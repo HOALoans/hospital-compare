@@ -1,13 +1,8 @@
 import { useEffect, useState } from "react";
 import { Search, Loader2, MapPin } from "lucide-react";
 import type { HospitalSummary } from "@shared/types";
+import { US_STATES } from "@shared/usStates";
 import { searchHospitals } from "@/lib/api";
-
-const US_STATES = [
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS",
-  "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY",
-  "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "DC",
-].sort((a, b) => a.localeCompare(b));
 
 interface Props {
   onSelect: (hospital: HospitalSummary) => void;

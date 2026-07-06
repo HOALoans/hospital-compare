@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, X, Loader2 } from "lucide-react";
+import { Plus, Search, X, Loader2, MapPin } from "lucide-react";
 import type { HospitalSummary } from "@shared/types";
 import { individualHospitalColor } from "@shared/chartTheme";
+import { US_STATES } from "@shared/usStates";
 import { searchHospitals } from "@/lib/api";
 
 const MAX_COMPARE = 10;
@@ -14,6 +15,7 @@ interface Props {
 
 export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Props) {
   const [query, setQuery] = useState("");
+  const [state, setState] = useState("");
   const [results, setResults] = useState<HospitalSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -26,7 +28,7 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const data = await searchHospitals(query);
+        const data = await searchHospitals(query, state || undefined);
         const selectedIds = new Set(selected.map((h) => h.facilityId));
         setResults(
           data.hospitals.filter(
@@ -40,7 +42,7 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [query, baseHospitalId, selected]);
+  }, [query, state, baseHospitalId, selected]);
 
   const addHospital = (hospital: HospitalSummary) => {
     if (selected.length >= MAX_COMPARE) return;
@@ -106,23 +108,43 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
       )}
 
       {open && selected.length < MAX_COMPARE && (
-        <div className="relative no-print">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-indigo-500" />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search hospital name, city, or ZIP…"
-            className="w-full rounded-lg border border-indigo-200 bg-white py-2.5 pl-10 pr-3 text-sm outline-none ring-indigo-500 focus:ring-2"
-            autoFocus
-          />
+        <div className="space-y-2 no-print">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-indigo-500" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search hospital name, city, or ZIP…"
+                className="w-full rounded-lg border border-indigo-200 bg-white py-2.5 pl-10 pr-3 text-sm outline-none ring-indigo-500 focus:ring-2"
+                autoFocus
+              />
+            </div>
+            <div className="relative sm:w-32">
+              <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-indigo-500" />
+              <select
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="w-full appearance-none rounded-lg border border-indigo-200 bg-white py-2.5 pl-9 pr-8 text-sm outline-none ring-indigo-500 focus:ring-2"
+                aria-label="Filter by state"
+              >
+                <option value="">All states</option>
+                {US_STATES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           {loading && (
-            <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching…
             </div>
           )}
           {results.length > 0 && (
-            <ul className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-indigo-100 bg-white shadow-md">
+            <ul className="max-h-48 overflow-y-auto rounded-lg border border-indigo-100 bg-white shadow-md">
               {results.map((h) => (
                 <li key={h.facilityId}>
                   <button

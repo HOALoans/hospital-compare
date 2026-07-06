@@ -6,6 +6,7 @@ import path from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { fileURLToPath } from "url";
+import { ARCHIVE_YEARS } from "../shared/measures.js";
 import { COMPARISON_MEASURE_IDS } from "../shared/measures.js";
 import type { HospitalTrend } from "../shared/types.js";
 
@@ -16,16 +17,81 @@ const RAW_DIR = path.join(__dirname, "../.cache/archives-raw");
 const EXTRACT_DIR = path.join(__dirname, "../.cache/archives-extracted");
 const LOCK_FILE = path.join(__dirname, "../.cache/archive-ingest.lock");
 
+const CMS_BASE = "https://data.cms.gov";
+const CMS_ARCHIVE_CATALOG =
+  "https://data.cms.gov/provider-data/api/1/archive/aggregate/theme/hospitals/relative";
 const CURRENT_HOSPITAL_ZIP =
   "https://data.cms.gov/provider-data/sites/default/files/archive/Hospitals/current/hospitals_current_data.zip";
 
-const ARCHIVE_SOURCES: { year: number; label: string; urls: string[] }[] = [
-  {
-    year: new Date().getFullYear(),
-    label: "Current CMS hospital snapshot",
-    urls: [CURRENT_HOSPITAL_ZIP],
-  },
-];
+type ArchiveSource = {
+  id: string;
+  year: number;
+  label: string;
+  urls: string[];
+};
+
+type CmsArchiveEntry = {
+  name: string;
+  type: string;
+  url: string;
+  date: string;
+};
+
+function toAbsoluteCmsUrl(url: string): string {
+  if (url.startsWith("http")) return url;
+  return `${CMS_BASE}${url.startsWith("/") ? url : `/${url}`}`;
+}
+
+export async function loadArchiveSources(): Promise<ArchiveSource[]> {
+  const sources: ArchiveSource[] = [
+    {
+      id: "current",
+      year: new Date().getFullYear(),
+      label: "Current CMS hospital snapshot",
+      urls: [CURRENT_HOSPITAL_ZIP],
+    },
+  ];
+
+  try {
+    const res = await fetch(CMS_ARCHIVE_CATALOG);
+    if (!res.ok) {
+      console.warn(`[archives] CMS archive catalog returned ${res.status}`);
+      return sources;
+    }
+
+    const payload = (await res.json()) as { data?: CmsArchiveEntry[] };
+    const latestThemeByYear = new Map<string, CmsArchiveEntry>();
+
+    for (const entry of payload.data ?? []) {
+      if (entry.type !== "theme") continue;
+      const year = entry.date.slice(0, 4);
+      const minYear = ARCHIVE_YEARS[0];
+      const maxYear = ARCHIVE_YEARS[ARCHIVE_YEARS.length - 1];
+      if (Number(year) < minYear || Number(year) > maxYear) continue;
+
+      const existing = latestThemeByYear.get(year);
+      if (!existing || entry.date > existing.date) {
+        latestThemeByYear.set(year, entry);
+      }
+    }
+
+    for (const year of [...latestThemeByYear.keys()].sort()) {
+      const entry = latestThemeByYear.get(year)!;
+      sources.push({
+        id: entry.date,
+        year: Number(year),
+        label: entry.name,
+        urls: [toAbsoluteCmsUrl(entry.url)],
+      });
+    }
+
+    console.log(`[archives] Loaded ${sources.length} archive sources from CMS catalog`);
+  } catch (err) {
+    console.warn("[archives] Could not fetch CMS archive catalog:", err);
+  }
+
+  return sources;
+}
 
 function parseCsvLine(line: string): string[] {
   const result: string[] = [];
@@ -62,15 +128,72 @@ function findCsvFile(dir: string, pattern: RegExp): string | null {
   return null;
 }
 
+function discoverCsvFiles(dir: string): { hcahps: string | null; hai: string | null } {
+  let hcahps: string | null =
+    findCsvFile(dir, /^HCAHPS-Hospital\.csv$/i) ??
+    findCsvFile(dir, /^HCAHPS - Hospital\.csv$/i) ??
+    findCsvFile(dir, /hcahps.*hospital/i);
+  let hai: string | null =
+    findCsvFile(dir, /^Healthcare_Associated_Infections/i) ??
+    findCsvFile(dir, /^Healthcare Associated Infections/i) ??
+    findCsvFile(dir, /healthcare.*associated.*infection/i);
+
+  if (hcahps && hai) return { hcahps, hai };
+
+  const csvPaths: string[] = [];
+  function walk(current: string) {
+    if (!fs.existsSync(current)) return;
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (/\.csv$/i.test(entry.name)) csvPaths.push(full);
+    }
+  }
+  walk(dir);
+
+  for (const csvPath of csvPaths) {
+    const headerLine = fs.readFileSync(csvPath, "utf8").split(/\r?\n/)[0] ?? "";
+    const headers = parseCsvLine(headerLine).map(normalizeHeader);
+    const has = (...names: string[]) => names.every((n) => headers.includes(n));
+
+    if (
+      !hcahps &&
+      has("facility_id", "hcahps_measure_id") &&
+      (headers.includes("hcahps_linear_mean_value") || headers.includes("patient_survey_star_rating"))
+    ) {
+      hcahps = csvPath;
+    }
+
+    if (
+      !hai &&
+      has("facility_id", "measure_id", "score") &&
+      !headers.includes("hcahps_measure_id")
+    ) {
+      hai = csvPath;
+    }
+  }
+
+  return { hcahps, hai };
+}
+
+function normalizeHeader(header: string): string {
+  return header
+    .trim()
+    .toLowerCase()
+    .replace(/[/\s]+/g, "_")
+    .replace(/[^a-z0-9_]/g, "");
+}
+
 function parseHcahpsCsv(csvPath: string) {
   const csv = fs.readFileSync(csvPath, "utf8");
   const lines = csv.split(/\r?\n/).filter(Boolean);
   if (lines.length < 2) return [];
 
-  const headers = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
+  const headers = parseCsvLine(lines[0]).map(normalizeHeader);
   const idx = (name: string) => headers.indexOf(name);
   const facilityIdx = idx("facility_id");
-  const measureIdx = idx("hcahps_measure_id") >= 0 ? idx("hcahps_measure_id") : idx("measure_id");
+  const measureIdx =
+    idx("hcahps_measure_id") >= 0 ? idx("hcahps_measure_id") : idx("measure_id");
   const linearIdx = idx("hcahps_linear_mean_value");
   const starIdx = idx("patient_survey_star_rating");
   const haiScoreIdx = idx("score");
@@ -127,23 +250,30 @@ async function extractZip(zipPath: string, destDir: string) {
   await execFileAsync("unzip", ["-o", zipPath, "-d", destDir]);
 }
 
+function shouldSkipIngest(): boolean {
+  if (process.env.FORCE_INGEST_ARCHIVES === "1") return false;
+  if (!fs.existsSync(LOCK_FILE)) return false;
+  const age = Date.now() - fs.statSync(LOCK_FILE).mtimeMs;
+  return age < 6 * 60 * 60 * 1000;
+}
+
 export async function runArchiveIngest() {
-  if (fs.existsSync(LOCK_FILE)) {
-    const age = Date.now() - fs.statSync(LOCK_FILE).mtimeMs;
-    if (age < 6 * 60 * 60 * 1000) {
-      console.log("[archives] Ingest already ran recently, skipping");
-      return;
-    }
+  if (shouldSkipIngest()) {
+    console.log("[archives] Ingest already ran recently, skipping");
+    return;
   }
+
   fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
   fs.mkdirSync(RAW_DIR, { recursive: true });
   fs.mkdirSync(EXTRACT_DIR, { recursive: true });
   fs.writeFileSync(LOCK_FILE, new Date().toISOString());
 
+  const archiveSources = await loadArchiveSources();
   const byFacility = new Map<string, HospitalTrend["points"]>();
 
-  for (const source of ARCHIVE_SOURCES) {
-    const zipPath = path.join(RAW_DIR, `hospital_${source.year}.zip`);
+  for (const source of archiveSources) {
+    const safeId = source.id.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const zipPath = path.join(RAW_DIR, `hospital_${safeId}.zip`);
     if (!fs.existsSync(zipPath)) {
       console.log(`[archives] Downloading ${source.label}...`);
       const buf = await tryDownload(source.urls);
@@ -154,7 +284,7 @@ export async function runArchiveIngest() {
       fs.writeFileSync(zipPath, buf);
     }
 
-    const extractPath = path.join(EXTRACT_DIR, String(source.year));
+    const extractPath = path.join(EXTRACT_DIR, safeId);
     if (!fs.existsSync(extractPath) || fs.readdirSync(extractPath).length === 0) {
       console.log(`[archives] Extracting ${source.label}...`);
       try {
@@ -165,13 +295,7 @@ export async function runArchiveIngest() {
       }
     }
 
-    const hcahpsCsv =
-      findCsvFile(extractPath, /^HCAHPS-Hospital\.csv$/i) ??
-      findCsvFile(extractPath, /hcahps.*hospital/i);
-    const haiCsv =
-      findCsvFile(extractPath, /^Healthcare_Associated_Infections/i) ??
-      findCsvFile(extractPath, /healthcare.*associated.*infection/i);
-
+    const { hcahps: hcahpsCsv, hai: haiCsv } = discoverCsvFiles(extractPath);
     const csvFiles = [hcahpsCsv, haiCsv].filter(Boolean) as string[];
     if (csvFiles.length === 0) {
       console.warn(`[archives]   No HCAHPS/HAI CSV found in ${source.label}`);
@@ -198,6 +322,10 @@ export async function runArchiveIngest() {
             scores: {},
           };
           points.push(point);
+        } else {
+          point.releaseLabel = source.label;
+          point.periodStart = row.periodStart;
+          point.periodEnd = row.periodEnd;
         }
         point.scores[row.measureId] = row.value;
         byFacility.set(row.facilityId, points);

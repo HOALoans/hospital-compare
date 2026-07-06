@@ -12,7 +12,7 @@
     "dev:server": "tsx watch server/index.ts",
     "build": "vite build && tsc -p tsconfig.server.json",
     "start": "node dist/server/index.js",
-    "ingest:archives": "tsx server/archiveIngest.ts"
+    "ingest:archives": "tsx scripts/ingestArchives.ts"
   },
   "dependencies": {
     "express": "^4.18.3",

@@ -21,9 +21,17 @@ export function TrendChart({ trend, selectedMeasureId }: Props) {
   if (!trend.points.length || !measure) {
     return (
       <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-        Historical trend data is not loaded for this hospital yet. CMS archives snapshots from
-        2019–2026 — run <code className="rounded bg-white px-1">npm run ingest:archives</code> after
-        downloading archive CSVs.
+        Historical trend data is not loaded for this hospital yet. Parigrado imports CMS hospital
+        archives (2019–2026) automatically — charts usually appear within a few minutes after the
+        server starts.{" "}
+        <a
+          href="https://data.cms.gov/provider-data/archived-data/hospitals"
+          className="text-indigo-700 underline"
+          target="_blank"
+          rel="noreferrer"
+        >
+          View CMS archives
+        </a>
       </div>
     );
   }
