@@ -16,49 +16,14 @@ const RAW_DIR = path.join(__dirname, "../.cache/archives-raw");
 const EXTRACT_DIR = path.join(__dirname, "../.cache/archives-extracted");
 const LOCK_FILE = path.join(__dirname, "../.cache/archive-ingest.lock");
 
+const CURRENT_HOSPITAL_ZIP =
+  "https://data.cms.gov/provider-data/sites/default/files/archive/Hospitals/current/hospitals_current_data.zip";
+
 const ARCHIVE_SOURCES: { year: number; label: string; urls: string[] }[] = [
   {
-    year: 2024,
-    label: "2024 archive",
-    urls: [
-      "https://data.cms.gov/provider-data/sites/default/files/archive/Hospital/2024/hospital_12_2024.zip",
-      "https://data.cms.gov/provider-data/sites/default/files/archive/Hospital/2024/Hospital_2024_archive.zip",
-    ],
-  },
-  {
-    year: 2023,
-    label: "2023 archive",
-    urls: [
-      "https://data.cms.gov/provider-data/sites/default/files/archive/Hospital/2023/hospital_12_2023.zip",
-    ],
-  },
-  {
-    year: 2022,
-    label: "2022 archive",
-    urls: [
-      "https://data.cms.gov/provider-data/sites/default/files/archive/Hospital/2022/hospital_12_2022.zip",
-    ],
-  },
-  {
-    year: 2021,
-    label: "2021 archive",
-    urls: [
-      "https://data.cms.gov/provider-data/sites/default/files/archive/Hospital/2021/hospital_12_2021.zip",
-    ],
-  },
-  {
-    year: 2020,
-    label: "2020 archive",
-    urls: [
-      "https://data.cms.gov/provider-data/sites/default/files/archive/Hospital/2020/hospital_12_2020.zip",
-    ],
-  },
-  {
-    year: 2019,
-    label: "2019 archive",
-    urls: [
-      "https://data.cms.gov/provider-data/sites/default/files/archive/Hospital/2019/hospital_12_2019.zip",
-    ],
+    year: new Date().getFullYear(),
+    label: "Current CMS hospital snapshot",
+    urls: [CURRENT_HOSPITAL_ZIP],
   },
 ];
 
@@ -201,9 +166,11 @@ export async function runArchiveIngest() {
     }
 
     const hcahpsCsv =
-      findCsvFile(extractPath, /hcahps.*hospital/i) ??
-      findCsvFile(extractPath, /HCAHPS/i);
-    const haiCsv = findCsvFile(extractPath, /healthcare.*associated.*infection/i);
+      findCsvFile(extractPath, /^HCAHPS-Hospital\.csv$/i) ??
+      findCsvFile(extractPath, /hcahps.*hospital/i);
+    const haiCsv =
+      findCsvFile(extractPath, /^Healthcare_Associated_Infections/i) ??
+      findCsvFile(extractPath, /healthcare.*associated.*infection/i);
 
     const csvFiles = [hcahpsCsv, haiCsv].filter(Boolean) as string[];
     if (csvFiles.length === 0) {
@@ -215,11 +182,16 @@ export async function runArchiveIngest() {
       const rows = parseHcahpsCsv(csvPath);
       console.log(`[archives]   ${path.basename(csvPath)}: ${rows.length} score rows`);
       for (const row of rows) {
+        const yearFromPeriod = row.periodEnd
+          ? Number(row.periodEnd.slice(-4))
+          : source.year;
+        const year = Number.isFinite(yearFromPeriod) ? yearFromPeriod : source.year;
+
         const points = byFacility.get(row.facilityId) ?? [];
-        let point = points.find((p) => p.year === source.year);
+        let point = points.find((p) => p.year === year);
         if (!point) {
           point = {
-            year: source.year,
+            year,
             releaseLabel: source.label,
             periodStart: row.periodStart,
             periodEnd: row.periodEnd,
@@ -235,9 +207,17 @@ export async function runArchiveIngest() {
 
   for (const [facilityId, points] of byFacility) {
     points.sort((a, b) => a.year - b.year);
+    const existingPath = path.join(ARCHIVE_DIR, `${facilityId}.json`);
+    let merged = points;
+    if (fs.existsSync(existingPath)) {
+      const existing = JSON.parse(fs.readFileSync(existingPath, "utf8")) as HospitalTrend;
+      const byYear = new Map(existing.points.map((p) => [p.year, p]));
+      for (const p of points) byYear.set(p.year, p);
+      merged = [...byYear.values()].sort((a, b) => a.year - b.year);
+    }
     fs.writeFileSync(
       path.join(ARCHIVE_DIR, `${facilityId}.json`),
-      JSON.stringify({ facilityId, points } satisfies HospitalTrend),
+      JSON.stringify({ facilityId, points: merged } satisfies HospitalTrend),
     );
   }
 
