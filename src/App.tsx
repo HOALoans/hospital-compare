@@ -35,6 +35,7 @@ const DEFAULT_PEERS = new Set([
 
 export default function App() {
   const [ready, setReady] = useState(false);
+  const [directoryReady, setDirectoryReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<HospitalSummary | null>(null);
   const [comparison, setComparison] = useState<ComparisonResult | null>(null);
@@ -51,6 +52,7 @@ export default function App() {
       try {
         const health = await fetchHealth();
         setReady(health.ready);
+        setDirectoryReady(health.directoryReady ?? health.ready);
         if (!health.ready) setTimeout(poll, 3000);
       } catch {
         setTimeout(poll, 5000);
@@ -104,7 +106,9 @@ export default function App() {
           {!ready && (
             <div className="flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Loading CMS hospital data…
+              {directoryReady
+                ? "Loading quality scores from CMS…"
+                : "Loading CMS hospital directory…"}
             </div>
           )}
         </div>

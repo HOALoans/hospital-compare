@@ -18,19 +18,25 @@ export function HospitalSearch({ onSelect }: Props) {
   const [state, setState] = useState("");
   const [results, setResults] = useState<HospitalSummary[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults([]);
+      setSearchError(null);
       return;
     }
     const timer = setTimeout(async () => {
       setLoading(true);
+      setSearchError(null);
       try {
         const data = await searchHospitals(query, state || undefined);
         setResults(data.hospitals);
-      } catch {
+      } catch (err) {
         setResults([]);
+        setSearchError(
+          err instanceof Error ? err.message : "Search is temporarily unavailable.",
+        );
       } finally {
         setLoading(false);
       }
@@ -89,8 +95,16 @@ export function HospitalSearch({ onSelect }: Props) {
         </ul>
       )}
 
-      {query.length >= 2 && !loading && results.length === 0 && (
-        <p className="text-sm text-slate-500">No hospitals matched your search.</p>
+      {searchError && (
+        <p className="text-sm text-amber-800">{searchError}</p>
+      )}
+
+      {query.length >= 2 && !loading && !searchError && results.length === 0 && (
+        <p className="text-sm text-slate-500">
+          No hospitals matched your search. Try a shorter name, city, or ZIP — CMS uses official
+          facility names (e.g. Asheville&apos;s Mission Hospital is listed as &quot;Memorial Mission
+          Hospital&quot;).
+        </p>
       )}
     </div>
   );

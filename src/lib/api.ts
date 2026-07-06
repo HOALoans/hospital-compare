@@ -28,5 +28,10 @@ export function fetchTrends(facilityId: string) {
 }
 
 export function fetchHealth() {
-  return apiGet<{ ok: boolean; ready: boolean; hospitalCount: number }>("/api/health");
+  return apiGet<{
+    ok: boolean;
+    ready: boolean;
+    directoryReady?: boolean;
+    hospitalCount: number;
+  }>("/api/health");
 }

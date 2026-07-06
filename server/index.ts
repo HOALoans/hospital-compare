@@ -4,7 +4,13 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import { ARCHIVE_YEARS } from "../shared/measures.js";
 import type { HospitalTrend } from "../shared/types.js";
-import { initializeCache, isCacheReady, searchHospitals, getHospitals } from "./cache.js";
+import {
+  initializeCache,
+  isCacheReady,
+  isHospitalDirectoryReady,
+  searchHospitals,
+  getHospitals,
+} from "./cache.js";
 import { buildComparison } from "./comparisons.js";
 import { scheduleArchiveIngest } from "./archiveIngest.js";
 
@@ -18,13 +24,14 @@ app.get("/api/health", (_req, res) => {
   res.json({
     ok: true,
     ready: isCacheReady(),
+    directoryReady: isHospitalDirectoryReady(),
     hospitalCount: getHospitals().length,
   });
 });
 
 app.get("/api/hospitals/search", (req, res) => {
-  if (!isCacheReady()) {
-    res.status(503).json({ error: "Data cache is still loading. Try again shortly." });
+  if (!isHospitalDirectoryReady()) {
+    res.status(503).json({ error: "Hospital directory is still loading. Try again shortly." });
     return;
   }
   const q = String(req.query.q ?? "");
@@ -35,7 +42,7 @@ app.get("/api/hospitals/search", (req, res) => {
 
 app.get("/api/hospitals/:facilityId/compare", (req, res) => {
   if (!isCacheReady()) {
-    res.status(503).json({ error: "Data cache is still loading. Try again shortly." });
+    res.status(503).json({ error: "Quality scores are still loading. Try again shortly." });
     return;
   }
   const comparison = buildComparison(req.params.facilityId);

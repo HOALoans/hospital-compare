@@ -59,7 +59,14 @@ let scoresByPeer = new Map<string, Map<string, { sum: number; count: number }>>(
 let nationalBenchmarks = new Map<string, number>();
 let nationalCounts = new Map<string, number>();
 let currentPeriod = { start: "", end: "" };
-let ready = false;
+let hospitalsReady = false;
+let scoresReady = false;
+
+/** Common names patients use that differ from the CMS facility_name. */
+const HOSPITAL_SEARCH_ALIASES: Record<string, string[]> = {
+  "340002": ["mission hospital", "mission hospital asheville", "mission health", "mission health asheville"],
+  "340087": ["mission hospital mcdowell", "mission health mcdowell", "mission health marion"],
+};
 
 function mapHospital(row: CmsHospitalRow): HospitalSummary {
   const zip3 = row.zip_code?.slice(0, 3) ?? "";
@@ -173,7 +180,11 @@ function indexScore(
 }
 
 export function isCacheReady() {
-  return ready;
+  return scoresReady;
+}
+
+export function isHospitalDirectoryReady() {
+  return hospitalsReady;
 }
 
 export function getHospitals() {
@@ -206,6 +217,11 @@ export function searchHospitals(query: string, state?: string, limit = 25): Hosp
       if (city.includes(q)) score += 20;
       if (county.includes(q)) score += 15;
       if (h.zip.startsWith(q)) score += 30;
+      for (const alias of HOSPITAL_SEARCH_ALIASES[h.facilityId] ?? []) {
+        if (alias === q) score += 90;
+        else if (alias.startsWith(q) || q.startsWith(alias)) score += 70;
+        else if (alias.includes(q) || q.includes(alias)) score += 55;
+      }
       return { h, score };
     })
     .filter((x) => x.score > 0)
@@ -262,6 +278,8 @@ async function loadFromCms() {
   console.log("[cache] Loading hospital directory from CMS...");
   const hospitalRows = await cmsQueryAll<CmsHospitalRow>({ dataset: DATASETS.hospitals });
   hospitals = hospitalRows.map(mapHospital);
+  hospitalsReady = true;
+  console.log(`[cache] Hospital directory ready — ${hospitals.length} hospitals`);
   const hospitalById = new Map(hospitals.map((h) => [h.facilityId, h]));
 
   scoresByFacility = new Map();
@@ -343,11 +361,12 @@ export async function initializeCache(maxAgeHours = 24) {
 
   if (freshEnough && loadFromDisk()) {
     console.log(`[cache] Loaded ${hospitals.length} hospitals from disk cache`);
-    ready = true;
+    hospitalsReady = true;
+    scoresReady = true;
     return;
   }
 
   await loadFromCms();
-  ready = true;
+  scoresReady = true;
   console.log(`[cache] Ready — ${hospitals.length} hospitals indexed`);
 }
