@@ -250,6 +250,24 @@ async function extractZip(zipPath: string, destDir: string) {
   await execFileAsync("unzip", ["-o", zipPath, "-d", destDir]);
 }
 
+function flushTrendFiles(byFacility: Map<string, HospitalTrend["points"]>) {
+  for (const [facilityId, points] of byFacility) {
+    points.sort((a, b) => a.year - b.year);
+    const existingPath = path.join(ARCHIVE_DIR, `${facilityId}.json`);
+    let merged = points;
+    if (fs.existsSync(existingPath)) {
+      const existing = JSON.parse(fs.readFileSync(existingPath, "utf8")) as HospitalTrend;
+      const byYear = new Map(existing.points.map((p) => [p.year, p]));
+      for (const p of points) byYear.set(p.year, p);
+      merged = [...byYear.values()].sort((a, b) => a.year - b.year);
+    }
+    fs.writeFileSync(
+      path.join(ARCHIVE_DIR, `${facilityId}.json`),
+      JSON.stringify({ facilityId, points: merged } satisfies HospitalTrend),
+    );
+  }
+}
+
 function shouldSkipIngest(): boolean {
   if (process.env.FORCE_INGEST_ARCHIVES === "1") return false;
   if (!fs.existsSync(LOCK_FILE)) return false;
@@ -331,22 +349,9 @@ export async function runArchiveIngest() {
         byFacility.set(row.facilityId, points);
       }
     }
-  }
 
-  for (const [facilityId, points] of byFacility) {
-    points.sort((a, b) => a.year - b.year);
-    const existingPath = path.join(ARCHIVE_DIR, `${facilityId}.json`);
-    let merged = points;
-    if (fs.existsSync(existingPath)) {
-      const existing = JSON.parse(fs.readFileSync(existingPath, "utf8")) as HospitalTrend;
-      const byYear = new Map(existing.points.map((p) => [p.year, p]));
-      for (const p of points) byYear.set(p.year, p);
-      merged = [...byYear.values()].sort((a, b) => a.year - b.year);
-    }
-    fs.writeFileSync(
-      path.join(ARCHIVE_DIR, `${facilityId}.json`),
-      JSON.stringify({ facilityId, points: merged } satisfies HospitalTrend),
-    );
+    flushTrendFiles(byFacility);
+    console.log(`[archives]   Saved trends for ${byFacility.size} hospitals after ${source.label}`);
   }
 
   console.log(`[archives] Trend files written for ${byFacility.size} hospitals`);
