@@ -115,14 +115,18 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-start gap-3">
-            <Building2 className="mt-0.5 h-5 w-5 text-teal-700" />
+        <section className="relative overflow-hidden rounded-2xl border-2 border-teal-600/30 bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-6 shadow-xl shadow-teal-900/10 ring-1 ring-teal-600/15 sm:p-8">
+          <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-teal-400/10 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-cyan-400/10 blur-2xl" />
+          <div className="relative mb-6 flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white shadow-md">
+              <Building2 className="h-5 w-5" />
+            </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Find your hospital</h2>
+              <h2 className="text-xl font-semibold text-slate-900">Find your hospital</h2>
               <p className="mt-1 text-sm text-slate-600">
-                Compare HCAHPS patient experience and CDC NHSN infection measures against county,
-                ZIP, state, and national peers — including for-profit vs non-profit hospitals.
+                Search by name, city, or ZIP — then compare HCAHPS patient experience and CDC NHSN
+                infection measures against county, ZIP, state, and national peers.
               </p>
             </div>
           </div>
@@ -287,7 +291,10 @@ export default function App() {
       </main>
 
       <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-400">
-        Public CMS & CDC-reported data for informational purposes only. Not medical advice.
+        <p>
+          <span className="font-medium text-slate-500">Parigrado.com</span> · Public CMS &amp; CDC-reported
+          data for informational purposes only. Not medical advice.
+        </p>
       </footer>
     </div>
   );
