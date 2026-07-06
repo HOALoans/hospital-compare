@@ -4,6 +4,7 @@ import type { HospitalSummary } from "@shared/types";
 import { individualHospitalColor } from "@shared/chartTheme";
 import { US_STATES } from "@shared/usStates";
 import { searchHospitals } from "@/lib/api";
+import { HospitalLogo } from "@/components/HospitalLogo";
 
 const MAX_COMPARE = 10;
 
@@ -82,8 +83,9 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
           {selected.map((h, i) => (
             <li
               key={h.facilityId}
-              className="inline-flex max-w-full items-center gap-2 rounded-full border border-white bg-white py-1 pl-3 pr-1.5 text-xs shadow-sm"
+              className="inline-flex max-w-full items-center gap-2 rounded-full border border-white bg-white py-1 pl-1.5 pr-1.5 text-xs shadow-sm"
             >
+              <HospitalLogo hospital={h} size={24} />
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
                 style={{ backgroundColor: individualHospitalColor(i) }}
@@ -150,12 +152,15 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
                   <button
                     type="button"
                     onClick={() => addHospital(h)}
-                    className="flex w-full flex-col gap-0.5 px-3 py-2.5 text-left hover:bg-indigo-50"
+                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-indigo-50"
                   >
-                    <span className="text-sm font-medium text-slate-900">{h.name}</span>
-                    <span className="text-xs text-slate-500">
-                      {h.city}, {h.state} {h.zip}
-                    </span>
+                    <HospitalLogo hospital={h} size={28} />
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-slate-900">{h.name}</span>
+                      <span className="mt-0.5 block text-xs text-slate-500">
+                        {h.city}, {h.state} {h.zip}
+                      </span>
+                    </div>
                   </button>
                 </li>
               ))}

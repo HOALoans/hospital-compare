@@ -3,7 +3,9 @@ import {
   Activity,
   BarChart3,
   Building2,
+  Download,
   ExternalLink,
+  Home,
   Info,
   Loader2,
   Printer,
@@ -20,10 +22,15 @@ import {
 import { OWNERSHIP_LABELS } from "@shared/ownership";
 import { CHART } from "@shared/chartTheme";
 import { fetchComparison, fetchHealth, fetchTrends } from "@/lib/api";
+import { downloadComparisonCsv } from "@/lib/exportComparisonCsv";
 import { HospitalSearch } from "@/components/HospitalSearch";
 import { CompareHospitalPicker } from "@/components/CompareHospitalPicker";
 import { ComparisonTable } from "@/components/ComparisonTable";
 import { TrendChart } from "@/components/TrendChart";
+import { HomePage } from "@/components/HomePage";
+import { HospitalLogo } from "@/components/HospitalLogo";
+
+type AppView = "home" | "compare";
 
 type SortKey = "category" | "measure" | "gap-national" | "gap-state" | "gap-county";
 
@@ -37,6 +44,8 @@ const DEFAULT_PEERS = new Set([
 ]);
 
 export default function App() {
+  const [view, setView] = useState<AppView>("home");
+  const searchSectionRef = useRef<HTMLElement>(null);
   const [ready, setReady] = useState(false);
   const [directoryReady, setDirectoryReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -81,6 +90,7 @@ export default function App() {
 
   const loadHospital = useCallback(
     async (hospital: HospitalSummary) => {
+      setView("compare");
       setSelected(hospital);
       setCompareHospitals([]);
       skipCompareRefetch.current = true;
@@ -126,11 +136,32 @@ export default function App() {
     window.print();
   };
 
+  const exportCsv = () => {
+    if (!comparison) return;
+    downloadComparisonCsv(comparison, { visiblePeerKeys: visiblePeers });
+  };
+
+  const goToCompare = () => {
+    setView("compare");
+    requestAnimationFrame(() => {
+      searchSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  const goHome = () => {
+    setView("home");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-slate-200 bg-white no-print">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
-          <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={goHome}
+            className="flex items-center gap-3 text-left transition hover:opacity-90"
+          >
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-700 text-white">
               <Activity className="h-5 w-5" />
             </div>
@@ -138,20 +169,55 @@ export default function App() {
               <h1 className="font-display text-2xl leading-tight text-slate-900">{SITE_NAME}</h1>
               <p className="text-sm text-slate-500">{SITE_TAGLINE}</p>
             </div>
+          </button>
+          <div className="flex items-center gap-3">
+            <nav className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+              <button
+                type="button"
+                onClick={goHome}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                  view === "home"
+                    ? "bg-white text-indigo-700 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Home className="h-4 w-4" />
+                Home
+              </button>
+              <button
+                type="button"
+                onClick={goToCompare}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                  view === "compare"
+                    ? "bg-white text-indigo-700 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Building2 className="h-4 w-4" />
+                Compare
+              </button>
+            </nav>
+            {!ready && (
+              <div className="flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {directoryReady
+                  ? "Loading quality scores from CMS…"
+                  : "Loading CMS hospital directory…"}
+              </div>
+            )}
           </div>
-          {!ready && (
-            <div className="flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {directoryReady
-                ? "Loading quality scores from CMS…"
-                : "Loading CMS hospital directory…"}
-            </div>
-          )}
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
-        <section className="relative overflow-hidden rounded-2xl border-2 border-indigo-300/40 bg-gradient-to-br from-indigo-50 via-white to-orange-50/30 p-6 shadow-xl shadow-indigo-900/5 ring-1 ring-indigo-200/50 sm:p-8 no-print">
+        {view === "home" && <HomePage onStartCompare={goToCompare} />}
+
+        {view === "compare" && (
+          <>
+        <section
+          ref={searchSectionRef}
+          className="relative overflow-hidden rounded-2xl border-2 border-indigo-300/40 bg-gradient-to-br from-indigo-50 via-white to-orange-50/30 p-6 shadow-xl shadow-indigo-900/5 ring-1 ring-indigo-200/50 sm:p-8 no-print"
+        >
           <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-indigo-400/10 blur-2xl" />
           <div className="pointer-events-none absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-orange-300/10 blur-2xl" />
           <div className="relative mb-6 flex items-start gap-3">
@@ -190,17 +256,22 @@ export default function App() {
                   <p className="hidden text-xs font-semibold uppercase tracking-wide text-indigo-700 print:block">
                     {SITE_NAME} — Hospital Comparison Report
                   </p>
-                  <h2 className="font-display text-3xl text-slate-900">{selected.name}</h2>
-                  <p className="mt-1 text-slate-600">
-                    {selected.city}, {selected.state} {selected.zip} · {selected.county} County
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    {selected.hospitalType} · {selected.ownership} (
-                    {OWNERSHIP_LABELS[selected.ownershipGroup]})
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    Reporting period: {comparison.period.start} – {comparison.period.end}
-                  </p>
+                  <div className="flex items-start gap-4">
+                    <HospitalLogo hospital={selected} size={48} className="no-print" />
+                    <div>
+                      <h2 className="font-display text-3xl text-slate-900">{selected.name}</h2>
+                      <p className="mt-1 text-slate-600">
+                        {selected.city}, {selected.state} {selected.zip} · {selected.county} County
+                      </p>
+                      <p className="mt-2 text-sm text-slate-500">
+                        {selected.hospitalType} · {selected.ownership} (
+                        {OWNERSHIP_LABELS[selected.ownershipGroup]})
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Reporting period: {comparison.period.start} – {comparison.period.end}
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   {selected.overallRating && (
@@ -213,6 +284,14 @@ export default function App() {
                       </div>
                     </div>
                   )}
+                  <button
+                    type="button"
+                    onClick={exportCsv}
+                    className="no-print inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </button>
                   <button
                     type="button"
                     onClick={printReport}
@@ -351,6 +430,8 @@ export default function App() {
             ))}
           </ul>
         </section>
+          </>
+        )}
       </main>
 
       <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-400 no-print">

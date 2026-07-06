@@ -3,6 +3,7 @@ import { Search, Loader2, MapPin } from "lucide-react";
 import type { HospitalSummary } from "@shared/types";
 import { US_STATES } from "@shared/usStates";
 import { searchHospitals } from "@/lib/api";
+import { HospitalLogo } from "@/components/HospitalLogo";
 
 interface Props {
   onSelect: (hospital: HospitalSummary) => void;
@@ -82,13 +83,16 @@ export function HospitalSearch({ onSelect }: Props) {
               <button
                 type="button"
                 onClick={() => onSelect(h)}
-                className="flex w-full flex-col gap-0.5 px-4 py-3.5 text-left transition hover:bg-teal-50"
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-teal-50"
               >
-                <span className="font-semibold text-slate-900">{h.name}</span>
-                <span className="text-sm text-slate-500">
-                  {h.city}, {h.state} {h.zip} · {h.ownership}
-                  {h.overallRating ? ` · ${h.overallRating}★ overall` : ""}
-                </span>
+                <HospitalLogo hospital={h} size={36} />
+                <div className="min-w-0 flex-1">
+                  <span className="font-semibold text-slate-900">{h.name}</span>
+                  <span className="mt-0.5 block text-sm text-slate-500">
+                    {h.city}, {h.state} {h.zip} · {h.ownership}
+                    {h.overallRating ? ` · ${h.overallRating}★ overall` : ""}
+                  </span>
+                </div>
               </button>
             </li>
           ))}
