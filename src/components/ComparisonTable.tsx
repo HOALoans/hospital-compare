@@ -87,29 +87,104 @@ function GapBadge({
   );
 }
 
-function markerStyles(kind: BarMarker["kind"]) {
+function markerHitArea(kind: BarMarker["kind"]) {
   switch (kind) {
     case "hospital":
-      return "h-4 w-4 -translate-x-1/2 rounded-full border-2 border-white bg-teal-600 shadow-sm z-20";
-    case "national":
-      return "h-3 w-0.5 -translate-x-1/2 bg-slate-400 z-10";
-    case "state":
-      return "h-3 w-0.5 -translate-x-1/2 bg-sky-500 z-10";
-    case "county":
-      return "h-3 w-0.5 -translate-x-1/2 bg-violet-500 z-10";
+      return "flex h-7 w-7 cursor-help items-center justify-center";
     case "peer":
-      return "h-2.5 w-2.5 -translate-x-1/2 rotate-45 border border-white bg-amber-500 z-10";
+      return "flex h-6 w-6 cursor-help items-center justify-center";
+    default:
+      return "flex h-7 w-4 cursor-help items-center justify-center";
   }
+}
+
+function markerShape(kind: BarMarker["kind"]) {
+  switch (kind) {
+    case "hospital":
+      return "h-5 w-5 rounded-full border-2 border-white bg-teal-600 shadow-md";
+    case "national":
+      return "h-4 w-0.5 rounded-full bg-slate-500";
+    case "state":
+      return "h-4 w-0.5 rounded-full bg-sky-500";
+    case "county":
+      return "h-4 w-0.5 rounded-full bg-violet-500";
+    case "peer":
+      return "h-2.5 w-2.5 rotate-45 border border-white bg-amber-500 shadow-sm";
+  }
+}
+
+function markerTooltipHint(kind: BarMarker["kind"]) {
+  switch (kind) {
+    case "hospital":
+      return "The hospital you selected";
+    case "national":
+      return "Average across all U.S. hospitals";
+    case "state":
+      return "Average for hospitals in this state";
+    case "county":
+      return "Average for hospitals in this county";
+    case "peer":
+      return "Average for the selected compare group";
+  }
+}
+
+function MarkerTooltip({
+  marker,
+  valueType,
+  leftPercent,
+  hospitalName,
+}: {
+  marker: BarMarker;
+  valueType: MeasureValueType;
+  leftPercent: number;
+  hospitalName?: string;
+}) {
+  const align =
+    leftPercent < 12 ? "left-0 translate-x-0" : leftPercent > 88 ? "right-0 translate-x-0" : "left-1/2 -translate-x-1/2";
+
+  return (
+    <div
+      className="group/marker absolute top-1/2 z-30 -translate-x-1/2 -translate-y-1/2"
+      style={{ left: `${leftPercent}%` }}
+    >
+      <div className={markerHitArea(marker.kind)} aria-label={`${marker.label}: ${formatMeasureValue(marker.value, valueType)}`}>
+        <div className={markerShape(marker.kind)} />
+      </div>
+      <div
+        className={`pointer-events-none absolute bottom-full z-40 mb-2 w-max max-w-[220px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-left opacity-0 shadow-lg transition-opacity duration-150 group-hover/marker:opacity-100 group-focus-within/marker:opacity-100 ${align}`}
+        role="tooltip"
+      >
+        <p className="text-xs font-semibold text-slate-900">{marker.label}</p>
+        <p className="mt-0.5 text-sm font-bold text-teal-800">
+          {formatMeasureValue(marker.value, valueType)}
+        </p>
+        <p className="mt-1 text-[11px] leading-snug text-slate-500">
+          {marker.kind === "hospital" && hospitalName ? hospitalName : markerTooltipHint(marker.kind)}
+        </p>
+        <div
+          className={`absolute top-full mt-px h-2 w-2 rotate-45 border-b border-r border-slate-200 bg-white ${
+            leftPercent < 12
+              ? "left-4"
+              : leftPercent > 88
+                ? "right-4"
+                : "left-1/2 -translate-x-1/2"
+          }`}
+        />
+      </div>
+    </div>
+  );
 }
 
 function ComparisonBar({
   markers,
   valueType,
   higherIsBetter,
+  hospitalName,
 }: {
   markers: BarMarker[];
   valueType: MeasureValueType;
   higherIsBetter: boolean;
+  hospitalName?: string;
 }) {
   const values = markers.map((m) => m.value);
   const { min, max } = scaleBounds(values, valueType);
@@ -117,7 +192,7 @@ function ComparisonBar({
 
   return (
     <div className="mt-3">
-      <div className="relative h-7">
+      <div className="relative h-8">
         <div
           className={`absolute inset-x-0 top-1/2 h-2.5 -translate-y-1/2 rounded-full ${
             higherIsBetter
@@ -135,11 +210,12 @@ function ComparisonBar({
           />
         )}
         {markers.map((marker) => (
-          <div
+          <MarkerTooltip
             key={marker.key}
-            className={`absolute top-1/2 -translate-y-1/2 ${markerStyles(marker.kind)}`}
-            style={{ left: `${toPercent(marker.value, min, max)}%` }}
-            title={`${marker.label}: ${formatMeasureValue(marker.value, valueType)}`}
+            marker={marker}
+            valueType={valueType}
+            leftPercent={toPercent(marker.value, min, max)}
+            hospitalName={hospitalName}
           />
         ))}
       </div>
@@ -237,6 +313,7 @@ function MeasureCard({
           markers={markers}
           valueType={def.valueType}
           higherIsBetter={def.higherIsBetter}
+          hospitalName={comparison.hospital.name}
         />
       )}
 
@@ -329,7 +406,7 @@ export function ComparisonTable({
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
         <span className="font-semibold text-slate-700">Chart key</span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-teal-600" /> Your hospital
+          <span className="h-3.5 w-3.5 rounded-full border border-white bg-teal-600 shadow-sm" /> Your hospital (large teal dot)
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-3 w-0.5 bg-slate-400" /> National
@@ -343,7 +420,7 @@ export function ComparisonTable({
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rotate-45 bg-amber-500" /> Compare group
         </span>
-        <span className="text-slate-500">Bar color runs worse → better for each measure.</span>
+        <span className="text-slate-500">Hover any marker for details. Bar color runs worse → better.</span>
       </div>
 
       <div className="grid gap-3">
