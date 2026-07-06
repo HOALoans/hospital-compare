@@ -17,8 +17,15 @@ export function searchHospitals(q: string, state?: string) {
   );
 }
 
-export function fetchComparison(facilityId: string) {
-  return apiGet<ComparisonResult>(`/api/hospitals/${facilityId}/compare`);
+export function fetchComparison(facilityId: string, compareWithIds: string[] = []) {
+  const params = new URLSearchParams();
+  if (compareWithIds.length > 0) {
+    params.set("compareWith", compareWithIds.join(","));
+  }
+  const qs = params.toString();
+  return apiGet<ComparisonResult>(
+    `/api/hospitals/${facilityId}/compare${qs ? `?${qs}` : ""}`,
+  );
 }
 
 export function fetchTrends(facilityId: string) {

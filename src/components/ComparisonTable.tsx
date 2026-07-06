@@ -1,6 +1,10 @@
 import { useMemo } from "react";
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
-import type { ComparisonResult, PeerAverage } from "@shared/types";
+import type { ComparisonResult, HospitalComparePeer, PeerAverage } from "@shared/types";
+import {
+  CHART,
+  individualHospitalColor,
+} from "@shared/chartTheme";
 import {
   COMPARISON_MEASURES,
   MEASURE_GROUPS,
@@ -21,11 +25,20 @@ interface Props {
   visiblePeerKeys: Set<string>;
 }
 
+type MarkerKind =
+  | "hospital"
+  | "national"
+  | "state"
+  | "county"
+  | "peer"
+  | "compare-hospital";
+
 interface BarMarker {
   key: string;
   label: string;
   value: number;
-  kind: "hospital" | "national" | "state" | "county" | "peer";
+  kind: MarkerKind;
+  color?: string;
 }
 
 function nationalGap(
@@ -45,7 +58,7 @@ function scaleBounds(values: number[], valueType: MeasureValueType) {
   }
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const pad = Math.max((max - min) * 0.12, valueType === "sir" ? 0.05 : 1);
+  const pad = Math.max((max - min) * 0.15, valueType === "sir" ? 0.05 : 1);
   return {
     min: Math.max(0, min - pad),
     max: max + pad,
@@ -59,27 +72,24 @@ function toPercent(value: number, min: number, max: number) {
 
 function deltaIcon(delta: number | null) {
   if (delta === null) return <Minus className="h-3 w-3 text-slate-300" />;
-  if (delta > 0.05) return <ArrowUp className="h-3 w-3 text-emerald-600" />;
-  if (delta < -0.05) return <ArrowDown className="h-3 w-3 text-rose-600" />;
+  if (delta > 0.05) return <ArrowUp className="h-3 w-3" style={{ color: CHART.positive }} />;
+  if (delta < -0.05) return <ArrowDown className="h-3 w-3" style={{ color: CHART.negative }} />;
   return <Minus className="h-3 w-3 text-slate-400" />;
 }
 
-function GapBadge({
-  gap,
-  decimals,
-}: {
-  gap: number | null;
-  decimals: number;
-}) {
+function GapBadge({ gap, decimals }: { gap: number | null; decimals: number }) {
   if (gap === null) {
     return <span className="text-xs text-slate-400">No national benchmark</span>;
   }
-
   const tone =
-    gap > 0.05 ? "bg-emerald-50 text-emerald-800" : gap < -0.05 ? "bg-rose-50 text-rose-800" : "bg-slate-100 text-slate-600";
+    gap > 0.05
+      ? "bg-emerald-50 text-emerald-900 ring-emerald-200"
+      : gap < -0.05
+        ? "bg-rose-50 text-rose-900 ring-rose-200"
+        : "bg-slate-100 text-slate-600 ring-slate-200";
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${tone}`}>
       {deltaIcon(gap)}
       {gap > 0 ? "+" : ""}
       {Number(gap.toFixed(decimals))} vs national
@@ -87,44 +97,20 @@ function GapBadge({
   );
 }
 
-function markerHitArea(kind: BarMarker["kind"]) {
-  switch (kind) {
+function markerColor(marker: BarMarker): string {
+  switch (marker.kind) {
     case "hospital":
-      return "flex h-7 w-7 cursor-help items-center justify-center";
-    case "peer":
-      return "flex h-6 w-6 cursor-help items-center justify-center";
-    default:
-      return "flex h-7 w-4 cursor-help items-center justify-center";
-  }
-}
-
-function markerShape(kind: BarMarker["kind"]) {
-  switch (kind) {
-    case "hospital":
-      return "h-5 w-5 rounded-full border-2 border-white bg-teal-600 shadow-md";
+      return CHART.baseHospital;
     case "national":
-      return "h-4 w-0.5 rounded-full bg-slate-500";
+      return CHART.national;
     case "state":
-      return "h-4 w-0.5 rounded-full bg-sky-500";
+      return CHART.state;
     case "county":
-      return "h-4 w-0.5 rounded-full bg-violet-500";
+      return CHART.county;
     case "peer":
-      return "h-2.5 w-2.5 rotate-45 border border-white bg-amber-500 shadow-sm";
-  }
-}
-
-function markerTooltipHint(kind: BarMarker["kind"]) {
-  switch (kind) {
-    case "hospital":
-      return "The hospital you selected";
-    case "national":
-      return "Average across all U.S. hospitals";
-    case "state":
-      return "Average for hospitals in this state";
-    case "county":
-      return "Average for hospitals in this county";
-    case "peer":
-      return "Average for the selected compare group";
+      return CHART.peerGroup;
+    case "compare-hospital":
+      return marker.color ?? CHART.state;
   }
 }
 
@@ -132,44 +118,52 @@ function MarkerTooltip({
   marker,
   valueType,
   leftPercent,
-  hospitalName,
+  subtitle,
 }: {
   marker: BarMarker;
   valueType: MeasureValueType;
   leftPercent: number;
-  hospitalName?: string;
+  subtitle?: string;
 }) {
+  const color = markerColor(marker);
   const align =
     leftPercent < 12 ? "left-0 translate-x-0" : leftPercent > 88 ? "right-0 translate-x-0" : "left-1/2 -translate-x-1/2";
+  const isBase = marker.kind === "hospital";
+  const size = isBase ? 22 : marker.kind === "compare-hospital" ? 16 : 12;
 
   return (
     <div
-      className="group/marker absolute top-1/2 z-30 -translate-x-1/2 -translate-y-1/2"
+      className="group/marker absolute bottom-0 z-30 -translate-x-1/2"
       style={{ left: `${leftPercent}%` }}
     >
-      <div className={markerHitArea(marker.kind)} aria-label={`${marker.label}: ${formatMeasureValue(marker.value, valueType)}`}>
-        <div className={markerShape(marker.kind)} />
+      <div
+        className="mx-auto cursor-help"
+        style={{ width: Math.max(size, 28), height: 44 }}
+        aria-label={`${marker.label}: ${formatMeasureValue(marker.value, valueType)}`}
+      >
+        <div className="mx-auto h-full w-px bg-slate-300/80" style={{ marginBottom: -2 }} />
+        <div
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 border-2 border-white shadow-md"
+          style={{
+            width: size,
+            height: size,
+            borderRadius: marker.kind === "peer" ? 2 : "9999px",
+            backgroundColor: color,
+            transform: marker.kind === "peer" ? "translateX(-50%) rotate(45deg)" : "translateX(-50%)",
+          }}
+        />
       </div>
       <div
-        className={`pointer-events-none absolute bottom-full z-40 mb-2 w-max max-w-[220px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-left opacity-0 shadow-lg transition-opacity duration-150 group-hover/marker:opacity-100 group-focus-within/marker:opacity-100 ${align}`}
+        className={`pointer-events-none absolute bottom-full z-40 mb-1 w-max max-w-[240px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-left opacity-0 shadow-xl transition-opacity duration-150 group-hover/marker:opacity-100 group-focus-within/marker:opacity-100 print:opacity-100 ${align}`}
         role="tooltip"
       >
         <p className="text-xs font-semibold text-slate-900">{marker.label}</p>
-        <p className="mt-0.5 text-sm font-bold text-teal-800">
+        <p className="mt-0.5 text-sm font-bold" style={{ color }}>
           {formatMeasureValue(marker.value, valueType)}
         </p>
-        <p className="mt-1 text-[11px] leading-snug text-slate-500">
-          {marker.kind === "hospital" && hospitalName ? hospitalName : markerTooltipHint(marker.kind)}
-        </p>
-        <div
-          className={`absolute top-full mt-px h-2 w-2 rotate-45 border-b border-r border-slate-200 bg-white ${
-            leftPercent < 12
-              ? "left-4"
-              : leftPercent > 88
-                ? "right-4"
-                : "left-1/2 -translate-x-1/2"
-          }`}
-        />
+        {subtitle && (
+          <p className="mt-1 text-[11px] leading-snug text-slate-500">{subtitle}</p>
+        )}
       </div>
     </div>
   );
@@ -179,33 +173,35 @@ function ComparisonBar({
   markers,
   valueType,
   higherIsBetter,
-  hospitalName,
+  baseHospitalName,
 }: {
   markers: BarMarker[];
   valueType: MeasureValueType;
   higherIsBetter: boolean;
-  hospitalName?: string;
+  baseHospitalName?: string;
 }) {
   const values = markers.map((m) => m.value);
   const { min, max } = scaleBounds(values, valueType);
   const hospital = markers.find((m) => m.kind === "hospital");
+  const trackGradient = higherIsBetter
+    ? `linear-gradient(90deg, ${CHART.trackLow}, ${CHART.trackMid}, ${CHART.trackHigh})`
+    : `linear-gradient(90deg, ${CHART.trackHigh}, ${CHART.trackMid}, ${CHART.trackLow})`;
 
   return (
-    <div className="mt-3">
-      <div className="relative h-8">
+    <div className="mt-4 rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200/80">
+      <div className="relative h-14">
         <div
-          className={`absolute inset-x-0 top-1/2 h-2.5 -translate-y-1/2 rounded-full ${
-            higherIsBetter
-              ? "bg-gradient-to-r from-rose-100 via-amber-50 to-emerald-100"
-              : "bg-gradient-to-r from-emerald-100 via-amber-50 to-rose-100"
-          }`}
+          className="absolute inset-x-0 top-1/2 h-5 -translate-y-1/2 rounded-full shadow-inner"
+          style={{ background: trackGradient }}
         />
         {hospital && (
           <div
-            className="absolute top-1/2 h-2.5 -translate-y-1/2 rounded-full bg-teal-200/80"
+            className="absolute top-1/2 h-5 -translate-y-1/2 rounded-full opacity-90"
             style={{
               left: 0,
               width: `${toPercent(hospital.value, min, max)}%`,
+              backgroundColor: CHART.baseHospitalLight,
+              boxShadow: `inset 0 0 0 1px ${CHART.baseHospital}40`,
             }}
           />
         )}
@@ -215,13 +211,19 @@ function ComparisonBar({
             marker={marker}
             valueType={valueType}
             leftPercent={toPercent(marker.value, min, max)}
-            hospitalName={hospitalName}
+            subtitle={
+              marker.kind === "hospital"
+                ? baseHospitalName
+                : marker.kind === "compare-hospital"
+                  ? "Individual comparison hospital"
+                  : undefined
+            }
           />
         ))}
       </div>
-      <div className="mt-1 flex justify-between text-[10px] text-slate-400">
-        <span>{valueType === "sir" ? "Lower is better" : "Lower"}</span>
-        <span>{valueType === "sir" ? "Higher is worse" : "Higher"}</span>
+      <div className="mt-2 flex justify-between text-[10px] font-medium uppercase tracking-wide text-slate-500">
+        <span>{valueType === "sir" ? "Lower is better" : "Lower scores"}</span>
+        <span>{valueType === "sir" ? "Higher is worse" : "Higher scores"}</span>
       </div>
     </div>
   );
@@ -231,80 +233,99 @@ function BenchmarkChip({
   label,
   value,
   valueType,
-  accent,
+  color,
 }: {
   label: string;
   value: number | null;
   valueType: MeasureValueType;
-  accent: string;
+  color: string;
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
-      <span className={`h-2 w-2 rounded-full ${accent}`} />
-      <span className="text-slate-500">{label}</span>
-      <span className="font-medium text-slate-800">{formatMeasureValue(value, valueType)}</span>
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-0.5 text-xs ring-1 ring-slate-200">
+      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+      <span className="max-w-[140px] truncate text-slate-500" title={label}>
+        {label}
+      </span>
+      <span className="font-semibold text-slate-900">{formatMeasureValue(value, valueType)}</span>
     </span>
   );
+}
+
+function buildMarkers(
+  measureId: string,
+  comparison: ComparisonResult,
+  visiblePeers: PeerAverage[],
+  compareHospitals: HospitalComparePeer[],
+  baseValue: number | null,
+): BarMarker[] {
+  const markers: BarMarker[] = [];
+  const national = comparison.nationalScores[measureId];
+  const state = comparison.stateScores[measureId];
+  const county = comparison.countyScores[measureId];
+
+  if (national != null) markers.push({ key: "national", label: "National", value: national, kind: "national" });
+  if (state != null) markers.push({ key: "state", label: "State", value: state, kind: "state" });
+  if (county != null) markers.push({ key: "county", label: "County", value: county, kind: "county" });
+
+  for (const peer of visiblePeers) {
+    const v = peer.scores[measureId];
+    if (v != null) {
+      markers.push({ key: peer.groupKey, label: peer.label, value: v, kind: "peer" });
+    }
+  }
+
+  compareHospitals.forEach((ch, i) => {
+    const v = ch.scores[measureId];
+    if (v != null) {
+      markers.push({
+        key: ch.groupKey,
+        label: ch.hospital.name,
+        value: v,
+        kind: "compare-hospital",
+        color: individualHospitalColor(i),
+      });
+    }
+  });
+
+  if (baseValue != null) {
+    markers.push({ key: "hospital", label: "Your hospital", value: baseValue, kind: "hospital" });
+  }
+
+  return markers;
 }
 
 function MeasureCard({
   measure,
   comparison,
   visiblePeers,
+  compareHospitals,
 }: {
   measure: MeasureDefinition;
   comparison: ComparisonResult;
   visiblePeers: PeerAverage[];
+  compareHospitals: HospitalComparePeer[];
 }) {
   const def = getMeasureDefinition(measure.id)!;
   const value =
     comparison.hospitalScores.find((s) => s.measureId === measure.id)?.value ?? null;
   const national = comparison.nationalScores[measure.id] ?? null;
-  const state = comparison.stateScores[measure.id] ?? null;
-  const county = comparison.countyScores[measure.id] ?? null;
   const gap = nationalGap(value, national, def.higherIsBetter);
   const gapDecimals = def.valueType === "sir" ? 3 : 1;
   const groupLabel = MEASURE_GROUPS.find((g) => g.id === measure.group)?.label;
-
-  const markers: BarMarker[] = [];
-  if (national !== null) {
-    markers.push({ key: "national", label: "National", value: national, kind: "national" });
-  }
-  if (state !== null) {
-    markers.push({ key: "state", label: "State", value: state, kind: "state" });
-  }
-  if (county !== null) {
-    markers.push({ key: "county", label: "County", value: county, kind: "county" });
-  }
-  for (const peer of visiblePeers) {
-    const peerValue = peer.scores[measure.id];
-    if (peerValue != null) {
-      markers.push({
-        key: peer.groupKey,
-        label: peer.label,
-        value: peerValue,
-        kind: "peer",
-      });
-    }
-  }
-  if (value !== null) {
-    markers.push({ key: "hospital", label: "Your hospital", value, kind: "hospital" });
-  }
+  const markers = buildMarkers(measure.id, comparison, visiblePeers, compareHospitals, value);
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <article className="comparison-measure-card break-inside-avoid rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-teal-700">
-            {groupLabel}
-          </p>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-indigo-700">{groupLabel}</p>
           <h4 className="text-sm font-semibold leading-snug text-slate-900">{measure.label}</h4>
         </div>
         <div className="shrink-0 text-right">
-          <div className="text-xl font-bold leading-none text-teal-800">
+          <div className="text-2xl font-bold leading-none" style={{ color: CHART.baseHospital }}>
             {formatMeasureValue(value, def.valueType)}
           </div>
-          <p className="mt-1 text-[11px] text-slate-500">Your hospital</p>
+          <p className="mt-1 text-[11px] font-medium text-slate-500">Your hospital</p>
         </div>
       </div>
 
@@ -313,21 +334,40 @@ function MeasureCard({
           markers={markers}
           valueType={def.valueType}
           higherIsBetter={def.higherIsBetter}
-          hospitalName={comparison.hospital.name}
+          baseHospitalName={comparison.hospital.name}
         />
       )}
 
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
-        <BenchmarkChip label="National" value={national} valueType={def.valueType} accent="bg-slate-400" />
-        <BenchmarkChip label="State" value={state} valueType={def.valueType} accent="bg-sky-500" />
-        <BenchmarkChip label="County" value={county} valueType={def.valueType} accent="bg-violet-500" />
+      <div className="mt-3 flex flex-wrap gap-2">
+        <BenchmarkChip label="National" value={national} valueType={def.valueType} color={CHART.national} />
+        <BenchmarkChip
+          label="State"
+          value={comparison.stateScores[measure.id] ?? null}
+          valueType={def.valueType}
+          color={CHART.state}
+        />
+        <BenchmarkChip
+          label="County"
+          value={comparison.countyScores[measure.id] ?? null}
+          valueType={def.valueType}
+          color={CHART.county}
+        />
         {visiblePeers.map((peer) => (
           <BenchmarkChip
             key={peer.groupKey}
             label={peer.label}
             value={peer.scores[measure.id] ?? null}
             valueType={def.valueType}
-            accent="bg-amber-500"
+            color={CHART.peerGroup}
+          />
+        ))}
+        {compareHospitals.map((ch, i) => (
+          <BenchmarkChip
+            key={ch.groupKey}
+            label={ch.hospital.name}
+            value={ch.scores[measure.id] ?? null}
+            valueType={def.valueType}
+            color={individualHospitalColor(i)}
           />
         ))}
       </div>
@@ -400,27 +440,34 @@ export function ComparisonTable({
   }, [comparison, groupFilter, hospitalScores, sortBy, sortDir]);
 
   const visiblePeers = comparison.peers.filter((p) => visiblePeerKeys.has(p.groupKey));
+  const compareHospitals = comparison.compareHospitals ?? [];
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-        <span className="font-semibold text-slate-700">Chart key</span>
+      <div className="chart-legend flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
+        <span className="font-bold text-slate-900">Chart key</span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3.5 w-3.5 rounded-full border border-white bg-teal-600 shadow-sm" /> Your hospital (large teal dot)
+          <span className="h-4 w-4 rounded-full border-2 border-white shadow" style={{ backgroundColor: CHART.baseHospital }} />
+          Your hospital
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-0.5 bg-slate-400" /> National
+          <span className="h-3 w-3 rounded-full" style={{ backgroundColor: CHART.national }} /> National
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-0.5 bg-sky-500" /> State
+          <span className="h-3 w-3 rounded-full" style={{ backgroundColor: CHART.state }} /> State
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-0.5 bg-violet-500" /> County
+          <span className="h-3 w-3 rounded-full" style={{ backgroundColor: CHART.county }} /> County
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rotate-45 bg-amber-500" /> Compare group
+          <span className="h-2.5 w-2.5 rotate-45" style={{ backgroundColor: CHART.peerGroup }} /> Group avg
         </span>
-        <span className="text-slate-500">Hover any marker for details. Bar color runs worse → better.</span>
+        {compareHospitals.length > 0 && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: individualHospitalColor(0) }} />
+            Other hospitals (colored dots)
+          </span>
+        )}
       </div>
 
       <div className="grid gap-3">
@@ -430,6 +477,7 @@ export function ComparisonTable({
             measure={measure}
             comparison={comparison}
             visiblePeers={visiblePeers}
+            compareHospitals={compareHospitals}
           />
         ))}
       </div>

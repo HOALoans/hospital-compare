@@ -4,7 +4,12 @@ import {
   type MeasureGroup,
 } from "../shared/measures.js";
 import { OWNERSHIP_LABELS, type OwnershipGroup } from "../shared/ownership.js";
-import type { ComparisonResult, MeasureScore, PeerAverage } from "../shared/types.js";
+import type {
+  ComparisonResult,
+  HospitalComparePeer,
+  MeasureScore,
+  PeerAverage,
+} from "../shared/types.js";
 import {
   countHospitalsInPeer,
   getCurrentPeriod,
@@ -16,6 +21,11 @@ import {
   peerKeyState,
   peerKeyZip3,
 } from "./cache.js";
+
+function scoresRecord(facilityId: string): Record<string, number | null> {
+  const rows = buildHospitalScores(facilityId);
+  return Object.fromEntries(rows.map((r) => [r.measureId, r.value]));
+}
 
 function buildHospitalScores(facilityId: string): MeasureScore[] {
   const rows = getFacilityScores(facilityId);
@@ -79,9 +89,23 @@ function ownershipPeer(
   return makePeer(`ZIP ${hospital.zip3}xx — ${ogLabel}`, groupKey, key);
 }
 
-export function buildComparison(facilityId: string): ComparisonResult | null {
+export function buildComparison(
+  facilityId: string,
+  compareWithIds: string[] = [],
+): ComparisonResult | null {
   const hospital = getHospitalById(facilityId);
   if (!hospital) return null;
+
+  const compareHospitals: HospitalComparePeer[] = compareWithIds
+    .slice(0, 10)
+    .filter((id) => id !== facilityId)
+    .map((id) => getHospitalById(id))
+    .filter((h): h is NonNullable<typeof h> => h != null)
+    .map((h) => ({
+      hospital: h,
+      groupKey: `hospital-${h.facilityId}`,
+      scores: scoresRecord(h.facilityId),
+    }));
 
   const hospitalScores = buildHospitalScores(facilityId);
   const stateAllScores = peerScores(peerKeyState(hospital.state, "all"));
@@ -115,6 +139,7 @@ export function buildComparison(facilityId: string): ComparisonResult | null {
     period: getCurrentPeriod(),
     hospitalScores,
     peers,
+    compareHospitals,
     nationalScores: nationalComputed,
     stateScores: stateAllScores,
     countyScores: countyAllScores,

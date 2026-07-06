@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity,
   BarChart3,
@@ -6,6 +6,7 @@ import {
   ExternalLink,
   Info,
   Loader2,
+  Printer,
 } from "lucide-react";
 import type { ComparisonResult, HospitalSummary, HospitalTrend } from "@shared/types";
 import {
@@ -17,8 +18,10 @@ import {
   type MeasureGroup,
 } from "@shared/measures";
 import { OWNERSHIP_LABELS } from "@shared/ownership";
+import { CHART } from "@shared/chartTheme";
 import { fetchComparison, fetchHealth, fetchTrends } from "@/lib/api";
 import { HospitalSearch } from "@/components/HospitalSearch";
+import { CompareHospitalPicker } from "@/components/CompareHospitalPicker";
 import { ComparisonTable } from "@/components/ComparisonTable";
 import { TrendChart } from "@/components/TrendChart";
 
@@ -44,8 +47,11 @@ export default function App() {
   const [sortBy, setSortBy] = useState<SortKey>("category");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [visiblePeers, setVisiblePeers] = useState<Set<string>>(DEFAULT_PEERS);
+  const [compareHospitals, setCompareHospitals] = useState<HospitalSummary[]>([]);
   const [trendMeasure, setTrendMeasure] = useState(COMPARISON_MEASURES[0].id);
   const [error, setError] = useState<string | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
+  const skipCompareRefetch = useRef(false);
 
   useEffect(() => {
     const poll = async () => {
@@ -61,25 +67,51 @@ export default function App() {
     poll();
   }, []);
 
-  const loadHospital = useCallback(async (hospital: HospitalSummary) => {
-    setSelected(hospital);
-    setLoading(true);
-    setError(null);
-    try {
+  const loadComparison = useCallback(
+    async (hospital: HospitalSummary, compareIds: string[]) => {
       const [comp, tr] = await Promise.all([
-        fetchComparison(hospital.facilityId),
+        fetchComparison(hospital.facilityId, compareIds),
         fetchTrends(hospital.facilityId),
       ]);
       setComparison(comp);
       setTrend(tr);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load comparison");
-      setComparison(null);
-      setTrend(null);
-    } finally {
-      setLoading(false);
+    },
+    [],
+  );
+
+  const loadHospital = useCallback(
+    async (hospital: HospitalSummary) => {
+      setSelected(hospital);
+      setCompareHospitals([]);
+      skipCompareRefetch.current = true;
+      setLoading(true);
+      setError(null);
+      try {
+        await loadComparison(hospital, []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load comparison");
+        setComparison(null);
+        setTrend(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loadComparison],
+  );
+
+  useEffect(() => {
+    if (!selected || skipCompareRefetch.current) {
+      skipCompareRefetch.current = false;
+      return;
     }
-  }, []);
+    const ids = compareHospitals.map((h) => h.facilityId);
+    setCompareLoading(true);
+    loadComparison(selected, ids)
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Failed to update comparison");
+      })
+      .finally(() => setCompareLoading(false));
+  }, [compareHospitals, selected, loadComparison]);
 
   const togglePeer = (key: string) => {
     setVisiblePeers((prev) => {
@@ -90,12 +122,16 @@ export default function App() {
     });
   };
 
+  const printReport = () => {
+    window.print();
+  };
+
   return (
     <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 bg-white no-print">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-700 text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-700 text-white">
               <Activity className="h-5 w-5" />
             </div>
             <div>
@@ -115,11 +151,11 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
-        <section className="relative overflow-hidden rounded-2xl border-2 border-teal-600/30 bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-6 shadow-xl shadow-teal-900/10 ring-1 ring-teal-600/15 sm:p-8">
-          <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-teal-400/10 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-cyan-400/10 blur-2xl" />
+        <section className="relative overflow-hidden rounded-2xl border-2 border-indigo-300/40 bg-gradient-to-br from-indigo-50 via-white to-orange-50/30 p-6 shadow-xl shadow-indigo-900/5 ring-1 ring-indigo-200/50 sm:p-8 no-print">
+          <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-indigo-400/10 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-orange-300/10 blur-2xl" />
           <div className="relative mb-6 flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white shadow-md">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-700 text-white shadow-md">
               <Building2 className="h-5 w-5" />
             </div>
             <div>
@@ -147,10 +183,13 @@ export default function App() {
         )}
 
         {comparison && selected && !loading && (
-          <>
-            <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 to-white p-6 shadow-sm">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
+          <div id="comparison-report" className="space-y-8">
+            <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-orange-50/50 to-white p-6 shadow-sm">
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+                <div className="print:block">
+                  <p className="hidden text-xs font-semibold uppercase tracking-wide text-indigo-700 print:block">
+                    {SITE_NAME} — Hospital Comparison Report
+                  </p>
                   <h2 className="font-display text-3xl text-slate-900">{selected.name}</h2>
                   <p className="mt-1 text-slate-600">
                     {selected.city}, {selected.state} {selected.zip} · {selected.county} County
@@ -163,19 +202,43 @@ export default function App() {
                     Reporting period: {comparison.period.start} – {comparison.period.end}
                   </p>
                 </div>
-                {selected.overallRating && (
-                  <div className="rounded-xl border border-teal-100 bg-white px-5 py-3 text-center shadow-sm">
-                    <div className="text-3xl font-bold text-teal-800">{selected.overallRating}</div>
-                    <div className="text-xs uppercase tracking-wide text-slate-500">
-                      CMS overall stars
+                <div className="flex flex-wrap items-center gap-3">
+                  {selected.overallRating && (
+                    <div className="rounded-xl border border-orange-200 bg-white px-5 py-3 text-center shadow-sm">
+                      <div className="text-3xl font-bold" style={{ color: CHART.baseHospital }}>
+                        {selected.overallRating}
+                      </div>
+                      <div className="text-xs uppercase tracking-wide text-slate-500">
+                        CMS overall stars
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                  <button
+                    type="button"
+                    onClick={printReport}
+                    className="no-print inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                  >
+                    <Printer className="h-4 w-4" />
+                    Save as PDF
+                  </button>
+                </div>
               </div>
             </section>
 
             <section className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3">
+              <CompareHospitalPicker
+                baseHospitalId={selected.facilityId}
+                selected={compareHospitals}
+                onChange={setCompareHospitals}
+              />
+
+              {compareLoading && (
+                <div className="flex items-center gap-2 text-sm text-indigo-700">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Updating comparison…
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-3 no-print">
                 <label className="text-sm font-medium text-slate-700">Category</label>
                 <select
                   value={groupFilter}
@@ -221,7 +284,7 @@ export default function App() {
                     onClick={() => togglePeer(peer.groupKey)}
                     className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                       visiblePeers.has(peer.groupKey)
-                        ? "bg-teal-700 text-white"
+                        ? "bg-indigo-700 text-white"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
                   >
@@ -239,7 +302,7 @@ export default function App() {
               />
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm no-print">
               <div className="mb-4 flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-teal-700" />
                 <h3 className="text-lg font-semibold text-slate-900">Historical trends</h3>
@@ -261,12 +324,12 @@ export default function App() {
               </select>
               {trend && <TrendChart trend={trend} selectedMeasureId={trendMeasure} />}
             </section>
-          </>
+          </div>
         )}
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm no-print">
           <div className="mb-4 flex items-center gap-2">
-            <Info className="h-5 w-5 text-teal-700" />
+            <Info className="h-5 w-5 text-indigo-700" />
             <h3 className="text-lg font-semibold text-slate-900">Data sources</h3>
           </div>
           <ul className="space-y-3">
@@ -280,7 +343,7 @@ export default function App() {
                   href={src.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex shrink-0 items-center gap-1 text-teal-700 hover:underline"
+                  className="flex shrink-0 items-center gap-1 text-indigo-700 hover:underline"
                 >
                   {src.agency} <ExternalLink className="h-3.5 w-3.5" />
                 </a>
@@ -290,7 +353,7 @@ export default function App() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-400">
+      <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-400 no-print">
         <p>
           <span className="font-medium text-slate-500">Parigrado.com</span> · Public CMS &amp; CDC-reported
           data for informational purposes only. Not medical advice.

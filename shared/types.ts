@@ -30,11 +30,18 @@ export interface PeerAverage {
   scores: Record<string, number | null>;
 }
 
+export interface HospitalComparePeer {
+  hospital: HospitalSummary;
+  groupKey: string;
+  scores: Record<string, number | null>;
+}
+
 export interface ComparisonResult {
   hospital: HospitalSummary;
   period: { start: string; end: string };
   hospitalScores: MeasureScore[];
   peers: PeerAverage[];
+  compareHospitals: HospitalComparePeer[];
   nationalScores: Record<string, number | null>;
   stateScores: Record<string, number | null>;
   countyScores: Record<string, number | null>;

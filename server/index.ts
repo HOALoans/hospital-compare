@@ -45,7 +45,12 @@ app.get("/api/hospitals/:facilityId/compare", (req, res) => {
     res.status(503).json({ error: "Quality scores are still loading. Try again shortly." });
     return;
   }
-  const comparison = buildComparison(req.params.facilityId);
+  const compareWith = String(req.query.compareWith ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 10);
+  const comparison = buildComparison(req.params.facilityId, compareWith);
   if (!comparison) {
     res.status(404).json({ error: "Hospital not found" });
     return;
