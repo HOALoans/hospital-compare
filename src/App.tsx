@@ -99,6 +99,8 @@ export default function App() {
   const [compareLoading, setCompareLoading] = useState(false);
   const skipCompareRefetch = useRef(false);
   const urlRestored = useRef(false);
+  /** True while a deep-link hospital restore fetch is still in flight. */
+  const restoreInProgress = useRef(Boolean(initialUrl.hospitalId));
 
   useEffect(() => {
     const poll = async () => {
@@ -180,6 +182,7 @@ export default function App() {
         setError(err instanceof Error ? err.message : "Could not restore shared link");
       } finally {
         setLoading(false);
+        restoreInProgress.current = false;
       }
     })();
   }, [directoryReady, initialUrl, loadComparison]);
@@ -202,7 +205,9 @@ export default function App() {
     // Don't sync (and thereby overwrite) the URL while a deep-link hospital is
     // still pending restore. Otherwise we'd strip the ?hospital= param before
     // the restore effect reads it, blanking the Compare page on shared links.
-    if (initialUrl.hospitalId && !urlRestored.current && !selected) return;
+    // Block URL sync until deep-link restore finishes so we don't strip ?hospital=
+    // after urlRestored is set but before selected is populated.
+    if (restoreInProgress.current && !selected) return;
     if (view === "admin") {
       syncUrl({ view: "admin" });
       return;

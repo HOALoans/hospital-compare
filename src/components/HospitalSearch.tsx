@@ -22,28 +22,49 @@ export function HospitalSearch({ onSelect, initialState = "" }: Props) {
   }, [initialState]);
 
   useEffect(() => {
-    if (query.trim().length < 2) {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
       setResults([]);
       setSearchError(null);
+      setLoading(false);
       return;
     }
+
+    // Show "Searching…" immediately (including debounce window) so we never
+    // flash "No hospitals matched" before the API call has actually run.
+    setLoading(true);
+    setSearchError(null);
+
+    let cancelled = false;
     const timer = setTimeout(async () => {
-      setLoading(true);
-      setSearchError(null);
       try {
-        const data = await searchHospitals(query, state || undefined);
+        const data = await searchHospitals(trimmed, state || undefined);
+        if (cancelled) return;
         setResults(data.hospitals);
       } catch (err) {
+        if (cancelled) return;
         setResults([]);
         setSearchError(
           err instanceof Error ? err.message : "Search is temporarily unavailable.",
         );
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }, 300);
-    return () => clearTimeout(timer);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [query, state]);
+
+  const handleSelect = (hospital: HospitalSummary) => {
+    setQuery("");
+    setResults([]);
+    setSearchError(null);
+    setLoading(false);
+    onSelect(hospital);
+  };
 
   return (
     <div className="space-y-4">
@@ -87,7 +108,7 @@ export function HospitalSearch({ onSelect, initialState = "" }: Props) {
             <li key={h.facilityId}>
               <button
                 type="button"
-                onClick={() => onSelect(h)}
+                onClick={() => handleSelect(h)}
                 className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-teal-50"
               >
                 <HospitalLogo hospital={h} size={36} />
