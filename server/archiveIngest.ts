@@ -2,10 +2,13 @@
  * Downloads and extracts CMS hospital archive ZIPs, then builds per-hospital trend files.
  */
 import fs from "fs";
+import readline from "readline";
 import path from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { fileURLToPath } from "url";
+import { Readable } from "stream";
+import { pipeline } from "stream/promises";
 import { ARCHIVE_YEARS } from "../shared/measures.js";
 import { COMPARISON_MEASURE_IDS } from "../shared/measures.js";
 import type { HospitalTrend } from "../shared/types.js";
@@ -128,7 +131,27 @@ function findCsvFile(dir: string, pattern: RegExp): string | null {
   return null;
 }
 
-function discoverCsvFiles(dir: string): { hcahps: string | null; hai: string | null } {
+/**
+ * Reads only the first line of a (potentially very large) file by streaming,
+ * so we never load a 150MB+ CSV into memory just to inspect its header.
+ */
+async function readFirstLine(filePath: string): Promise<string> {
+  const stream = fs.createReadStream(filePath, { encoding: "utf8" });
+  const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+  try {
+    for await (const line of rl) {
+      return line;
+    }
+    return "";
+  } finally {
+    rl.close();
+    stream.destroy();
+  }
+}
+
+async function discoverCsvFiles(
+  dir: string,
+): Promise<{ hcahps: string | null; hai: string | null }> {
   let hcahps: string | null =
     findCsvFile(dir, /^HCAHPS-Hospital\.csv$/i) ??
     findCsvFile(dir, /^HCAHPS - Hospital\.csv$/i) ??
@@ -152,7 +175,7 @@ function discoverCsvFiles(dir: string): { hcahps: string | null; hai: string | n
   walk(dir);
 
   for (const csvPath of csvPaths) {
-    const headerLine = fs.readFileSync(csvPath, "utf8").split(/\r?\n/)[0] ?? "";
+    const headerLine = await readFirstLine(csvPath);
     const headers = parseCsvLine(headerLine).map(normalizeHeader);
     const has = (...names: string[]) => names.every((n) => headers.includes(n));
 
@@ -184,65 +207,101 @@ function normalizeHeader(header: string): string {
     .replace(/[^a-z0-9_]/g, "");
 }
 
-function parseHcahpsCsv(csvPath: string) {
-  const csv = fs.readFileSync(csvPath, "utf8");
-  const lines = csv.split(/\r?\n/).filter(Boolean);
-  if (lines.length < 2) return [];
-
-  const headers = parseCsvLine(lines[0]).map(normalizeHeader);
-  const idx = (name: string) => headers.indexOf(name);
-  const facilityIdx = idx("facility_id");
-  const measureIdx =
-    idx("hcahps_measure_id") >= 0 ? idx("hcahps_measure_id") : idx("measure_id");
-  const linearIdx = idx("hcahps_linear_mean_value");
-  const starIdx = idx("patient_survey_star_rating");
-  const haiScoreIdx = idx("score");
-  const startIdx = idx("start_date");
-  const endIdx = idx("end_date");
-
-  const rows: {
-    facilityId: string;
-    measureId: string;
-    value: number;
-    periodStart: string;
-    periodEnd: string;
-  }[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const cols = parseCsvLine(lines[i]);
-    const measureId = cols[measureIdx]?.trim();
-    if (!measureId || !COMPARISON_MEASURE_IDS.has(measureId)) continue;
-
-    let value: number | null = null;
-    const linear = cols[linearIdx]?.trim();
-    const star = cols[starIdx]?.trim();
-    const hai = cols[haiScoreIdx]?.trim();
-    if (linear && linear !== "Not Applicable" && linear !== "Not Available") value = Number(linear);
-    else if (star && star !== "Not Applicable" && star !== "Not Available") value = Number(star);
-    else if (hai && hai !== "Not Applicable" && hai !== "Not Available") value = Number(hai);
-    if (value === null || !Number.isFinite(value)) continue;
-
-    rows.push({
-      facilityId: cols[facilityIdx]?.trim(),
-      measureId,
-      value,
-      periodStart: cols[startIdx]?.trim() ?? "",
-      periodEnd: cols[endIdx]?.trim() ?? "",
-    });
-  }
-  return rows;
+interface ArchiveScoreRow {
+  facilityId: string;
+  measureId: string;
+  value: number;
+  periodStart: string;
+  periodEnd: string;
 }
 
-async function tryDownload(urls: string[]): Promise<Buffer | null> {
+/**
+ * Streams a CMS score CSV line-by-line (readline over a read stream) and invokes
+ * `onRow` for each matching measure. Only a single line is ever held in memory,
+ * so even a 150MB+ HCAHPS CSV parses within the 512MB free-tier budget instead
+ * of blowing up the heap via readFileSync + String.split.
+ */
+async function streamScoreCsv(
+  csvPath: string,
+  onRow: (row: ArchiveScoreRow) => void,
+): Promise<number> {
+  const stream = fs.createReadStream(csvPath, { encoding: "utf8" });
+  const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+
+  let headers: string[] | null = null;
+  let facilityIdx = -1;
+  let measureIdx = -1;
+  let linearIdx = -1;
+  let starIdx = -1;
+  let haiScoreIdx = -1;
+  let startIdx = -1;
+  let endIdx = -1;
+  let matched = 0;
+
+  try {
+    for await (const line of rl) {
+      if (!line) continue;
+
+      if (headers === null) {
+        headers = parseCsvLine(line).map(normalizeHeader);
+        const idx = (name: string) => headers!.indexOf(name);
+        facilityIdx = idx("facility_id");
+        measureIdx = idx("hcahps_measure_id") >= 0 ? idx("hcahps_measure_id") : idx("measure_id");
+        linearIdx = idx("hcahps_linear_mean_value");
+        starIdx = idx("patient_survey_star_rating");
+        haiScoreIdx = idx("score");
+        startIdx = idx("start_date");
+        endIdx = idx("end_date");
+        continue;
+      }
+
+      const cols = parseCsvLine(line);
+      const measureId = cols[measureIdx]?.trim();
+      if (!measureId || !COMPARISON_MEASURE_IDS.has(measureId)) continue;
+
+      let value: number | null = null;
+      const linear = cols[linearIdx]?.trim();
+      const star = cols[starIdx]?.trim();
+      const hai = cols[haiScoreIdx]?.trim();
+      if (linear && linear !== "Not Applicable" && linear !== "Not Available") value = Number(linear);
+      else if (star && star !== "Not Applicable" && star !== "Not Available") value = Number(star);
+      else if (hai && hai !== "Not Applicable" && hai !== "Not Available") value = Number(hai);
+      if (value === null || !Number.isFinite(value)) continue;
+
+      onRow({
+        facilityId: cols[facilityIdx]?.trim(),
+        measureId,
+        value,
+        periodStart: cols[startIdx]?.trim() ?? "",
+        periodEnd: cols[endIdx]?.trim() ?? "",
+      });
+      matched += 1;
+    }
+  } finally {
+    rl.close();
+    stream.destroy();
+  }
+
+  return matched;
+}
+
+/**
+ * Streams the first reachable URL straight to `destPath` so the compressed
+ * archive is never fully buffered in the JS heap. Returns true on success.
+ */
+async function tryDownloadToFile(urls: string[], destPath: string): Promise<boolean> {
   for (const url of urls) {
     try {
       const res = await fetch(url);
-      if (res.ok) return Buffer.from(await res.arrayBuffer());
+      if (!res.ok || !res.body) continue;
+      const nodeStream = Readable.fromWeb(res.body as Parameters<typeof Readable.fromWeb>[0]);
+      await pipeline(nodeStream, fs.createWriteStream(destPath));
+      return true;
     } catch {
-      /* try next */
+      fs.rmSync(destPath, { force: true });
     }
   }
-  return null;
+  return false;
 }
 
 async function extractZip(zipPath: string, destDir: string) {
@@ -287,19 +346,20 @@ export async function runArchiveIngest() {
   fs.writeFileSync(LOCK_FILE, new Date().toISOString());
 
   const archiveSources = await loadArchiveSources();
-  const byFacility = new Map<string, HospitalTrend["points"]>();
 
+  // Process one archive source at a time. The per-source map is scoped to the
+  // loop body and flushed (merged into the on-disk trend files) before the next
+  // source is fetched, so we never hold 8 years of rows in memory simultaneously.
   for (const source of archiveSources) {
     const safeId = source.id.replace(/[^a-zA-Z0-9_-]/g, "_");
     const zipPath = path.join(RAW_DIR, `hospital_${safeId}.zip`);
     if (!fs.existsSync(zipPath)) {
       console.log(`[archives] Downloading ${source.label}...`);
-      const buf = await tryDownload(source.urls);
-      if (!buf) {
+      const ok = await tryDownloadToFile(source.urls, zipPath);
+      if (!ok) {
         console.warn(`[archives]   Could not download ${source.label}`);
         continue;
       }
-      fs.writeFileSync(zipPath, buf);
     }
 
     const extractPath = path.join(EXTRACT_DIR, safeId);
@@ -313,20 +373,18 @@ export async function runArchiveIngest() {
       }
     }
 
-    const { hcahps: hcahpsCsv, hai: haiCsv } = discoverCsvFiles(extractPath);
+    const { hcahps: hcahpsCsv, hai: haiCsv } = await discoverCsvFiles(extractPath);
     const csvFiles = [hcahpsCsv, haiCsv].filter(Boolean) as string[];
     if (csvFiles.length === 0) {
       console.warn(`[archives]   No HCAHPS/HAI CSV found in ${source.label}`);
       continue;
     }
 
+    const byFacility = new Map<string, HospitalTrend["points"]>();
+
     for (const csvPath of csvFiles) {
-      const rows = parseHcahpsCsv(csvPath);
-      console.log(`[archives]   ${path.basename(csvPath)}: ${rows.length} score rows`);
-      for (const row of rows) {
-        const yearFromPeriod = row.periodEnd
-          ? Number(row.periodEnd.slice(-4))
-          : source.year;
+      const matched = await streamScoreCsv(csvPath, (row) => {
+        const yearFromPeriod = row.periodEnd ? Number(row.periodEnd.slice(-4)) : source.year;
         const year = Number.isFinite(yearFromPeriod) ? yearFromPeriod : source.year;
 
         const points = byFacility.get(row.facilityId) ?? [];
@@ -347,18 +405,41 @@ export async function runArchiveIngest() {
         }
         point.scores[row.measureId] = row.value;
         byFacility.set(row.facilityId, points);
-      }
+      });
+      console.log(`[archives]   ${path.basename(csvPath)}: ${matched} score rows`);
     }
 
     flushTrendFiles(byFacility);
     console.log(`[archives]   Saved trends for ${byFacility.size} hospitals after ${source.label}`);
+    // Drop this source's rows before moving to the next archive so peak heap
+    // stays flat instead of growing across all years.
+    byFacility.clear();
   }
 
-  console.log(`[archives] Trend files written for ${byFacility.size} hospitals`);
+  console.log(`[archives] Trend ingest complete across ${archiveSources.length} sources`);
 }
 
-export async function scheduleArchiveIngest() {
-  setTimeout(() => {
-    runArchiveIngest().catch((err) => console.warn("[archives]", err));
-  }, 15_000);
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Defers the heavy archive ingest until the primary score cache is ready, so
+ * the streaming CSV parse never competes with the initial CMS load for the
+ * 512MB heap. `isReady` is polled with backoff up to `maxWaitMs`.
+ */
+export async function scheduleArchiveIngest(
+  isReady: () => boolean = () => true,
+  { initialDelayMs = 15_000, pollMs = 5_000, maxWaitMs = 15 * 60 * 1000 } = {},
+) {
+  await sleep(initialDelayMs);
+
+  const startedAt = Date.now();
+  while (!isReady() && Date.now() - startedAt < maxWaitMs) {
+    await sleep(pollMs);
+  }
+
+  if (!isReady()) {
+    console.warn("[archives] Scores not ready in time; running ingest anyway");
+  }
+
+  await runArchiveIngest();
 }

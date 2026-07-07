@@ -8,3 +8,13 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Cap V8's heap below the 512MB free-tier limit so the garbage collector
+      # runs aggressively instead of the container OOM-killer restarting us.
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=400
+      # Archive trend ingest now streams CSVs line-by-line and runs sequentially
+      # only after the score cache is ready, so it fits the free tier. Flip to
+      # "false" to keep the web service lean and run `npm run ingest:archives`
+      # as a separate one-off job instead.
+      - key: INGEST_ARCHIVES
+        value: "true"

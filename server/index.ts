@@ -159,7 +159,9 @@ async function start() {
   });
 
   if (process.env.INGEST_ARCHIVES !== "false") {
-    scheduleArchiveIngest().catch((err) => {
+    // Wait until the primary score cache is ready before starting the heavy
+    // archive ingest so the two don't compete for the 512MB free-tier heap.
+    scheduleArchiveIngest(isCacheReady).catch((err) => {
       console.warn("[archives] Background ingest error:", err);
     });
   }
