@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  AlertTriangle,
   Check,
   Copy,
   ExternalLink,
@@ -396,15 +395,14 @@ export function PartnerAdminPage({ onExit }: Props) {
         </div>
       </div>
 
-      <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+      <div className="flex items-start gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
         <div>
-          <p className="font-semibold">Partner data is not permanently saved on this host</p>
-          <p className="mt-1 text-amber-800">
-            On Render, partners and logos live on ephemeral disk unless a persistent volume is
-            attached, so <strong>everything created here is wiped on every redeploy</strong>. If a
-            partner you created is missing, it was lost during a deploy — re-create it here. For a
-            permanent partner, attach a persistent disk or seed it in code.
+          <p className="font-semibold">Partners persist on the attached disk</p>
+          <p className="mt-1 text-emerald-800">
+            Partner records and logos are stored on Render&apos;s persistent disk, so they survive
+            redeploys. If you just enabled the disk, re-create any partners that were lost on
+            ephemeral storage once — after that they are kept permanently.
           </p>
         </div>
       </div>

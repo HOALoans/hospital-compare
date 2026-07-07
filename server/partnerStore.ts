@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 import {
   DEFAULT_PARTNER,
   SEED_PARTNERS,
@@ -9,8 +8,8 @@ import {
   type PartnerBranding,
 } from "../shared/partnerConfig.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, "../data");
+/** Project-root data/ (Render disk mounts at /opt/render/project/src/data). */
+export const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
 const PARTNERS_FILE = path.join(DATA_DIR, "partners.json");
 export const LOGOS_DIR = path.join(DATA_DIR, "partner-logos");
 
