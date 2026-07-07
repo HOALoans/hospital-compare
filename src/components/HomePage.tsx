@@ -6,8 +6,7 @@ import {
   Scale,
   ShieldCheck,
 } from "lucide-react";
-import { CHART } from "@shared/chartTheme";
-import { DATA_SOURCES, SITE_NAME, SITE_TAGLINE } from "@shared/measures";
+import { SITE_NAME, SITE_TAGLINE } from "@shared/measures";
 
 interface Props {
   onStartCompare: () => void;
@@ -141,25 +140,17 @@ export function HomePage({ onStartCompare }: Props) {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-4 text-lg font-semibold text-slate-900">Public data sources</h3>
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {DATA_SOURCES.map((src) => (
-            <li key={src.name} className="text-sm text-slate-600">
-              <span className="font-medium text-slate-900">{src.name}</span>
-              <span className="text-slate-400"> · </span>
-              {src.agency}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 text-xs text-slate-400">
-          Chart colors follow the Parigrado palette — your hospital in{" "}
-          <span style={{ color: CHART.baseHospital }} className="font-medium">
-            orange
-          </span>
-          , benchmarks in indigo and slate.
-        </p>
-      </section>
+      <p className="px-1 text-sm text-slate-500">
+        Every score comes from public federal datasets — CMS Hospital Compare (HCAHPS),
+        CDC/NHSN infection measures, CMS readmissions, and CMS archived snapshots. See{" "}
+        <a
+          href="#data-sources"
+          className="font-medium text-indigo-700 underline decoration-indigo-200 underline-offset-2 hover:text-indigo-800"
+        >
+          data sources &amp; disclaimer
+        </a>{" "}
+        for details and source links.
+      </p>
     </div>
   );
 }

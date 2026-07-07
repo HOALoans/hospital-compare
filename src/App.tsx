@@ -6,15 +6,12 @@ import {
   Building2,
   Check,
   Download,
-  ExternalLink,
   Home,
-  Info,
   Loader2,
   Printer,
 } from "lucide-react";
 import type { ComparisonResult, HospitalSummary, HospitalTrend } from "@shared/types";
 import {
-  DATA_SOURCES,
   MEASURE_GROUPS,
   MEASURE_CATEGORIES,
   COMPARISON_MEASURES,
@@ -41,6 +38,7 @@ import { WatchlistButton } from "@/components/WatchlistButton";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 import { ExecutiveSummaryPrint } from "@/components/ExecutiveSummaryPrint";
 import { MethodologyPage } from "@/components/MethodologyPage";
+import { SiteDisclaimer } from "@/components/SiteDisclaimer";
 
 type AppView = "home" | "compare" | "methodology";
 
@@ -647,41 +645,11 @@ export default function App() {
                 </section>
               </div>
             )}
-
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm no-print">
-              <div className="mb-4 flex items-center gap-2">
-                <Info className="h-5 w-5 text-indigo-700" />
-                <h3 className="text-lg font-semibold text-slate-900">Data sources</h3>
-              </div>
-              <ul className="space-y-3">
-                {DATA_SOURCES.map((src) => (
-                  <li key={src.name} className="flex items-start justify-between gap-4 text-sm">
-                    <div>
-                      <div className="font-medium text-slate-900">{src.name}</div>
-                      <div className="text-slate-500">{src.description}</div>
-                    </div>
-                    <a
-                      href={src.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex shrink-0 items-center gap-1 text-indigo-700 hover:underline"
-                    >
-                      {src.agency} <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
           </>
         )}
       </main>
 
-      <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-400 no-print">
-        <p>
-          <span className="font-medium text-slate-500">Parigrado.com</span> · Public CMS &amp;
-          CDC-reported data for informational purposes only. Not medical advice.
-        </p>
-      </footer>
+      <SiteDisclaimer />
     </div>
   );
 }
