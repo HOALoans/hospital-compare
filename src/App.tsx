@@ -65,6 +65,8 @@ export default function App() {
   const [selected, setSelected] = useState<HospitalSummary | null>(null);
   const [comparison, setComparison] = useState<ComparisonResult | null>(null);
   const [trend, setTrend] = useState<HospitalTrend | null>(null);
+  const [compareTrends, setCompareTrends] = useState<HospitalTrend[]>([]);
+  const [trendYears, setTrendYears] = useState(10);
   const [groupFilter, setGroupFilter] = useState<MeasureGroup | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<MeasureCategory | "all">(
     (initialUrl.groupFilter as MeasureCategory | "all") || "all",
@@ -97,12 +99,14 @@ export default function App() {
 
   const loadComparison = useCallback(
     async (hospital: HospitalSummary, compareIds: string[]) => {
-      const [comp, tr] = await Promise.all([
+      const [comp, tr, cmpTrends] = await Promise.all([
         fetchComparison(hospital.facilityId, compareIds),
         fetchTrends(hospital.facilityId),
+        Promise.all(compareIds.map((id) => fetchTrends(id))),
       ]);
       setComparison(comp);
       setTrend(tr);
+      setCompareTrends(cmpTrends);
     },
     [],
   );
@@ -121,6 +125,7 @@ export default function App() {
         setError(err instanceof Error ? err.message : "Failed to load comparison");
         setComparison(null);
         setTrend(null);
+        setCompareTrends([]);
       } finally {
         setLoading(false);
       }
@@ -237,7 +242,7 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-slate-200 bg-white no-print">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
+        <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
           <button
             type="button"
             onClick={goHome}
@@ -302,7 +307,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-screen-2xl space-y-8 px-4 py-8 sm:px-6">
         {view === "home" && <HomePage onStartCompare={goToCompare} />}
 
         {view === "methodology" && (
@@ -541,24 +546,46 @@ export default function App() {
                     <h3 className="text-lg font-semibold text-slate-900">Historical trends</h3>
                   </div>
                   <p className="mb-4 text-sm text-slate-600">
-                    Year-over-year scores from CMS archived hospital snapshots (2019–2026).
+                    Year-over-year scores from CMS archived hospital snapshots (2019–2026), shown as
+                    grouped vertical bars. Individually compared hospitals appear alongside your
+                    hospital using the same colors as the comparison charts above.
                   </p>
-                  <select
-                    value={trendMeasure}
-                    onChange={(e) => setTrendMeasure(e.target.value)}
-                    className="mb-4 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                  >
-                    {COMPARISON_MEASURES.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="mb-4 flex flex-wrap items-center gap-3">
+                    <select
+                      value={trendMeasure}
+                      onChange={(e) => setTrendMeasure(e.target.value)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                    >
+                      {COMPARISON_MEASURES.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                      Years shown
+                      <select
+                        value={trendYears}
+                        onChange={(e) => setTrendYears(Number(e.target.value))}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                      >
+                        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                          <option key={n} value={n}>
+                            {n === 1 ? "Last year" : `Last ${n} years`}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                   {trend && (
                     <TrendChart
                       trend={trend}
+                      compareTrends={compareTrends}
+                      compareHospitals={comparison.compareHospitals}
+                      baseHospitalName={selected.name}
                       selectedMeasureId={trendMeasure}
                       facilityId={selected.facilityId}
+                      maxYears={trendYears}
                     />
                   )}
                 </section>

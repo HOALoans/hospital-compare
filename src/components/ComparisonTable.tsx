@@ -19,6 +19,15 @@ import { MeasureHelp } from "@/components/MeasureHelp";
 
 type SortKey = "category" | "measure" | "gap-national" | "gap-state" | "gap-county";
 
+// Peer group keys that are already represented by dedicated marker kinds
+// (national circle, state circle, county circle). We map each dedicated
+// marker to its toggle key so markers react to the peer toggle state and we
+// avoid drawing duplicate diamonds for the same value.
+const NATIONAL_KEY = "national";
+const STATE_KEY = "state-all";
+const COUNTY_KEY = "county-all";
+const DEDICATED_PEER_KEYS = new Set([NATIONAL_KEY, STATE_KEY, COUNTY_KEY]);
+
 interface Props {
   comparison: ComparisonResult;
   groupFilter: MeasureGroup | "all";
@@ -141,7 +150,7 @@ function MarkerTooltip({
     >
       <div
         className="mx-auto cursor-help"
-        style={{ width: Math.max(size, 28), height: 44 }}
+        style={{ width: Math.max(size, 28), height: 64 }}
         aria-label={`${marker.label}: ${formatMeasureValue(marker.value, valueType)}`}
       >
         <div className="mx-auto h-full w-px bg-slate-300/80" style={{ marginBottom: -2 }} />
@@ -191,15 +200,15 @@ function ComparisonBar({
     : `linear-gradient(90deg, ${CHART.trackHigh}, ${CHART.trackMid}, ${CHART.trackLow})`;
 
   return (
-    <div className="mt-4 rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-200/80">
-      <div className="relative h-14">
+    <div className="mt-4 rounded-xl bg-slate-50/80 px-5 py-4 ring-1 ring-slate-200/80">
+      <div className="relative h-20">
         <div
-          className="absolute inset-x-0 top-1/2 h-5 -translate-y-1/2 rounded-full shadow-inner"
+          className="absolute inset-x-0 top-1/2 h-7 -translate-y-1/2 rounded-full shadow-inner"
           style={{ background: trackGradient }}
         />
         {hospital && (
           <div
-            className="absolute top-1/2 h-5 -translate-y-1/2 rounded-full opacity-90"
+            className="absolute top-1/2 h-7 -translate-y-1/2 rounded-full opacity-90"
             style={{
               left: 0,
               width: `${toPercent(hospital.value, min, max)}%`,
@@ -224,9 +233,19 @@ function ComparisonBar({
           />
         ))}
       </div>
-      <div className="mt-2 flex justify-between text-[10px] font-medium uppercase tracking-wide text-slate-500">
-        <span>{valueType === "sir" ? "Lower is better" : "Lower scores"}</span>
-        <span>{valueType === "sir" ? "Higher is worse" : "Higher scores"}</span>
+      <div className="mt-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-slate-500">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="rounded bg-white px-1.5 py-0.5 font-semibold text-slate-600 ring-1 ring-slate-200">
+            {formatMeasureValue(min, valueType)}
+          </span>
+          {valueType === "sir" ? "Lower is better" : "Lower scores"}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          {valueType === "sir" ? "Higher is worse" : "Higher scores"}
+          <span className="rounded bg-white px-1.5 py-0.5 font-semibold text-slate-600 ring-1 ring-slate-200">
+            {formatMeasureValue(max, valueType)}
+          </span>
+        </span>
       </div>
     </div>
   );
@@ -260,17 +279,25 @@ function buildMarkers(
   visiblePeers: PeerAverage[],
   compareHospitals: HospitalComparePeer[],
   baseValue: number | null,
+  visiblePeerKeys: Set<string>,
 ): BarMarker[] {
   const markers: BarMarker[] = [];
   const national = comparison.nationalScores[measureId];
   const state = comparison.stateScores[measureId];
   const county = comparison.countyScores[measureId];
 
-  if (national != null) markers.push({ key: "national", label: "National", value: national, kind: "national" });
-  if (state != null) markers.push({ key: "state", label: "State", value: state, kind: "state" });
-  if (county != null) markers.push({ key: "county", label: "County", value: county, kind: "county" });
+  // National / State / County markers are gated by their toggle so they
+  // disappear when the corresponding group is switched off.
+  if (national != null && visiblePeerKeys.has(NATIONAL_KEY))
+    markers.push({ key: "national", label: "National", value: national, kind: "national" });
+  if (state != null && visiblePeerKeys.has(STATE_KEY))
+    markers.push({ key: "state", label: "State", value: state, kind: "state" });
+  if (county != null && visiblePeerKeys.has(COUNTY_KEY))
+    markers.push({ key: "county", label: "County", value: county, kind: "county" });
 
   for (const peer of visiblePeers) {
+    // Skip peers already drawn as dedicated national/state/county markers.
+    if (DEDICATED_PEER_KEYS.has(peer.groupKey)) continue;
     const v = peer.scores[measureId];
     if (v != null) {
       markers.push({ key: peer.groupKey, label: peer.label, value: v, kind: "peer" });
@@ -301,11 +328,13 @@ function MeasureCard({
   measure,
   comparison,
   visiblePeers,
+  visiblePeerKeys,
   compareHospitals,
 }: {
   measure: MeasureDefinition;
   comparison: ComparisonResult;
   visiblePeers: PeerAverage[];
+  visiblePeerKeys: Set<string>;
   compareHospitals: HospitalComparePeer[];
 }) {
   const def = getMeasureDefinition(measure.id)!;
@@ -315,7 +344,15 @@ function MeasureCard({
   const gap = nationalGap(value, national, def.higherIsBetter);
   const gapDecimals = def.valueType === "sir" ? 3 : 1;
   const groupLabel = MEASURE_GROUPS.find((g) => g.id === measure.group)?.label;
-  const markers = buildMarkers(measure.id, comparison, visiblePeers, compareHospitals, value);
+  const markers = buildMarkers(
+    measure.id,
+    comparison,
+    visiblePeers,
+    compareHospitals,
+    value,
+    visiblePeerKeys,
+  );
+  const dedicatedPeers = visiblePeers.filter((p) => !DEDICATED_PEER_KEYS.has(p.groupKey));
 
   return (
     <article className="comparison-measure-card break-inside-avoid rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -343,20 +380,26 @@ function MeasureCard({
       )}
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <BenchmarkChip label="National" value={national} valueType={def.valueType} color={CHART.national} />
-        <BenchmarkChip
-          label="State"
-          value={comparison.stateScores[measure.id] ?? null}
-          valueType={def.valueType}
-          color={CHART.state}
-        />
-        <BenchmarkChip
-          label="County"
-          value={comparison.countyScores[measure.id] ?? null}
-          valueType={def.valueType}
-          color={CHART.county}
-        />
-        {visiblePeers.map((peer) => (
+        {visiblePeerKeys.has(NATIONAL_KEY) && (
+          <BenchmarkChip label="National" value={national} valueType={def.valueType} color={CHART.national} />
+        )}
+        {visiblePeerKeys.has(STATE_KEY) && (
+          <BenchmarkChip
+            label="State"
+            value={comparison.stateScores[measure.id] ?? null}
+            valueType={def.valueType}
+            color={CHART.state}
+          />
+        )}
+        {visiblePeerKeys.has(COUNTY_KEY) && (
+          <BenchmarkChip
+            label="County"
+            value={comparison.countyScores[measure.id] ?? null}
+            valueType={def.valueType}
+            color={CHART.county}
+          />
+        )}
+        {dedicatedPeers.map((peer) => (
           <BenchmarkChip
             key={peer.groupKey}
             label={peer.label}
@@ -485,6 +528,7 @@ export function ComparisonTable({
             measure={measure}
             comparison={comparison}
             visiblePeers={visiblePeers}
+            visiblePeerKeys={visiblePeerKeys}
             compareHospitals={compareHospitals}
           />
         ))}

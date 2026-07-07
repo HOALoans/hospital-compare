@@ -115,6 +115,32 @@ export function HomePage({ onStartCompare }: Props) {
         </div>
       </section>
 
+      <section className="rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-white to-indigo-50/40 p-6 shadow-sm sm:p-8">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-700 text-white shadow-sm">
+            <Scale className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">Why &ldquo;Parigrado&rdquo;?</h3>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
+              The name blends the Italian and Latin roots{" "}
+              <span className="font-semibold text-indigo-700">pari</span> (equal, on par) and{" "}
+              <span className="font-semibold text-orange-700">grado</span> (grade, degree) — because
+              our mission is to grade hospitals on an equal, unbiased footing, using the same public
+              federal metrics for everyone.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-3 py-1 font-medium text-indigo-800">
+                pari · equal
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-800">
+                grado · grade
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h3 className="mb-4 text-lg font-semibold text-slate-900">Public data sources</h3>
         <ul className="grid gap-3 sm:grid-cols-2">
