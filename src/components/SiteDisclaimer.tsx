@@ -1,5 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import { DATA_SOURCES, SITE_NAME } from "@shared/measures";
+import { usePartner } from "@/context/PartnerContext";
 
 const CMS_HOSPITAL_COMPARE_URL = "https://www.medicare.gov/care-compare/";
 
@@ -9,6 +10,9 @@ const CMS_HOSPITAL_COMPARE_URL = "https://www.medicare.gov/care-compare/";
  * collapsible "Data sources & disclaimer" block rather than a prominent card.
  */
 export function SiteDisclaimer() {
+  const { partner } = usePartner();
+  const showPoweredBy = partner.showPoweredBy ?? false;
+
   return (
     <footer id="data-sources" className="mt-8 border-t border-slate-200 bg-slate-50/60 no-print">
       <div className="mx-auto max-w-screen-2xl px-4 py-6 sm:px-6">
@@ -69,6 +73,12 @@ export function SiteDisclaimer() {
         <p className="mt-4 text-center text-xs text-slate-400">
           © 2026 Parigrado. All rights reserved.
         </p>
+        {showPoweredBy && (
+          <p className="mt-2 text-center text-xs text-slate-400">
+            Powered by{" "}
+            <span className="font-medium text-slate-500">{SITE_NAME}</span>
+          </p>
+        )}
         <p className="mt-2 text-center text-xs text-slate-400">
           <span className="font-medium text-slate-500">{SITE_NAME}</span> · Public CMS &amp;
           CDC-reported data for informational purposes only. Not medical advice.

@@ -25,6 +25,7 @@ import { CHART } from "@shared/chartTheme";
 import { fetchComparison, fetchHealth, fetchHospital, fetchTrends } from "@/lib/api";
 import { downloadComparisonCsv } from "@/lib/exportComparisonCsv";
 import { parseUrlState, syncUrl } from "@/lib/urlState";
+import { usePartner } from "@/context/PartnerContext";
 import { HospitalSearch } from "@/components/HospitalSearch";
 import { CompareHospitalPicker, MAX_COMPARE } from "@/components/CompareHospitalPicker";
 import { ComparisonTable } from "@/components/ComparisonTable";
@@ -66,6 +67,7 @@ function peerToggleColor(groupKey: string): string {
 }
 
 export default function App() {
+  const { partner, partnerId } = usePartner();
   const initialUrl = parseUrlState(window.location.search);
   const [view, setView] = useState<AppView>(initialUrl.view);
   const searchSectionRef = useRef<HTMLElement>(null);
@@ -192,8 +194,9 @@ export default function App() {
   }, [compareHospitals, selected, loadComparison]);
 
   useEffect(() => {
+    const urlPartner = partnerId ?? undefined;
     if (view === "home" && !selected) {
-      syncUrl({ view: "home" });
+      syncUrl({ view: "home", partner: urlPartner });
       return;
     }
     syncUrl({
@@ -203,8 +206,9 @@ export default function App() {
       visiblePeers,
       stateFilter: searchStateFilter,
       groupFilter: categoryFilter,
+      partner: urlPartner,
     });
-  }, [view, selected, compareHospitals, visiblePeers, searchStateFilter, categoryFilter]);
+  }, [view, selected, compareHospitals, visiblePeers, searchStateFilter, categoryFilter, partnerId]);
 
   const togglePeer = (key: string) => {
     setVisiblePeers((prev) => {
@@ -260,6 +264,7 @@ export default function App() {
       visiblePeers,
       stateFilter: searchStateFilter,
       groupFilter: categoryFilter,
+      partner: partnerId ?? undefined,
     });
   };
 
@@ -272,12 +277,24 @@ export default function App() {
             onClick={goHome}
             className="flex items-center gap-3 text-left transition hover:opacity-90"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-700 text-white">
-              <Activity className="h-5 w-5" />
-            </div>
+            {partner.logoUrl ? (
+              <img
+                src={partner.logoUrl}
+                alt={partner.logoAlt ?? partner.displayName}
+                className="h-10 max-w-[10rem] object-contain"
+              />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-primary text-white">
+                <Activity className="h-5 w-5" />
+              </div>
+            )}
             <div>
-              <h1 className="font-display text-2xl leading-tight text-slate-900">{SITE_NAME}</h1>
-              <p className="text-sm text-slate-500">{SITE_TAGLINE}</p>
+              <h1 className="font-display text-2xl leading-tight text-slate-900">
+                {partner.displayName}
+              </h1>
+              <p className="text-sm text-slate-500">
+                {partner.tagline ?? SITE_TAGLINE}
+              </p>
             </div>
           </button>
           <div className="flex items-center gap-3">
@@ -287,7 +304,7 @@ export default function App() {
                 onClick={goHome}
                 className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
                   view === "home"
-                    ? "bg-white text-indigo-700 shadow-sm"
+                    ? "bg-white text-brand-primary shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -299,7 +316,7 @@ export default function App() {
                 onClick={goToCompare}
                 className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
                   view === "compare"
-                    ? "bg-white text-indigo-700 shadow-sm"
+                    ? "bg-white text-brand-primary shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -311,7 +328,7 @@ export default function App() {
                 onClick={goMethodology}
                 className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
                   view === "methodology"
-                    ? "bg-white text-indigo-700 shadow-sm"
+                    ? "bg-white text-brand-primary shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -430,7 +447,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={exportCsv}
-                        className="no-print inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                        className="no-print inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-primary/90"
                       >
                         <Download className="h-4 w-4" />
                         Export CSV

@@ -1,6 +1,12 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap");
 @import "tailwindcss";
 
+:root {
+  --brand-primary: #4f46e5;
+  --brand-secondary: #ea580c;
+  --brand-primary-hover: #4338ca;
+}
+
 @theme inline {
   --font-sans: "DM Sans", system-ui, sans-serif;
   --font-display: "Instrument Serif", Georgia, serif;
@@ -10,6 +16,8 @@
   --color-brand-600: #4338ca;
   --color-brand-700: #3730a3;
   --color-brand-900: #1e1b4b;
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
   --color-accent-500: #c2410c;
   --color-surface: #f4f6fb;
   --color-card: #ffffff;

@@ -144,7 +144,7 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
           onClick={() => setOpen((v) => !v)}
           disabled={selected.length >= MAX_COMPARE}
           aria-expanded={open}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none no-print"
+          className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary/90 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none no-print"
         >
           <Plus className="h-4 w-4" />
           {open ? "Close search" : "Add hospital"}

@@ -7,29 +7,33 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { SITE_NAME, SITE_TAGLINE } from "@shared/measures";
+import { usePartner } from "@/context/PartnerContext";
 
 interface Props {
   onStartCompare: () => void;
 }
 
 export function HomePage({ onStartCompare }: Props) {
+  const { partner } = usePartner();
+  const subheadline = partner.welcomeSubheadline ?? SITE_TAGLINE;
+
   return (
     <div className="space-y-10">
-      <section className="relative overflow-hidden rounded-2xl border-2 border-indigo-300/40 bg-gradient-to-br from-indigo-50 via-white to-orange-50/40 p-8 shadow-xl shadow-indigo-900/5 ring-1 ring-indigo-200/50 sm:p-12">
-        <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-indigo-400/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-orange-300/15 blur-3xl" />
+      <section className="relative overflow-hidden rounded-2xl border-2 border-brand-primary/40 bg-gradient-to-br from-brand-primary/5 via-white to-brand-secondary/10 p-8 shadow-xl shadow-brand-primary/5 ring-1 ring-brand-primary/20 sm:p-12">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-brand-primary/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-brand-secondary/15 blur-3xl" />
         <div className="relative mx-auto max-w-3xl text-center">
-          <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-700 text-white shadow-lg">
+          <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-primary text-white shadow-lg">
             <Activity className="h-7 w-7" />
           </div>
           <h2 className="font-display text-4xl leading-tight text-slate-900 sm:text-5xl">
-            Know how your hospital really compares
+            {partner.welcomeHeadline}
           </h2>
-          <p className="mt-4 text-lg text-slate-600">{SITE_TAGLINE}</p>
+          <p className="mt-4 text-lg text-slate-600">{subheadline}</p>
           <button
             type="button"
             onClick={onStartCompare}
-            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-indigo-700 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-indigo-900/20 transition hover:bg-indigo-800"
+            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:bg-brand-primary/90"
           >
             Compare a hospital
             <ArrowRight className="h-5 w-5" />
@@ -89,10 +93,10 @@ export function HomePage({ onStartCompare }: Props) {
         </article>
       </section>
 
-      <section className="rounded-2xl border border-indigo-200/60 bg-gradient-to-r from-indigo-50/80 to-orange-50/50 p-6 sm:p-8">
+      <section className="rounded-2xl border border-brand-primary/30 bg-gradient-to-r from-brand-primary/5 to-brand-secondary/10 p-6 sm:p-8">
         <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-700 shadow-sm ring-1 ring-indigo-200">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-brand-primary shadow-sm ring-1 ring-brand-primary/20">
               <Scale className="h-6 w-6" />
             </div>
             <div>
@@ -106,7 +110,7 @@ export function HomePage({ onStartCompare }: Props) {
           <button
             type="button"
             onClick={onStartCompare}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg border-2 border-indigo-700 bg-white px-5 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border-2 border-brand-primary bg-white px-5 py-2.5 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
           >
             Start comparing
             <ArrowRight className="h-4 w-4" />
@@ -145,7 +149,7 @@ export function HomePage({ onStartCompare }: Props) {
         CDC/NHSN infection measures, CMS readmissions, and CMS archived snapshots. See{" "}
         <a
           href="#data-sources"
-          className="font-medium text-indigo-700 underline decoration-indigo-200 underline-offset-2 hover:text-indigo-800"
+          className="font-medium text-brand-primary underline decoration-brand-primary/30 underline-offset-2 hover:text-brand-primary/80"
         >
           data sources &amp; disclaimer
         </a>{" "}

@@ -7,6 +7,7 @@ export interface CompareUrlState {
   peers: string[];
   stateFilter: string;
   groupFilter: string;
+  partner?: string;
 }
 
 const DEFAULT_PEERS = [
@@ -34,6 +35,8 @@ export function parseUrlState(search: string): CompareUrlState {
     ? peersParam.split(",").map((s) => s.trim()).filter(Boolean)
     : [...DEFAULT_PEERS];
 
+  const partner = params.get("partner") ?? undefined;
+
   return {
     view,
     hospitalId: params.get("hospital") ?? undefined,
@@ -41,6 +44,7 @@ export function parseUrlState(search: string): CompareUrlState {
     peers,
     stateFilter: params.get("state") ?? "",
     groupFilter: params.get("category") ?? "all",
+    partner,
   };
 }
 
@@ -51,10 +55,19 @@ export function buildUrlState(state: {
   visiblePeers?: Set<string>;
   stateFilter?: string;
   groupFilter?: string;
+  partner?: string;
 }): string {
   const params = new URLSearchParams();
 
-  if (state.view === "home") return "";
+  if (state.partner) {
+    params.set("partner", state.partner);
+  }
+
+  if (state.view === "home") {
+    const qs = params.toString();
+    return qs ? `?${qs}` : "";
+  }
+
   params.set("view", state.view);
 
   if (state.hospital) {
