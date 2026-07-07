@@ -39,8 +39,9 @@ interface CmsHcahpsRow extends Record<string, string> {
 
 interface CmsReadmissionRow extends Record<string, string> {
   facility_id: string;
-  measure_id: string;
-  score: string;
+  measure_name: string;
+  predicted_readmission_rate: string;
+  excess_readmission_ratio: string;
   start_date: string;
   end_date: string;
 }
@@ -134,15 +135,30 @@ function parseHcahpsScore(row: CmsHcahpsRow): number | null {
   return null;
 }
 
-function parseCmsScore(row: { score: string }): number | null {
-  const score = row.score;
-  if (!score || score === "Not Available" || score === "Not Applicable") return null;
-  const n = Number(score);
+const CMS_MISSING_VALUES = new Set([
+  "Not Available",
+  "Not Applicable",
+  "N/A",
+  "Too Few to Report",
+  "",
+]);
+
+function parseCmsNumber(raw: string | undefined): number | null {
+  if (raw == null || CMS_MISSING_VALUES.has(raw)) return null;
+  const n = Number(raw);
   return Number.isFinite(n) ? n : null;
+}
+
+function parseCmsScore(row: { score: string }): number | null {
+  return parseCmsNumber(row.score);
 }
 
 function parseHaiScore(row: CmsHaiRow): number | null {
   return parseCmsScore(row);
+}
+
+function parseReadmissionScore(row: CmsReadmissionRow): number | null {
+  return parseCmsNumber(row.predicted_readmission_rate);
 }
 
 export function peerKeyState(state: string, ownershipGroup: string) {
@@ -368,51 +384,67 @@ async function loadFromCms() {
 
   console.log("[cache] Loading HCAHPS scores...");
   for (const measure of HCAHPS_MEASURES) {
-    const rows = await cmsQueryAll<CmsHcahpsRow>({
-      dataset: DATASETS.hcahps,
-      conditions: [{ property: "hcahps_measure_id", value: measure.id }],
-    });
-    for (const row of rows) {
-      const value = parseHcahpsScore(row);
-      if (value === null) continue;
-      if (!currentPeriod.start) currentPeriod = { start: row.start_date, end: row.end_date };
-      const hospital = hospitalById.get(row.facility_id);
-      if (!hospital) continue;
-      indexScore(hospital, measure.id, value, row.start_date, row.end_date);
+    try {
+      const rows = await cmsQueryAll<CmsHcahpsRow>({
+        dataset: DATASETS.hcahps,
+        conditions: [{ property: "hcahps_measure_id", value: measure.id }],
+      });
+      for (const row of rows) {
+        const value = parseHcahpsScore(row);
+        if (value === null) continue;
+        if (!currentPeriod.start) currentPeriod = { start: row.start_date, end: row.end_date };
+        const hospital = hospitalById.get(row.facility_id);
+        if (!hospital) continue;
+        indexScore(hospital, measure.id, value, row.start_date, row.end_date);
+      }
+      console.log(`[cache]   HCAHPS ${measure.id}: ${rows.length} rows`);
+    } catch (err) {
+      console.error(`[cache]   HCAHPS ${measure.id} failed — skipping:`, err);
     }
-    console.log(`[cache]   HCAHPS ${measure.id}: ${rows.length} rows`);
   }
 
   console.log("[cache] Loading HAI infection scores (CDC NHSN via CMS)...");
   for (const measure of HAI_MEASURES) {
-    const rows = await cmsQueryAll<CmsHaiRow>({
-      dataset: DATASETS.hai,
-      conditions: [{ property: "measure_id", value: measure.id }],
-    });
-    for (const row of rows) {
-      const value = parseHaiScore(row);
-      if (value === null) continue;
-      const hospital = hospitalById.get(row.facility_id);
-      if (!hospital) continue;
-      indexScore(hospital, measure.id, value, row.start_date, row.end_date);
+    try {
+      const rows = await cmsQueryAll<CmsHaiRow>({
+        dataset: DATASETS.hai,
+        conditions: [{ property: "measure_id", value: measure.id }],
+      });
+      for (const row of rows) {
+        const value = parseHaiScore(row);
+        if (value === null) continue;
+        const hospital = hospitalById.get(row.facility_id);
+        if (!hospital) continue;
+        indexScore(hospital, measure.id, value, row.start_date, row.end_date);
+      }
+      console.log(`[cache]   HAI ${measure.id}: ${rows.length} rows`);
+    } catch (err) {
+      console.error(`[cache]   HAI ${measure.id} failed — skipping:`, err);
     }
-    console.log(`[cache]   HAI ${measure.id}: ${rows.length} rows`);
   }
 
   console.log("[cache] Loading readmission scores...");
   for (const measure of READMISSION_MEASURES) {
-    const rows = await cmsQueryAll<CmsReadmissionRow>({
-      dataset: DATASETS.readmissions,
-      conditions: [{ property: "measure_id", value: measure.id }],
-    });
-    for (const row of rows) {
-      const value = parseCmsScore(row);
-      if (value === null) continue;
-      const hospital = hospitalById.get(row.facility_id);
-      if (!hospital) continue;
-      indexScore(hospital, measure.id, value, row.start_date, row.end_date);
+    // The readmissions dataset (9n3s-kdb3) has no `measure_id` column — rows are
+    // keyed by `measure_name` (e.g. "READM-30-AMI-HRRP") and the readmission rate
+    // lives in `predicted_readmission_rate`, not `score`.
+    const cmsMeasureName = measure.cmsMeasureName ?? measure.id;
+    try {
+      const rows = await cmsQueryAll<CmsReadmissionRow>({
+        dataset: DATASETS.readmissions,
+        conditions: [{ property: "measure_name", value: cmsMeasureName }],
+      });
+      for (const row of rows) {
+        const value = parseReadmissionScore(row);
+        if (value === null) continue;
+        const hospital = hospitalById.get(row.facility_id);
+        if (!hospital) continue;
+        indexScore(hospital, measure.id, value, row.start_date, row.end_date);
+      }
+      console.log(`[cache]   Readmission ${measure.id}: ${rows.length} rows`);
+    } catch (err) {
+      console.error(`[cache]   Readmission ${measure.id} failed — skipping:`, err);
     }
-    console.log(`[cache]   Readmission ${measure.id}: ${rows.length} rows`);
   }
 
   finalizeNationalAverages();

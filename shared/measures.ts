@@ -23,6 +23,12 @@ export interface MeasureDefinition {
   higherIsBetter: boolean;
   description: string;
   dataset: MeasureDataset;
+  /**
+   * Value used to filter the CMS dataset when it does not expose a `measure_id`
+   * column. The readmissions dataset (9n3s-kdb3) keys rows by `measure_name`
+   * (e.g. "READM-30-AMI-HRRP") rather than the internal `id` used elsewhere.
+   */
+  cmsMeasureName?: string;
 }
 
 export const MEASURE_CATEGORIES: { id: MeasureCategory; label: string }[] = [
@@ -210,6 +216,7 @@ export const READMISSION_MEASURES: MeasureDefinition[] = [
     higherIsBetter: false,
     description: "Patients readmitted within 30 days of a heart attack discharge.",
     dataset: "readmissions",
+    cmsMeasureName: "READM-30-AMI-HRRP",
   },
   {
     id: "READM_30_HF",
@@ -220,6 +227,7 @@ export const READMISSION_MEASURES: MeasureDefinition[] = [
     higherIsBetter: false,
     description: "Patients readmitted within 30 days of a heart failure discharge.",
     dataset: "readmissions",
+    cmsMeasureName: "READM-30-HF-HRRP",
   },
   {
     id: "READM_30_PN",
@@ -230,6 +238,7 @@ export const READMISSION_MEASURES: MeasureDefinition[] = [
     higherIsBetter: false,
     description: "Patients readmitted within 30 days of a pneumonia discharge.",
     dataset: "readmissions",
+    cmsMeasureName: "READM-30-PN-HRRP",
   },
   {
     id: "READM_30_COPD",
@@ -240,6 +249,7 @@ export const READMISSION_MEASURES: MeasureDefinition[] = [
     higherIsBetter: false,
     description: "Patients readmitted within 30 days of a COPD discharge.",
     dataset: "readmissions",
+    cmsMeasureName: "READM-30-COPD-HRRP",
   },
   {
     id: "READM_30_HIP_KNEE",
@@ -250,6 +260,7 @@ export const READMISSION_MEASURES: MeasureDefinition[] = [
     higherIsBetter: false,
     description: "Patients readmitted within 30 days of hip/knee replacement.",
     dataset: "readmissions",
+    cmsMeasureName: "READM-30-HIP-KNEE-HRRP",
   },
 ];
 
