@@ -18,3 +18,7 @@ services:
       # as a separate one-off job instead.
       - key: INGEST_ARCHIVES
         value: "true"
+      # Required for /api/admin/* and ?view=admin partner management UI.
+      # Set a strong random value in the Render dashboard (sync: false keeps it manual).
+      - key: ADMIN_SECRET
+        sync: false

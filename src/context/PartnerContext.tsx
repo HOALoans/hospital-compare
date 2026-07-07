@@ -3,13 +3,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import {
-  resolvePartner,
-  type PartnerBranding,
-} from "@shared/partnerConfig";
+import { DEFAULT_PARTNER, type PartnerBranding } from "@shared/partnerConfig";
+import { fetchPartnerBranding } from "@/lib/partnerApi";
 
 function readPartnerIdFromUrl(): string | null {
   return new URLSearchParams(window.location.search).get("partner");
@@ -51,6 +50,7 @@ type PartnerContextValue = {
   partner: PartnerBranding;
   partnerId: string | null;
   isPartnerMode: boolean;
+  partnerLoading: boolean;
 };
 
 const PartnerContext = createContext<PartnerContextValue | null>(null);
@@ -62,7 +62,28 @@ export function PartnerProvider({ children }: { children: ReactNode }) {
     () => null,
   );
 
-  const partner = useMemo(() => resolvePartner(partnerId), [partnerId]);
+  const [partner, setPartner] = useState<PartnerBranding>(DEFAULT_PARTNER);
+  const [partnerLoading, setPartnerLoading] = useState(false);
+
+  useEffect(() => {
+    const id = partnerId ?? "default";
+    let cancelled = false;
+    setPartnerLoading(true);
+    fetchPartnerBranding(id)
+      .then((branding) => {
+        if (!cancelled) setPartner(branding);
+      })
+      .catch(() => {
+        if (!cancelled) setPartner(DEFAULT_PARTNER);
+      })
+      .finally(() => {
+        if (!cancelled) setPartnerLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [partnerId]);
+
   const isPartnerMode = partnerId !== null && partnerId !== "default";
 
   useEffect(() => {
@@ -76,8 +97,8 @@ export function PartnerProvider({ children }: { children: ReactNode }) {
   }, [partner]);
 
   const value = useMemo(
-    () => ({ partner, partnerId, isPartnerMode }),
-    [partner, partnerId, isPartnerMode],
+    () => ({ partner, partnerId, isPartnerMode, partnerLoading }),
+    [partner, partnerId, isPartnerMode, partnerLoading],
   );
 
   return (

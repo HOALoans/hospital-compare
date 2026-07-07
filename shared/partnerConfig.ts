@@ -14,16 +14,19 @@ export type PartnerBranding = {
   showPoweredBy?: boolean;
 };
 
-export const PARTNER_CONFIGS: Record<string, PartnerBranding> = {
-  default: {
-    id: "default",
-    displayName: SITE_NAME,
-    logoUrl: null,
-    primaryColor: "#4f46e5",
-    secondaryColor: "#ea580c",
-    welcomeHeadline: "Know how your hospital really compares",
-    showPoweredBy: false,
-  },
+/** Built-in Parigrado branding — always served from code, never stored in JSON. */
+export const DEFAULT_PARTNER: PartnerBranding = {
+  id: "default",
+  displayName: SITE_NAME,
+  logoUrl: null,
+  primaryColor: "#4f46e5",
+  secondaryColor: "#ea580c",
+  welcomeHeadline: "Know how your hospital really compares",
+  showPoweredBy: false,
+};
+
+/** Seed partners migrated to data/partners.json on first server run. */
+export const SEED_PARTNERS: Record<string, PartnerBranding> = {
   acme: {
     id: "acme",
     displayName: "ACME Health",
@@ -39,7 +42,15 @@ export const PARTNER_CONFIGS: Record<string, PartnerBranding> = {
   },
 };
 
-export function resolvePartner(id: string | null | undefined): PartnerBranding {
-  if (!id) return PARTNER_CONFIGS.default;
-  return PARTNER_CONFIGS[id] ?? PARTNER_CONFIGS.default;
+export function slugifyPartnerId(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 48) || "partner"
+  );
 }
+
+export const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;

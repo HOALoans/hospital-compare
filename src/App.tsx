@@ -39,9 +39,10 @@ import { WatchlistButton } from "@/components/WatchlistButton";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 import { ExecutiveSummaryPrint } from "@/components/ExecutiveSummaryPrint";
 import { MethodologyPage } from "@/components/MethodologyPage";
+import { PartnerAdminPage } from "@/components/PartnerAdminPage";
 import { SiteDisclaimer } from "@/components/SiteDisclaimer";
 
-type AppView = "home" | "compare" | "methodology";
+type AppView = "home" | "compare" | "methodology" | "admin";
 
 type SortKey = "category" | "measure" | "gap-national" | "gap-state" | "gap-county";
 
@@ -194,6 +195,10 @@ export default function App() {
   }, [compareHospitals, selected, loadComparison]);
 
   useEffect(() => {
+    if (view === "admin") {
+      syncUrl({ view: "admin" });
+      return;
+    }
     const urlPartner = partnerId ?? undefined;
     if (view === "home" && !selected) {
       syncUrl({ view: "home", partner: urlPartner });
@@ -256,6 +261,11 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const goAdmin = () => {
+    setView("admin");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const shareLink = () => {
     syncUrl({
       view: "compare",
@@ -272,32 +282,45 @@ export default function App() {
     <div className="min-h-screen">
       <header className="border-b border-slate-200 bg-white no-print">
         <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
-          <button
-            type="button"
-            onClick={goHome}
-            className="flex items-center gap-3 text-left transition hover:opacity-90"
-          >
-            {partner.logoUrl ? (
-              <img
-                src={partner.logoUrl}
-                alt={partner.logoAlt ?? partner.displayName}
-                className="h-10 max-w-[10rem] object-contain"
-              />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-primary text-white">
+          {view === "admin" ? (
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white">
                 <Activity className="h-5 w-5" />
               </div>
-            )}
-            <div>
-              <h1 className="font-display text-2xl leading-tight text-slate-900">
-                {partner.displayName}
-              </h1>
-              <p className="text-sm text-slate-500">
-                {partner.tagline ?? SITE_TAGLINE}
-              </p>
+              <div>
+                <h1 className="font-display text-2xl leading-tight text-slate-900">Parigrado</h1>
+                <p className="text-sm text-slate-500">Partner program admin</p>
+              </div>
             </div>
-          </button>
+          ) : (
+            <button
+              type="button"
+              onClick={goHome}
+              className="flex items-center gap-3 text-left transition hover:opacity-90"
+            >
+              {partner.logoUrl ? (
+                <img
+                  src={partner.logoUrl}
+                  alt={partner.logoAlt ?? partner.displayName}
+                  className="h-10 max-w-[10rem] object-contain"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-primary text-white">
+                  <Activity className="h-5 w-5" />
+                </div>
+              )}
+              <div>
+                <h1 className="font-display text-2xl leading-tight text-slate-900">
+                  {partner.displayName}
+                </h1>
+                <p className="text-sm text-slate-500">
+                  {partner.tagline ?? SITE_TAGLINE}
+                </p>
+              </div>
+            </button>
+          )}
           <div className="flex items-center gap-3">
+            {view !== "admin" && (
             <nav className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
               <button
                 type="button"
@@ -336,7 +359,8 @@ export default function App() {
                 Methodology
               </button>
             </nav>
-            {!ready && (
+            )}
+            {view !== "admin" && !ready && (
               <div className="flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 {directoryReady
@@ -349,6 +373,8 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-screen-2xl space-y-8 px-4 py-8 sm:px-6">
+        {view === "admin" && <PartnerAdminPage onExit={goHome} />}
+
         {view === "home" && <HomePage onStartCompare={goToCompare} />}
 
         {view === "methodology" && (
@@ -666,7 +692,7 @@ export default function App() {
         )}
       </main>
 
-      <SiteDisclaimer />
+      <SiteDisclaimer onOpenAdmin={goAdmin} showAdminLink={view !== "admin"} />
     </div>
   );
 }

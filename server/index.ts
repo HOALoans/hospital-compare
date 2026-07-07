@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import multer from "multer";
 import { ARCHIVE_YEARS } from "../shared/measures.js";
 import type { HospitalTrend } from "../shared/types.js";
 import {
@@ -17,12 +18,138 @@ import {
 } from "./cache.js";
 import { buildComparison } from "./comparisons.js";
 import { scheduleArchiveIngest } from "./archiveIngest.js";
+import { requireAdmin } from "./adminAuth.js";
+import {
+  initPartnerStore,
+  getPartner,
+  getAllPartners,
+  partnerExists,
+  createPartner,
+  updatePartner,
+  deletePartner,
+  setPartnerLogo,
+  removeOldLogos,
+  LOGOS_DIR,
+} from "./partnerStore.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ARCHIVE_DIR = path.join(__dirname, "../.cache/archives");
 const PORT = Number(process.env.PORT ?? 5175);
 
+const LOGO_MIME_EXT: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/svg+xml": "svg",
+  "image/webp": "webp",
+};
+
+const logoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (LOGO_MIME_EXT[file.mimetype]) cb(null, true);
+    else cb(new Error("Logo must be PNG, JPG, SVG, or WebP"));
+  },
+});
+
 const app = express();
+app.use(express.json());
+
+// --- Partner branding (public read) ---
+app.get("/api/partners/:id", (req, res) => {
+  const id = req.params.id;
+  if (!partnerExists(id)) {
+    res.status(404).json({ error: "Partner not found" });
+    return;
+  }
+  res.json(getPartner(id));
+});
+
+app.get("/api/partner-logos/:filename", (req, res) => {
+  const safeName = path.basename(req.params.filename);
+  const filePath = path.join(LOGOS_DIR, safeName);
+  if (!fs.existsSync(filePath)) {
+    res.status(404).json({ error: "Logo not found" });
+    return;
+  }
+  res.sendFile(filePath);
+});
+
+// --- Partner admin (protected) ---
+app.get("/api/admin/partners", requireAdmin, (_req, res) => {
+  res.json({ partners: getAllPartners() });
+});
+
+app.get("/api/admin/partners/:id", requireAdmin, (req, res) => {
+  if (!partnerExists(req.params.id)) {
+    res.status(404).json({ error: "Partner not found" });
+    return;
+  }
+  res.json(getPartner(req.params.id));
+});
+
+app.post("/api/admin/partners", requireAdmin, (req, res) => {
+  const result = createPartner(req.body ?? {});
+  if (!result.ok) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.status(201).json(result.partner);
+});
+
+app.put("/api/admin/partners/:id", requireAdmin, (req, res) => {
+  const result = updatePartner(req.params.id, req.body ?? {});
+  if (!result.ok) {
+    res.status(result.status ?? 400).json({ error: result.error });
+    return;
+  }
+  res.json(result.partner);
+});
+
+app.delete("/api/admin/partners/:id", requireAdmin, (req, res) => {
+  const result = deletePartner(req.params.id);
+  if (!result.ok) {
+    res.status(result.status ?? 400).json({ error: result.error });
+    return;
+  }
+  res.json({ ok: true });
+});
+
+app.post(
+  "/api/admin/partners/:id/logo",
+  requireAdmin,
+  (req, res, next) => {
+    logoUpload.single("logo")(req, res, (err) => {
+      if (err) {
+        res.status(400).json({ error: err instanceof Error ? err.message : "Upload failed" });
+        return;
+      }
+      next();
+    });
+  },
+  (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: "logo file is required" });
+      return;
+    }
+    const ext = LOGO_MIME_EXT[req.file.mimetype];
+    if (!ext) {
+      res.status(400).json({ error: "Unsupported image type" });
+      return;
+    }
+    const filename = `${req.params.id}.${ext}`;
+    fs.mkdirSync(LOGOS_DIR, { recursive: true });
+    removeOldLogos(req.params.id, filename);
+    fs.writeFileSync(path.join(LOGOS_DIR, filename), req.file.buffer);
+    const result = setPartnerLogo(req.params.id, filename);
+    if (!result.ok) {
+      res.status(result.status ?? 400).json({ error: result.error });
+      return;
+    }
+    res.json(result.partner);
+  },
+);
 
 app.get("/api/health", (_req, res) => {
   res.json({
@@ -80,7 +207,7 @@ app.get("/api/watchlist", (_req, res) => {
   });
 });
 
-app.post("/api/watchlist", express.json(), (req, res) => {
+app.post("/api/watchlist", (req, res) => {
   const { email, facilityId } = req.body ?? {};
   if (!email || !facilityId) {
     res.status(400).json({ error: "email and facilityId required" });
@@ -154,6 +281,8 @@ if (fs.existsSync(clientDist)) {
 }
 
 async function start() {
+  initPartnerStore();
+
   initializeCache().catch((err) => {
     console.error("[cache] Failed to initialize:", err);
   });

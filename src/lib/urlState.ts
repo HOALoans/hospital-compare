@@ -1,7 +1,7 @@
 import type { HospitalSummary } from "@shared/types";
 
 export interface CompareUrlState {
-  view: "home" | "compare" | "methodology";
+  view: "home" | "compare" | "methodology" | "admin";
   hospitalId?: string;
   compareWith: string[];
   peers: string[];
@@ -22,8 +22,14 @@ const DEFAULT_PEERS = [
 export function parseUrlState(search: string): CompareUrlState {
   const params = new URLSearchParams(search);
   const viewParam = params.get("view");
-  const view =
-    viewParam === "methodology" ? "methodology" : viewParam === "compare" || params.get("hospital") ? "compare" : "home";
+  const view: CompareUrlState["view"] =
+    viewParam === "admin"
+      ? "admin"
+      : viewParam === "methodology"
+        ? "methodology"
+        : viewParam === "compare" || params.get("hospital")
+          ? "compare"
+          : "home";
 
   const compareWith = (params.get("compare") ?? params.get("compareWith") ?? "")
     .split(",")
@@ -49,7 +55,7 @@ export function parseUrlState(search: string): CompareUrlState {
 }
 
 export function buildUrlState(state: {
-  view: "home" | "compare" | "methodology";
+  view: "home" | "compare" | "methodology" | "admin";
   hospital?: HospitalSummary | null;
   compareHospitals?: HospitalSummary[];
   visiblePeers?: Set<string>;
@@ -58,6 +64,12 @@ export function buildUrlState(state: {
   partner?: string;
 }): string {
   const params = new URLSearchParams();
+
+  if (state.view === "admin") {
+    params.set("view", "admin");
+    const qs = params.toString();
+    return qs ? `?${qs}` : "";
+  }
 
   if (state.partner) {
     params.set("partner", state.partner);

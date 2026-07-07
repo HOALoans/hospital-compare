@@ -9,7 +9,13 @@ const CMS_HOSPITAL_COMPARE_URL = "https://www.medicare.gov/care-compare/";
  * accessible (as a small inline list) but folds them into a muted,
  * collapsible "Data sources & disclaimer" block rather than a prominent card.
  */
-export function SiteDisclaimer() {
+export function SiteDisclaimer({
+  onOpenAdmin,
+  showAdminLink = true,
+}: {
+  onOpenAdmin?: () => void;
+  showAdminLink?: boolean;
+}) {
   const { partner } = usePartner();
   const showPoweredBy = partner.showPoweredBy ?? false;
 
@@ -72,6 +78,18 @@ export function SiteDisclaimer() {
 
         <p className="mt-4 text-center text-xs text-slate-400">
           © 2026 Parigrado. All rights reserved.
+          {showAdminLink && onOpenAdmin && (
+            <>
+              {" · "}
+              <button
+                type="button"
+                onClick={onOpenAdmin}
+                className="text-slate-400 underline decoration-slate-300 underline-offset-2 hover:text-indigo-600"
+              >
+                Partner admin
+              </button>
+            </>
+          )}
         </p>
         {showPoweredBy && (
           <p className="mt-2 text-center text-xs text-slate-400">
