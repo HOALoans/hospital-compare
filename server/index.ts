@@ -18,7 +18,7 @@ import {
 } from "./cache.js";
 import { buildComparison } from "./comparisons.js";
 import { scheduleArchiveIngest } from "./archiveIngest.js";
-import { requireAdmin } from "./adminAuth.js";
+import { handleAdminLogin, handleAdminLogout, requireAdmin } from "./adminAuth.js";
 import {
   initPartnerStore,
   getPartner,
@@ -75,6 +75,10 @@ app.get("/api/partner-logos/:filename", (req, res) => {
   }
   res.sendFile(filePath);
 });
+
+// --- Partner admin auth ---
+app.post("/api/admin/login", handleAdminLogin);
+app.post("/api/admin/logout", handleAdminLogout);
 
 // --- Partner admin (protected) ---
 app.get("/api/admin/partners", requireAdmin, (_req, res) => {

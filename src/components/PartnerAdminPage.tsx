@@ -14,15 +14,17 @@ import {
 import type { PartnerBranding } from "@shared/partnerConfig";
 import { HEX_COLOR_RE, slugifyPartnerId } from "@shared/partnerConfig";
 import {
-  clearStoredAdminKey,
+  AdminAuthError,
+  adminLogin,
+  clearStoredAdminSession,
   createPartnerApi,
   deletePartnerApi,
-  getStoredAdminKey,
+  getStoredAdminEmail,
+  getStoredAdminToken,
   listPartners,
-  setStoredAdminKey,
+  setStoredAdminSession,
   updatePartnerApi,
   uploadPartnerLogo,
-  verifyAdminKey,
 } from "@/lib/adminApi";
 
 type FormState = {
@@ -96,8 +98,10 @@ interface Props {
 }
 
 export function PartnerAdminPage({ onExit }: Props) {
-  const [adminKey, setAdminKey] = useState<string | null>(() => getStoredAdminKey());
-  const [authInput, setAuthInput] = useState("");
+  const [adminToken, setAdminToken] = useState<string | null>(() => getStoredAdminToken());
+  const [adminEmail, setAdminEmail] = useState<string | null>(() => getStoredAdminEmail());
+  const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
 
@@ -130,12 +134,19 @@ export function PartnerAdminPage({ onExit }: Props) {
     window.setTimeout(() => setMessage(null), 4000);
   }, []);
 
-  const loadPartners = useCallback(async (key: string) => {
+  const loadPartners = useCallback(async (token: string) => {
     setLoading(true);
     try {
-      const data = await listPartners(key);
+      const data = await listPartners(token);
       setPartners(data.partners);
     } catch (err) {
+      if (err instanceof AdminAuthError && err.status === 401) {
+        clearStoredAdminSession();
+        setAdminToken(null);
+        setAdminEmail(null);
+        setAuthError("Your session expired. Please sign in again.");
+        return;
+      }
       flash("err", err instanceof Error ? err.message : "Failed to load partners");
     } finally {
       setLoading(false);
@@ -143,8 +154,8 @@ export function PartnerAdminPage({ onExit }: Props) {
   }, [flash]);
 
   useEffect(() => {
-    if (adminKey) loadPartners(adminKey);
-  }, [adminKey, loadPartners]);
+    if (adminToken) loadPartners(adminToken);
+  }, [adminToken, loadPartners]);
 
   useEffect(() => {
     if (!logoFile) {
@@ -160,15 +171,27 @@ export function PartnerAdminPage({ onExit }: Props) {
     e.preventDefault();
     setAuthLoading(true);
     setAuthError(null);
-    const ok = await verifyAdminKey(authInput);
-    setAuthLoading(false);
-    if (!ok) {
-      setAuthError("Invalid admin key. Check ADMIN_SECRET on the server.");
-      return;
+    try {
+      const { token, email } = await adminLogin(emailInput, passwordInput);
+      setStoredAdminSession(token, email);
+      setAdminToken(token);
+      setAdminEmail(email);
+      setEmailInput("");
+      setPasswordInput("");
+    } catch (err) {
+      setAuthError(
+        err instanceof AdminAuthError ? err.message : "Invalid email or password",
+      );
+    } finally {
+      setAuthLoading(false);
     }
-    setStoredAdminKey(authInput);
-    setAdminKey(authInput);
-    setAuthInput("");
+  };
+
+  const handleSignOut = () => {
+    clearStoredAdminSession();
+    setAdminToken(null);
+    setAdminEmail(null);
+    void fetch("/api/admin/logout", { method: "POST" });
   };
 
   const startCreate = () => {
@@ -195,7 +218,7 @@ export function PartnerAdminPage({ onExit }: Props) {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!adminKey) return;
+    if (!adminToken) return;
     const err = validateForm(form, existingIds, editingId ?? undefined);
     if (err) {
       flash("err", err);
@@ -206,21 +229,21 @@ export function PartnerAdminPage({ onExit }: Props) {
       const payload = formPayload(form);
       let saved: PartnerBranding;
       if (mode === "create") {
-        saved = await createPartnerApi(adminKey, payload);
+        saved = await createPartnerApi(adminToken, payload);
         flash("ok", `Created partner "${saved.displayName}"`);
       } else if (editingId) {
-        saved = await updatePartnerApi(adminKey, editingId, payload);
+        saved = await updatePartnerApi(adminToken, editingId, payload);
         flash("ok", `Updated partner "${saved.displayName}"`);
       } else {
         return;
       }
 
       if (logoFile) {
-        saved = await uploadPartnerLogo(adminKey, saved.id, logoFile);
+        saved = await uploadPartnerLogo(adminToken, saved.id, logoFile);
         flash("ok", "Logo uploaded");
       }
 
-      await loadPartners(adminKey);
+      await loadPartners(adminToken);
       setMode("edit");
       setEditingId(saved.id);
       setForm(partnerToForm(saved));
@@ -233,14 +256,14 @@ export function PartnerAdminPage({ onExit }: Props) {
   };
 
   const handleLogoUpload = async () => {
-    if (!adminKey || !editingId || !logoFile) return;
+    if (!adminToken || !editingId || !logoFile) return;
     setSaving(true);
     try {
-      const saved = await uploadPartnerLogo(adminKey, editingId, logoFile);
+      const saved = await uploadPartnerLogo(adminToken, editingId, logoFile);
       flash("ok", "Logo uploaded");
       setLogoFile(null);
       setForm(partnerToForm(saved));
-      await loadPartners(adminKey);
+      await loadPartners(adminToken);
     } catch (err) {
       flash("err", err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -249,13 +272,13 @@ export function PartnerAdminPage({ onExit }: Props) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!adminKey || id === "default") return;
+    if (!adminToken || id === "default") return;
     if (!window.confirm(`Delete partner "${id}"? This cannot be undone.`)) return;
     try {
-      await deletePartnerApi(adminKey, id);
+      await deletePartnerApi(adminToken, id);
       flash("ok", "Partner deleted");
       if (editingId === id) cancelForm();
-      await loadPartners(adminKey);
+      await loadPartners(adminToken);
     } catch (err) {
       flash("err", err instanceof Error ? err.message : "Delete failed");
     }
@@ -268,30 +291,44 @@ export function PartnerAdminPage({ onExit }: Props) {
     window.setTimeout(() => setCopied(false), 2000);
   };
 
-  if (!adminKey) {
+  if (!adminToken) {
     return (
       <div className="mx-auto max-w-md py-16">
         <div className="rounded-2xl border border-indigo-200 bg-white p-8 shadow-lg shadow-indigo-900/5">
           <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white">
             <Lock className="h-6 w-6" />
           </div>
-          <h2 className="font-display text-2xl text-slate-900">Partner admin</h2>
+          <h2 className="font-display text-2xl text-slate-900">Partner admin sign in</h2>
           <p className="mt-2 text-sm text-slate-600">
-            Enter the admin secret configured as <code className="text-indigo-700">ADMIN_SECRET</code>{" "}
-            on the server. In local dev the default is <code className="text-indigo-700">dev-admin-key</code>.
+            Sign in with your authorized email and password to manage partner branding.
           </p>
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
             <div>
-              <label htmlFor="admin-key" className="block text-sm font-medium text-slate-700">
-                Admin key
+              <label htmlFor="admin-email" className="block text-sm font-medium text-slate-700">
+                Email
               </label>
               <input
-                id="admin-key"
-                type="password"
-                value={authInput}
-                onChange={(e) => setAuthInput(e.target.value)}
+                id="admin-email"
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="you@company.com"
                 className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                autoComplete="off"
+                autoComplete="email"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="admin-password" className="block text-sm font-medium text-slate-700">
+                Password
+              </label>
+              <input
+                id="admin-password"
+                type="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                autoComplete="current-password"
                 required
               />
             </div>
@@ -326,6 +363,11 @@ export function PartnerAdminPage({ onExit }: Props) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {adminEmail && (
+            <span className="self-center text-sm text-slate-600">
+              Signed in as <span className="font-medium text-slate-800">{adminEmail}</span>
+            </span>
+          )}
           <button
             type="button"
             onClick={onExit}
@@ -335,10 +377,7 @@ export function PartnerAdminPage({ onExit }: Props) {
           </button>
           <button
             type="button"
-            onClick={() => {
-              clearStoredAdminKey();
-              setAdminKey(null);
-            }}
+            onClick={handleSignOut}
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             Sign out

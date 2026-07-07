@@ -18,7 +18,13 @@ services:
       # as a separate one-off job instead.
       - key: INGEST_ARCHIVES
         value: "true"
-      # Required for /api/admin/* and ?view=admin partner management UI.
-      # Set a strong random value in the Render dashboard (sync: false keeps it manual).
+      # Signs admin session tokens after login; also accepts Bearer ADMIN_SECRET for scripts.
       - key: ADMIN_SECRET
+        sync: false
+      # Email allowlist for partner admin sign-in (comma-separated for multiple).
+      - key: ADMIN_EMAIL
+        value: larry@hoaloanservices.com
+        sync: false
+      # Password for partner admin sign-in (set in Render dashboard).
+      - key: ADMIN_PASSWORD
         sync: false
