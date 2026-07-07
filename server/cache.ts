@@ -1,16 +1,13 @@
 import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import type { HospitalSummary, NearbyHospital } from "../shared/types.js";
 import { classifyOwnership } from "../shared/ownership.js";
 import { HCAHPS_MEASURES, HAI_MEASURES, READMISSION_MEASURES } from "../shared/measures.js";
 import { HOSPITAL_SEARCH_ALIASES } from "../shared/hospitalAliases.js";
 import { cmsQueryAll, DATASETS } from "./cmsClient.js";
+import { DATA_DIR, HOSPITALS_CACHE_FILE, SCORES_CACHE_FILE } from "./dataPaths.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_DIR = path.join(__dirname, "../.cache");
-const HOSPITALS_FILE = path.join(CACHE_DIR, "hospitals.json");
-const SCORES_FILE = path.join(CACHE_DIR, "hcahps-scores.json");
+const HOSPITALS_FILE = HOSPITALS_CACHE_FILE;
+const SCORES_FILE = SCORES_CACHE_FILE;
 
 interface CmsHospitalRow extends Record<string, string> {
   facility_id: string;
@@ -450,7 +447,7 @@ async function loadFromCms() {
   finalizeNationalAverages();
   lastCacheRefresh = new Date().toISOString();
 
-  fs.mkdirSync(CACHE_DIR, { recursive: true });
+  fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(HOSPITALS_FILE, JSON.stringify({ hospitals, currentPeriod, lastCacheRefresh }));
   fs.writeFileSync(
     SCORES_FILE,

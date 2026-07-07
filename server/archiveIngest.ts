@@ -6,19 +6,22 @@ import readline from "readline";
 import path from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
-import { fileURLToPath } from "url";
 import { Readable } from "stream";
 import { pipeline } from "stream/promises";
 import { ARCHIVE_YEARS } from "../shared/measures.js";
 import { COMPARISON_MEASURE_IDS } from "../shared/measures.js";
 import type { HospitalTrend } from "../shared/types.js";
+import {
+  ARCHIVE_DIR,
+  ARCHIVE_EXTRACT_DIR,
+  ARCHIVE_LOCK_FILE,
+  ARCHIVE_RAW_DIR,
+} from "./dataPaths.js";
 
 const execFileAsync = promisify(execFile);
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ARCHIVE_DIR = path.join(__dirname, "../.cache/archives");
-const RAW_DIR = path.join(__dirname, "../.cache/archives-raw");
-const EXTRACT_DIR = path.join(__dirname, "../.cache/archives-extracted");
-const LOCK_FILE = path.join(__dirname, "../.cache/archive-ingest.lock");
+const RAW_DIR = ARCHIVE_RAW_DIR;
+const EXTRACT_DIR = ARCHIVE_EXTRACT_DIR;
+const LOCK_FILE = ARCHIVE_LOCK_FILE;
 
 const CMS_BASE = "https://data.cms.gov";
 const CMS_ARCHIVE_CATALOG =
@@ -327,11 +330,19 @@ function flushTrendFiles(byFacility: Map<string, HospitalTrend["points"]>) {
   }
 }
 
+/**
+ * Skip re-ingest when the lock is fresh (<6h) and trend files already exist on
+ * the persistent data disk. First deploy after this change starts with an empty
+ * disk and runs a full ingest once; later redeploys reuse stored archives.
+ */
 function shouldSkipIngest(): boolean {
   if (process.env.FORCE_INGEST_ARCHIVES === "1") return false;
   if (!fs.existsSync(LOCK_FILE)) return false;
   const age = Date.now() - fs.statSync(LOCK_FILE).mtimeMs;
-  return age < 6 * 60 * 60 * 1000;
+  if (age >= 6 * 60 * 60 * 1000) return false;
+  if (!fs.existsSync(ARCHIVE_DIR)) return false;
+  const hasTrendFiles = fs.readdirSync(ARCHIVE_DIR).some((f) => f.endsWith(".json"));
+  return hasTrendFiles;
 }
 
 export async function runArchiveIngest() {

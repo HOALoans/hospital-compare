@@ -7,11 +7,9 @@ import {
   slugifyPartnerId,
   type PartnerBranding,
 } from "../shared/partnerConfig.js";
+import { LOGOS_DIR, PARTNERS_FILE } from "./dataPaths.js";
 
-/** Project-root data/ (Render disk mounts at /opt/render/project/src/data). */
-export const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
-const PARTNERS_FILE = path.join(DATA_DIR, "partners.json");
-export const LOGOS_DIR = path.join(DATA_DIR, "partner-logos");
+export { LOGOS_DIR } from "./dataPaths.js";
 
 const RESERVED_IDS = new Set(["default"]);
 

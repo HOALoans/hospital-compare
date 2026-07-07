@@ -31,9 +31,9 @@ import {
   removeOldLogos,
   LOGOS_DIR,
 } from "./partnerStore.js";
+import { ARCHIVE_DIR } from "./dataPaths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ARCHIVE_DIR = path.join(__dirname, "../.cache/archives");
 const PORT = Number(process.env.PORT ?? 5175);
 
 const LOGO_MIME_EXT: Record<string, string> = {

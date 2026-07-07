@@ -5,7 +5,7 @@ services:
     buildCommand: npm ci && npm run build
     startCommand: npm run start
     healthCheckPath: /api/health
-    # Partner JSON + logos persist across redeploys (~$0.25/GB/mo; 1 GB ≈ $0.25/mo).
+    # Partner data, CMS cache, and archive trends persist across redeploys (~$0.25/GB/mo).
     # Blueprint deploys provision this automatically. If the service was created manually,
     # add the same disk in Dashboard → Settings → Disks (mount path must match DATA_DIR).
     disk:
