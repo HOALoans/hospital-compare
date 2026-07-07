@@ -33,6 +33,20 @@ body {
   font-family: var(--font-display);
 }
 
+@media (max-width: 767px) {
+  .mobile-sticky-summary {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  }
+}
+
 @media print {
   body {
     background: white;
@@ -58,6 +72,19 @@ body {
 
   .chart-legend {
     break-after: avoid;
+  }
+
+  .executive-summary-print {
+    break-after: page;
+    margin-bottom: 1rem;
+  }
+
+  .comparison-measure-card:nth-child(n + 4) {
+    display: none;
+  }
+
+  .measure-help-panel {
+    display: block !important;
   }
 
   @page {

@@ -13,6 +13,13 @@ export interface HospitalSummary {
   ownershipGroup: OwnershipGroup;
   hospitalType: string;
   overallRating: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export interface NearbyHospital extends HospitalSummary {
+  distanceMiles: number | null;
+  distanceLabel: string;
 }
 
 export interface MeasureScore {

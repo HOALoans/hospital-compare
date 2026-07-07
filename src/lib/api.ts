@@ -1,4 +1,9 @@
-import type { ComparisonResult, HospitalSummary, HospitalTrend } from "@shared/types";
+import type {
+  ComparisonResult,
+  HospitalSummary,
+  HospitalTrend,
+  NearbyHospital,
+} from "@shared/types";
 
 async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(path);
@@ -14,6 +19,16 @@ export function searchHospitals(q: string, state?: string) {
   if (state) params.set("state", state);
   return apiGet<{ hospitals: HospitalSummary[]; query: string }>(
     `/api/hospitals/search?${params}`,
+  );
+}
+
+export function fetchHospital(facilityId: string) {
+  return apiGet<HospitalSummary>(`/api/hospitals/${facilityId}`);
+}
+
+export function fetchNearbyHospitals(facilityId: string) {
+  return apiGet<{ hospital: HospitalSummary; nearby: NearbyHospital[] }>(
+    `/api/hospitals/${facilityId}/nearby`,
   );
 }
 
@@ -40,5 +55,18 @@ export function fetchHealth() {
     ready: boolean;
     directoryReady?: boolean;
     hospitalCount: number;
+    reportingPeriod?: { start: string; end: string };
+    lastCacheRefresh?: string | null;
   }>("/api/health");
+}
+
+export function fetchArchiveMeta() {
+  return apiGet<{
+    ingestedHospitalCount: number;
+    totalHospitalCount: number;
+    estimatedYearProgress: number;
+    estimatedYearsTotal: number;
+    lastCacheRefresh?: string | null;
+    reportingPeriod?: { start: string; end: string };
+  }>("/api/meta/archives");
 }

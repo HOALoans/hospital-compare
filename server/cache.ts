@@ -1,9 +1,10 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import type { HospitalSummary } from "../shared/types.js";
+import type { HospitalSummary, NearbyHospital } from "../shared/types.js";
 import { classifyOwnership } from "../shared/ownership.js";
-import { HCAHPS_MEASURES, HAI_MEASURES } from "../shared/measures.js";
+import { HCAHPS_MEASURES, HAI_MEASURES, READMISSION_MEASURES } from "../shared/measures.js";
+import { HOSPITAL_SEARCH_ALIASES } from "../shared/hospitalAliases.js";
 import { cmsQueryAll, DATASETS } from "./cmsClient.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -21,6 +22,8 @@ interface CmsHospitalRow extends Record<string, string> {
   hospital_type: string;
   hospital_ownership: string;
   hospital_overall_rating: string;
+  latitude: string;
+  longitude: string;
 }
 
 interface CmsHcahpsRow extends Record<string, string> {
@@ -30,6 +33,14 @@ interface CmsHcahpsRow extends Record<string, string> {
   hcahps_linear_mean_value: string;
   patient_survey_star_rating: string;
   hcahps_answer_percent: string;
+  start_date: string;
+  end_date: string;
+}
+
+interface CmsReadmissionRow extends Record<string, string> {
+  facility_id: string;
+  measure_id: string;
+  score: string;
   start_date: string;
   end_date: string;
 }
@@ -61,12 +72,25 @@ let nationalCounts = new Map<string, number>();
 let currentPeriod = { start: "", end: "" };
 let hospitalsReady = false;
 let scoresReady = false;
+let lastCacheRefresh: string | null = null;
 
-/** Common names patients use that differ from the CMS facility_name. */
-const HOSPITAL_SEARCH_ALIASES: Record<string, string[]> = {
-  "340002": ["mission hospital", "mission hospital asheville", "mission health", "mission health asheville"],
-  "340087": ["mission hospital mcdowell", "mission health mcdowell", "mission health marion"],
-};
+function parseCoord(raw: string | undefined): number | null {
+  if (!raw || raw === "Not Available") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3958.8;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 function mapHospital(row: CmsHospitalRow): HospitalSummary {
   const zip3 = row.zip_code?.slice(0, 3) ?? "";
@@ -86,6 +110,8 @@ function mapHospital(row: CmsHospitalRow): HospitalSummary {
       row.hospital_overall_rating !== "Not Available"
         ? row.hospital_overall_rating
         : null,
+    latitude: parseCoord(row.latitude),
+    longitude: parseCoord(row.longitude),
   };
 }
 
@@ -108,11 +134,15 @@ function parseHcahpsScore(row: CmsHcahpsRow): number | null {
   return null;
 }
 
-function parseHaiScore(row: CmsHaiRow): number | null {
+function parseCmsScore(row: { score: string }): number | null {
   const score = row.score;
   if (!score || score === "Not Available" || score === "Not Applicable") return null;
   const n = Number(score);
   return Number.isFinite(n) ? n : null;
+}
+
+function parseHaiScore(row: CmsHaiRow): number | null {
+  return parseCmsScore(row);
 }
 
 export function peerKeyState(state: string, ownershipGroup: string) {
@@ -195,6 +225,10 @@ export function getCurrentPeriod() {
   return currentPeriod;
 }
 
+export function getLastCacheRefresh() {
+  return lastCacheRefresh;
+}
+
 export function getHospitalById(id: string) {
   return hospitals.find((h) => h.facilityId === id);
 }
@@ -228,6 +262,51 @@ export function searchHospitals(query: string, state?: string, limit = 25): Hosp
     .sort((a, b) => b.score - a.score);
 
   return scored.slice(0, limit).map((x) => x.h);
+}
+
+export function findNearbyHospitals(facilityId: string, limit = 12): NearbyHospital[] {
+  const base = getHospitalById(facilityId);
+  if (!base) return [];
+
+  const MAX_MILES = 25;
+  const withDistance: NearbyHospital[] = [];
+
+  for (const h of hospitals) {
+    if (h.facilityId === facilityId) continue;
+
+    let distanceMiles: number | null = null;
+    let distanceLabel = "";
+
+    if (
+      base.latitude != null &&
+      base.longitude != null &&
+      h.latitude != null &&
+      h.longitude != null
+    ) {
+      distanceMiles = haversineMiles(base.latitude, base.longitude, h.latitude, h.longitude);
+      if (distanceMiles > MAX_MILES) continue;
+      distanceLabel = `${distanceMiles.toFixed(1)} mi`;
+    } else if (h.county.toUpperCase() === base.county.toUpperCase() && h.state === base.state) {
+      distanceLabel = "Same county";
+      distanceMiles = null;
+    } else if (h.zip3 === base.zip3 && h.state === base.state) {
+      distanceLabel = `ZIP ${h.zip3}xx area`;
+      distanceMiles = null;
+    } else {
+      continue;
+    }
+
+    withDistance.push({ ...h, distanceMiles, distanceLabel });
+  }
+
+  withDistance.sort((a, b) => {
+    if (a.distanceMiles != null && b.distanceMiles != null) return a.distanceMiles - b.distanceMiles;
+    if (a.distanceMiles != null) return -1;
+    if (b.distanceMiles != null) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  return withDistance.slice(0, limit);
 }
 
 export function getFacilityScores(facilityId: string) {
@@ -320,10 +399,27 @@ async function loadFromCms() {
     console.log(`[cache]   HAI ${measure.id}: ${rows.length} rows`);
   }
 
+  console.log("[cache] Loading readmission scores...");
+  for (const measure of READMISSION_MEASURES) {
+    const rows = await cmsQueryAll<CmsReadmissionRow>({
+      dataset: DATASETS.readmissions,
+      conditions: [{ property: "measure_id", value: measure.id }],
+    });
+    for (const row of rows) {
+      const value = parseCmsScore(row);
+      if (value === null) continue;
+      const hospital = hospitalById.get(row.facility_id);
+      if (!hospital) continue;
+      indexScore(hospital, measure.id, value, row.start_date, row.end_date);
+    }
+    console.log(`[cache]   Readmission ${measure.id}: ${rows.length} rows`);
+  }
+
   finalizeNationalAverages();
+  lastCacheRefresh = new Date().toISOString();
 
   fs.mkdirSync(CACHE_DIR, { recursive: true });
-  fs.writeFileSync(HOSPITALS_FILE, JSON.stringify({ hospitals, currentPeriod }));
+  fs.writeFileSync(HOSPITALS_FILE, JSON.stringify({ hospitals, currentPeriod, lastCacheRefresh }));
   fs.writeFileSync(
     SCORES_FILE,
     JSON.stringify({
@@ -340,8 +436,13 @@ function loadFromDisk() {
   if (!fs.existsSync(HOSPITALS_FILE) || !fs.existsSync(SCORES_FILE)) return false;
   const hospitalData = JSON.parse(fs.readFileSync(HOSPITALS_FILE, "utf8"));
   const scoreData = JSON.parse(fs.readFileSync(SCORES_FILE, "utf8"));
-  hospitals = hospitalData.hospitals;
+  hospitals = hospitalData.hospitals.map((h: HospitalSummary) => ({
+    ...h,
+    latitude: h.latitude ?? null,
+    longitude: h.longitude ?? null,
+  }));
   currentPeriod = hospitalData.currentPeriod ?? scoreData.currentPeriod ?? { start: "", end: "" };
+  lastCacheRefresh = hospitalData.lastCacheRefresh ?? null;
   scoresByFacility = new Map(scoreData.scores);
   scoresByPeer = new Map(
     scoreData.peers.map(([key, entries]: [string, [string, { sum: number; count: number }][]]) => [
@@ -363,6 +464,9 @@ export async function initializeCache(maxAgeHours = 24) {
     console.log(`[cache] Loaded ${hospitals.length} hospitals from disk cache`);
     hospitalsReady = true;
     scoresReady = true;
+    if (!lastCacheRefresh && fs.existsSync(HOSPITALS_FILE)) {
+      lastCacheRefresh = new Date(fs.statSync(HOSPITALS_FILE).mtimeMs).toISOString();
+    }
     return;
   }
 

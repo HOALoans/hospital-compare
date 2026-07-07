@@ -7,14 +7,19 @@ import { HospitalLogo } from "@/components/HospitalLogo";
 
 interface Props {
   onSelect: (hospital: HospitalSummary) => void;
+  initialState?: string;
 }
 
-export function HospitalSearch({ onSelect }: Props) {
+export function HospitalSearch({ onSelect, initialState = "" }: Props) {
   const [query, setQuery] = useState("");
-  const [state, setState] = useState("");
+  const [state, setState] = useState(initialState);
   const [results, setResults] = useState<HospitalSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialState) setState(initialState);
+  }, [initialState]);
 
   useEffect(() => {
     if (query.trim().length < 2) {

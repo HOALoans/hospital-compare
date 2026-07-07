@@ -38,7 +38,19 @@ export function HomePage({ onStartCompare }: Props) {
         </div>
       </section>
 
-      <section className="grid gap-6 md:grid-cols-3">
+      <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-800">
+            <Scale className="h-5 w-5" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900">For employers &amp; health plans</h3>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            Evaluate in-network hospitals against county, ZIP, and state peers on patient experience,
+            infections, and readmissions — the same federal metrics CMS publishes. Useful for benefits
+            teams comparing network adequacy without paid &quot;best hospital&quot; lists.
+          </p>
+        </article>
+
         <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
             <BarChart3 className="h-5 w-5" />

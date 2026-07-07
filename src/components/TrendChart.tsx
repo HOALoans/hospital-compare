@@ -11,29 +11,18 @@ import {
 import type { HospitalTrend } from "@shared/types";
 import { COMPARISON_MEASURES, formatMeasureValue } from "@shared/measures";
 
+import { TrendEmptyState } from "@/components/TrendEmptyState";
+
 interface Props {
   trend: HospitalTrend;
   selectedMeasureId: string;
+  facilityId: string;
 }
 
-export function TrendChart({ trend, selectedMeasureId }: Props) {
+export function TrendChart({ trend, selectedMeasureId, facilityId }: Props) {
   const measure = COMPARISON_MEASURES.find((m) => m.id === selectedMeasureId);
   if (!trend.points.length || !measure) {
-    return (
-      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-        Historical trend data is not loaded for this hospital yet. Parigrado imports CMS hospital
-        archives (2019–2026) automatically — charts usually appear within a few minutes after the
-        server starts.{" "}
-        <a
-          href="https://data.cms.gov/provider-data/archived-data/hospitals"
-          className="text-indigo-700 underline"
-          target="_blank"
-          rel="noreferrer"
-        >
-          View CMS archives
-        </a>
-      </div>
-    );
+    return <TrendEmptyState facilityId={facilityId} hasTrendData={false} />;
   }
 
   const data = trend.points.map((p) => ({

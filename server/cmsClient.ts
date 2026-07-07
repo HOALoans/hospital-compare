@@ -4,6 +4,7 @@ export const DATASETS = {
   hospitals: "xubh-q36u",
   hcahps: "dgck-syfz",
   hai: "77hc-ibv8",
+  readmissions: "9n3s-kdb3",
   hcahpsNational: "99ue-w85f",
   hcahpsState: "84jm-wiui",
 } as const;

@@ -12,14 +12,17 @@ import {
   getMeasureDefinition,
   type MeasureDefinition,
   type MeasureGroup,
+  type MeasureCategory,
   type MeasureValueType,
 } from "@shared/measures";
+import { MeasureHelp } from "@/components/MeasureHelp";
 
 type SortKey = "category" | "measure" | "gap-national" | "gap-state" | "gap-county";
 
 interface Props {
   comparison: ComparisonResult;
   groupFilter: MeasureGroup | "all";
+  categoryFilter?: MeasureCategory | "all";
   sortBy: SortKey;
   sortDir: "asc" | "desc";
   visiblePeerKeys: Set<string>;
@@ -320,6 +323,7 @@ function MeasureCard({
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-wide text-indigo-700">{groupLabel}</p>
           <h4 className="text-sm font-semibold leading-snug text-slate-900">{measure.label}</h4>
+          <MeasureHelp measure={measure} />
         </div>
         <div className="shrink-0 text-right">
           <div className="text-2xl font-bold leading-none" style={{ color: CHART.baseHospital }}>
@@ -382,6 +386,7 @@ function MeasureCard({
 export function ComparisonTable({
   comparison,
   groupFilter,
+  categoryFilter = "all",
   sortBy,
   sortDir,
   visiblePeerKeys,
@@ -393,6 +398,9 @@ export function ComparisonTable({
 
   const rows = useMemo(() => {
     let measures = [...COMPARISON_MEASURES];
+    if (categoryFilter !== "all") {
+      measures = measures.filter((m) => m.category === categoryFilter);
+    }
     if (groupFilter !== "all") measures = measures.filter((m) => m.group === groupFilter);
 
     const groupOrder = MEASURE_GROUPS.map((g) => g.id);
@@ -437,7 +445,7 @@ export function ComparisonTable({
     });
 
     return measures;
-  }, [comparison, groupFilter, hospitalScores, sortBy, sortDir]);
+  }, [comparison, groupFilter, categoryFilter, hospitalScores, sortBy, sortDir]);
 
   const visiblePeers = comparison.peers.filter((p) => visiblePeerKeys.has(p.groupKey));
   const compareHospitals = comparison.compareHospitals ?? [];

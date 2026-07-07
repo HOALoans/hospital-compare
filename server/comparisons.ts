@@ -154,6 +154,7 @@ const MEASURE_GROUP_ORDER: MeasureGroup[] = [
   "discharge",
   "recommendation",
   "safety",
+  "readmissions",
 ];
 
 export function sortComparisonRows(
