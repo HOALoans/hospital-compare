@@ -69,7 +69,11 @@ function peerToggleColor(groupKey: string): string {
 
 export default function App() {
   const { partner, partnerId } = usePartner();
-  const initialUrl = parseUrlState(window.location.search);
+  // Capture the URL state ONCE on first mount. Recomputing this every render
+  // is unsafe because the URL-sync effect below rewrites window.location before
+  // the deep-link restore effect runs — which would drop the hospital param and
+  // leave the Compare page blank for shared/bookmarked links.
+  const [initialUrl] = useState(() => parseUrlState(window.location.search));
   const [view, setView] = useState<AppView>(initialUrl.view);
   const searchSectionRef = useRef<HTMLElement>(null);
   const [ready, setReady] = useState(false);
@@ -195,6 +199,10 @@ export default function App() {
   }, [compareHospitals, selected, loadComparison]);
 
   useEffect(() => {
+    // Don't sync (and thereby overwrite) the URL while a deep-link hospital is
+    // still pending restore. Otherwise we'd strip the ?hospital= param before
+    // the restore effect reads it, blanking the Compare page on shared links.
+    if (initialUrl.hospitalId && !urlRestored.current && !selected) return;
     if (view === "admin") {
       syncUrl({ view: "admin" });
       return;
