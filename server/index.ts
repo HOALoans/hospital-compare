@@ -278,8 +278,29 @@ app.get("/api/meta/archives", (_req, res) => {
 
 const clientDist = path.join(__dirname, "../client");
 if (fs.existsSync(clientDist)) {
-  app.use(express.static(clientDist));
+  app.use(
+    express.static(clientDist, {
+      // index.html must always revalidate so a new deploy's hashed bundle
+      // references are picked up immediately (prevents stale-bundle blank pages).
+      // Vite's content-hashed /assets files are safe to cache forever.
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith("index.html")) {
+          res.setHeader("Cache-Control", "no-cache");
+        } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
+      },
+    }),
+  );
+  // Never fall back to index.html for a missing static asset (e.g. an old
+  // hashed bundle a stale client still references). Serving HTML in place of a
+  // JS/CSS module makes the browser refuse it and blanks the page — fail with a
+  // real 404 so the stale client reloads index.html and self-heals instead.
+  app.get(/\.(?:js|mjs|css|map|json|png|jpe?g|gif|svg|webp|avif|ico|woff2?|ttf|eot)$/i, (_req, res) => {
+    res.status(404).end();
+  });
   app.get("*", (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache");
     res.sendFile(path.join(clientDist, "index.html"));
   });
 }
