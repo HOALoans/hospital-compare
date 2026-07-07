@@ -27,7 +27,7 @@ export function buildComparisonCsv(
   const visiblePeers = comparison.peers.filter((p) => visiblePeerKeys.has(p.groupKey));
   const compareHospitals = comparison.compareHospitals ?? [];
 
-  lines.push(row(["Parigrado.com Hospital Comparison Export"]));
+  lines.push(row(["Parigrado Hospital Comparison Export"]));
   lines.push(row(["Hospital", hospital.name]));
   lines.push(row(["Facility ID", hospital.facilityId]));
   lines.push(row(["Location", `${hospital.city}, ${hospital.state} ${hospital.zip}`]));

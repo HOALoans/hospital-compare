@@ -167,7 +167,7 @@ async function start() {
   }
 
   app.listen(PORT, () => {
-    console.log(`Parigrado.com listening on port ${PORT}`);
+    console.log(`Parigrado listening on port ${PORT}`);
   });
 }
 

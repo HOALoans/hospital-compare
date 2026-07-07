@@ -67,6 +67,9 @@ export function SiteDisclaimer() {
         </details>
 
         <p className="mt-4 text-center text-xs text-slate-400">
+          © 2026 Parigrado. All rights reserved.
+        </p>
+        <p className="mt-2 text-center text-xs text-slate-400">
           <span className="font-medium text-slate-500">{SITE_NAME}</span> · Public CMS &amp;
           CDC-reported data for informational purposes only. Not medical advice.
         </p>

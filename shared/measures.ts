@@ -328,6 +328,6 @@ export const DATA_SOURCES = [
 
 export const ARCHIVE_YEARS = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
-export const SITE_NAME = "Parigrado.com";
+export const SITE_NAME = "Parigrado";
 export const SITE_TAGLINE =
   "Compare hospital quality to county, state, and national peers using public CMS & CDC data";
