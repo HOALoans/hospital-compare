@@ -28,7 +28,7 @@ import { fetchComparison, fetchHealth, fetchHospital, fetchTrends } from "@/lib/
 import { downloadComparisonCsv } from "@/lib/exportComparisonCsv";
 import { parseUrlState, syncUrl } from "@/lib/urlState";
 import { HospitalSearch } from "@/components/HospitalSearch";
-import { CompareHospitalPicker } from "@/components/CompareHospitalPicker";
+import { CompareHospitalPicker, MAX_COMPARE } from "@/components/CompareHospitalPicker";
 import { ComparisonTable } from "@/components/ComparisonTable";
 import { TrendChart } from "@/components/TrendChart";
 import { HomePage } from "@/components/HomePage";
@@ -203,6 +203,19 @@ export default function App() {
       return next;
     });
   };
+
+  const addToCompare = useCallback(
+    (hospital: HospitalSummary) => {
+      if (!selected) return;
+      if (hospital.facilityId === selected.facilityId) return;
+      setCompareHospitals((prev) => {
+        if (prev.length >= MAX_COMPARE) return prev;
+        if (prev.some((h) => h.facilityId === hospital.facilityId)) return prev;
+        return [...prev, hospital];
+      });
+    },
+    [selected],
+  );
 
   const printReport = () => window.print();
 
@@ -429,6 +442,7 @@ export default function App() {
                     setCompareHospitals([]);
                     loadHospital(h, []);
                   }}
+                  onAddToCompare={addToCompare}
                 />
 
                 <section className="space-y-4">

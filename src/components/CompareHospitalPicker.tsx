@@ -1,12 +1,24 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, X, Loader2, MapPin } from "lucide-react";
+import { Plus, Search, X, Loader2, MapPin, MousePointerSquareDashed } from "lucide-react";
 import type { HospitalSummary } from "@shared/types";
 import { individualHospitalColor } from "@shared/chartTheme";
 import { US_STATES } from "@shared/usStates";
 import { searchHospitals } from "@/lib/api";
 import { HospitalLogo } from "@/components/HospitalLogo";
 
-const MAX_COMPARE = 10;
+export const MAX_COMPARE = 10;
+
+/** MIME type used to carry a serialized HospitalSummary during drag-and-drop. */
+export const HOSPITAL_DRAG_MIME = "application/x-hospital-compare";
+
+/** Serialize a hospital onto a drag event for the compare drop zone. */
+export function setHospitalDragData(e: React.DragEvent, hospital: HospitalSummary) {
+  const payload = JSON.stringify(hospital);
+  e.dataTransfer.setData(HOSPITAL_DRAG_MIME, payload);
+  e.dataTransfer.setData("application/json", payload);
+  e.dataTransfer.setData("text/plain", payload);
+  e.dataTransfer.effectAllowed = "copy";
+}
 
 interface Props {
   baseHospitalId: string;
@@ -20,6 +32,16 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
   const [results, setResults] = useState<HospitalSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [dropFeedback, setDropFeedback] = useState<{ tone: "ok" | "warn"; text: string } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!dropFeedback) return;
+    const timer = setTimeout(() => setDropFeedback(null), 2800);
+    return () => clearTimeout(timer);
+  }, [dropFeedback]);
 
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -57,8 +79,65 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
     onChange(selected.filter((h) => h.facilityId !== facilityId));
   };
 
+  /** Add a dropped/clicked hospital, enforcing base/duplicate/max constraints. */
+  const tryAddDropped = (hospital: HospitalSummary): boolean => {
+    if (!hospital?.facilityId) return false;
+    if (hospital.facilityId === baseHospitalId) {
+      setDropFeedback({ tone: "warn", text: "That's already your base hospital." });
+      return false;
+    }
+    if (selected.some((h) => h.facilityId === hospital.facilityId)) {
+      setDropFeedback({ tone: "warn", text: `${hospital.name} is already in the comparison.` });
+      return false;
+    }
+    if (selected.length >= MAX_COMPARE) {
+      setDropFeedback({ tone: "warn", text: `You can compare up to ${MAX_COMPARE} hospitals.` });
+      return false;
+    }
+    onChange([...selected, hospital]);
+    setDropFeedback({ tone: "ok", text: `Added ${hospital.name} to the comparison.` });
+    return true;
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const raw =
+      e.dataTransfer.getData(HOSPITAL_DRAG_MIME) ||
+      e.dataTransfer.getData("application/json") ||
+      e.dataTransfer.getData("text/plain");
+    if (!raw) return;
+    try {
+      tryAddDropped(JSON.parse(raw) as HospitalSummary);
+    } catch {
+      /* ignore malformed drops */
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    const types = e.dataTransfer.types;
+    if (!types.includes(HOSPITAL_DRAG_MIME) && !types.includes("application/json")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setDragOver(false);
+  };
+
   return (
-    <div className="space-y-3 rounded-xl border border-indigo-200/80 bg-indigo-50/40 p-4">
+    <div
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      className={`space-y-3 rounded-xl border p-4 transition ${
+        dragOver
+          ? "border-2 border-dashed border-indigo-500 bg-indigo-100/70 ring-2 ring-indigo-300"
+          : "border-indigo-200/80 bg-indigo-50/40"
+      }`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-slate-900">Compare with individual hospitals</h3>
@@ -168,6 +247,30 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
           )}
         </div>
       )}
+
+      {dropFeedback && (
+        <p
+          role="status"
+          className={`rounded-lg px-3 py-2 text-xs font-medium ${
+            dropFeedback.tone === "ok"
+              ? "bg-emerald-50 text-emerald-700"
+              : "bg-amber-50 text-amber-800"
+          }`}
+        >
+          {dropFeedback.text}
+        </p>
+      )}
+
+      <div
+        className={`flex items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs no-print transition ${
+          dragOver
+            ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+            : "border-indigo-200 text-slate-500"
+        }`}
+      >
+        <MousePointerSquareDashed className="h-3.5 w-3.5" />
+        Drag a nearby hospital here to compare
+      </div>
     </div>
   );
 }
