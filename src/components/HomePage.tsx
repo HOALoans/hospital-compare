@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function HomePage({ onStartCompare }: Props) {
-  const { partner } = usePartner();
+  const { partner, isPartnerMode } = usePartner();
   const subheadline = partner.welcomeSubheadline ?? SITE_TAGLINE;
 
   return (
@@ -30,6 +30,13 @@ export function HomePage({ onStartCompare }: Props) {
             {partner.welcomeHeadline}
           </h2>
           <p className="mt-4 text-lg text-slate-600">{subheadline}</p>
+          {isPartnerMode && partner.heroDescription ? (
+            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-slate-700 sm:text-lg">
+              <span className="rounded-xl border border-brand-primary/20 bg-brand-primary/5 px-5 py-4 block text-left shadow-sm">
+                {partner.heroDescription}
+              </span>
+            </p>
+          ) : null}
           <button
             type="button"
             onClick={onStartCompare}

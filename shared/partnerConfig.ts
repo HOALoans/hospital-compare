@@ -9,6 +9,7 @@ export type PartnerBranding = {
   secondaryColor: string;
   welcomeHeadline: string;
   welcomeSubheadline?: string;
+  heroDescription?: string;
   tagline?: string;
   showPoweredBy?: boolean;
 };
@@ -32,6 +33,8 @@ export const PARTNER_CONFIGS: Record<string, PartnerBranding> = {
     welcomeHeadline: "Find Top-Rated Hospitals in Your Network",
     welcomeSubheadline:
       "Compare quality scores for hospitals covered by your ACME Health plan.",
+    heroDescription:
+      "Parigrado is a plug-and-play transparency widget that helps self-insured employers satisfy CAA fiduciary mandates, drive employees to high-value care, and lower annual plan expenditures—fully branded to your corporate identity.",
     showPoweredBy: true,
   },
 };
