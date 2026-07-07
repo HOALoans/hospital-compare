@@ -126,7 +126,14 @@ export function handleAdminLogin(req: Request, res: Response): void {
   const secret = getAdminSecret();
   const password = getAdminPassword();
   if (!secret || !password) {
-    res.status(503).json({ error: "Admin login is not configured on this server." });
+    const missing = [!password && "ADMIN_PASSWORD", !secret && "ADMIN_SECRET"].filter(
+      Boolean,
+    ) as string[];
+    res.status(503).json({
+      error: `Admin login is not configured on this server. Set ${missing.join(
+        " and ",
+      )} in the Render dashboard, then redeploy.`,
+    });
     return;
   }
 
