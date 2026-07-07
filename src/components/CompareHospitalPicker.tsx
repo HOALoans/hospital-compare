@@ -138,23 +138,26 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
           : "border-indigo-200/80 bg-indigo-50/40"
       }`}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          disabled={selected.length >= MAX_COMPARE}
+          aria-expanded={open}
+          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none no-print"
+        >
+          <Plus className="h-4 w-4" />
+          {open ? "Close search" : "Add hospital"}
+        </button>
         <div>
           <h3 className="text-sm font-semibold text-slate-900">Compare with individual hospitals</h3>
           <p className="text-xs text-slate-600">
-            Add up to {MAX_COMPARE} specific hospitals to overlay on every chart ({selected.length}/
-            {MAX_COMPARE} selected)
+            Overlay up to {MAX_COMPARE} specific hospitals on every chart
+            <span className="ml-1 font-semibold text-indigo-700">
+              ({selected.length}/{MAX_COMPARE} selected)
+            </span>
           </p>
         </div>
-        {selected.length < MAX_COMPARE && (
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700 no-print"
-          >
-            <Plus className="h-3.5 w-3.5" /> Add hospital
-          </button>
-        )}
       </div>
 
       {selected.length > 0 && (

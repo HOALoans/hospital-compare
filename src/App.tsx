@@ -4,6 +4,7 @@ import {
   BarChart3,
   BookOpen,
   Building2,
+  Check,
   Download,
   ExternalLink,
   Home,
@@ -53,6 +54,18 @@ const DEFAULT_PEERS = new Set([
   "state-all",
   "national",
 ]);
+
+/**
+ * Marker color a peer group maps to on the comparison bars. Keeps the toggle
+ * pills color-coded to match the markers they switch on/off (national/state/
+ * county have dedicated marker colors; every other group is a peer-group avg).
+ */
+function peerToggleColor(groupKey: string): string {
+  if (groupKey === "national") return CHART.national;
+  if (groupKey === "state-all") return CHART.state;
+  if (groupKey === "county-all") return CHART.county;
+  return CHART.peerGroup;
+}
 
 export default function App() {
   const initialUrl = parseUrlState(window.location.search);
@@ -526,22 +539,51 @@ export default function App() {
                     </select>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-sm font-medium text-slate-700">Compare groups:</span>
-                    {comparison.peers.map((peer) => (
-                      <button
-                        key={peer.groupKey}
-                        type="button"
-                        onClick={() => togglePeer(peer.groupKey)}
-                        className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                          visiblePeers.has(peer.groupKey)
-                            ? "bg-indigo-700 text-white"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        }`}
-                      >
-                        {peer.label}
-                      </button>
-                    ))}
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-slate-700">
+                        Compare groups
+                        <span className="ml-1.5 text-xs font-normal text-slate-500">
+                          — tap to show or hide each benchmark on the bars
+                        </span>
+                      </span>
+                      <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-200">
+                        {visiblePeers.size} shown
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {comparison.peers.map((peer) => {
+                        const active = visiblePeers.has(peer.groupKey);
+                        const color = peerToggleColor(peer.groupKey);
+                        return (
+                          <button
+                            key={peer.groupKey}
+                            type="button"
+                            onClick={() => togglePeer(peer.groupKey)}
+                            aria-pressed={active}
+                            title={active ? `Hide ${peer.label}` : `Show ${peer.label}`}
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                              active
+                                ? "border-transparent bg-indigo-700 text-white shadow-sm"
+                                : "border-slate-300 bg-white text-slate-500 hover:border-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                            }`}
+                          >
+                            {active ? (
+                              <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} />
+                            ) : (
+                              <span className="h-3 w-3 shrink-0 rounded-full border-2 border-slate-300" />
+                            )}
+                            <span
+                              className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                                active ? "ring-1 ring-white/70" : ""
+                              }`}
+                              style={{ backgroundColor: color }}
+                            />
+                            {peer.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <ComparisonTable
