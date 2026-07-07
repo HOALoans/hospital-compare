@@ -418,6 +418,21 @@ export default function App() {
               />
             </section>
 
+            {!selected && !comparison && !loading && !error && (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-6 py-12 text-center no-print">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary">
+                  <Building2 className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Search and select a hospital above to start comparing
+                </h3>
+                <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+                  Pick any Medicare-certified hospital to see how it stacks up against county,
+                  ZIP, state, and national peers — with quality scores, trends, and export options.
+                </p>
+              </div>
+            )}
+
             {loading && (
               <div className="flex items-center justify-center gap-2 py-12 text-slate-500">
                 <Loader2 className="h-5 w-5 animate-spin" />
