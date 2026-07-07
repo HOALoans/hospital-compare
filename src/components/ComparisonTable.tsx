@@ -53,6 +53,10 @@ interface BarMarker {
   color?: string;
 }
 
+function hasNoReportedData(peer: HospitalComparePeer): boolean {
+  return COMPARISON_MEASURES.every((m) => peer.scores[m.id] == null);
+}
+
 function nationalGap(
   value: number | null,
   national: number | null,
@@ -256,19 +260,26 @@ function BenchmarkChip({
   value,
   valueType,
   color,
+  emptyLabel,
 }: {
   label: string;
   value: number | null;
   valueType: MeasureValueType;
   color: string;
+  emptyLabel?: string;
 }) {
+  const isMissing = value == null && !!emptyLabel;
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-0.5 text-xs ring-1 ring-slate-200">
       <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
       <span className="max-w-[140px] truncate text-slate-500" title={label}>
         {label}
       </span>
-      <span className="font-semibold text-slate-900">{formatMeasureValue(value, valueType)}</span>
+      {isMissing ? (
+        <span className="font-semibold text-amber-700">{emptyLabel}</span>
+      ) : (
+        <span className="font-semibold text-slate-900">{formatMeasureValue(value, valueType)}</span>
+      )}
     </span>
   );
 }
@@ -415,6 +426,7 @@ function MeasureCard({
             value={ch.scores[measure.id] ?? null}
             valueType={def.valueType}
             color={individualHospitalColor(i)}
+            emptyLabel="No CMS data"
           />
         ))}
       </div>
@@ -492,6 +504,7 @@ export function ComparisonTable({
 
   const visiblePeers = comparison.peers.filter((p) => visiblePeerKeys.has(p.groupKey));
   const compareHospitals = comparison.compareHospitals ?? [];
+  const noDataHospitals = compareHospitals.filter(hasNoReportedData);
 
   return (
     <div className="space-y-4">
@@ -513,13 +526,47 @@ export function ComparisonTable({
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rotate-45" style={{ backgroundColor: CHART.peerGroup }} /> Group avg
         </span>
-        {compareHospitals.length > 0 && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: individualHospitalColor(0) }} />
-            Other hospitals (colored dots)
+        {compareHospitals.map((ch, i) => (
+          <span key={ch.groupKey} className="inline-flex items-center gap-1.5">
+            <span
+              className="h-3 w-3 rounded-full"
+              style={{ backgroundColor: individualHospitalColor(i) }}
+            />
+            <span className="max-w-[200px] truncate" title={ch.hospital.name}>
+              {ch.hospital.name}
+            </span>
+            {hasNoReportedData(ch) && (
+              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 ring-1 ring-amber-200">
+                No CMS data
+              </span>
+            )}
           </span>
-        )}
+        ))}
       </div>
+
+      {noDataHospitals.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+          <p className="font-semibold">
+            {noDataHospitals.length === 1
+              ? `${noDataHospitals[0].hospital.name} reports no CMS quality data`
+              : "Some compared hospitals report no CMS quality data"}
+          </p>
+          <p className="mt-1 leading-relaxed text-amber-800">
+            {noDataHospitals.length === 1 ? "It" : "They"} did not report HCAHPS patient-experience,
+            healthcare-associated infection, or readmission measures to CMS for this period — often
+            the case for specialty, pediatric, or research facilities. That is why{" "}
+            {noDataHospitals.length === 1 ? "it does" : "they do"} not appear on the comparison bars
+            below.
+          </p>
+          {noDataHospitals.length > 1 && (
+            <ul className="mt-1.5 list-inside list-disc">
+              {noDataHospitals.map((ch) => (
+                <li key={ch.groupKey}>{ch.hospital.name}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-3">
         {rows.map((measure) => (
