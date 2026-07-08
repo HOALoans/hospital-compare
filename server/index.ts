@@ -254,7 +254,10 @@ app.post("/api/saved-comparisons", (req, res) => {
 app.get("/api/saved-comparisons/:code", (req, res) => {
   const record = getSavedComparison(req.params.code);
   if (!record) {
-    res.status(404).json({ error: "Saved comparison not found" });
+    res.status(404).json({
+      error:
+        "This saved comparison link was not found. It may have expired, or the comparison was never saved on this server. Open the hospital comparison again and use Save comparison to create a new shareable link.",
+    });
     return;
   }
   const shareUrl = `${appOrigin(req)}/?saved=${encodeURIComponent(record.code)}`;

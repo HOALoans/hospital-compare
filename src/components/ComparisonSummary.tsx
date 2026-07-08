@@ -1,7 +1,7 @@
 import { TrendingDown, TrendingUp } from "lucide-react";
 import type { ComparisonResult } from "@shared/types";
 import { computeComparisonSummary } from "@/lib/comparisonSummary";
-import { formatMeasureValue, getMeasureDefinition } from "@shared/measures";
+import { formatGapValue, getMeasureDefinition } from "@shared/measures";
 import { CHART } from "@shared/chartTheme";
 
 interface Props {
@@ -15,7 +15,7 @@ export function ComparisonSummary({ comparison, sticky = false }: Props) {
 
   return (
     <section
-      className={`rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-white p-5 shadow-sm ${
+      className={`rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-white p-5 shadow-sm print:hidden ${
         sticky ? "mobile-sticky-summary" : ""
       }`}
     >
@@ -42,7 +42,7 @@ export function ComparisonSummary({ comparison, sticky = false }: Props) {
                     <span className="font-medium">{g.label}</span>
                     <span className="text-emerald-700">
                       {" "}
-                      +{formatMeasureValue(g.gap, def?.valueType ?? "linear")} vs state
+                      {formatGapValue(g.gap, def?.valueType ?? "linear")} vs state
                     </span>
                   </li>
                 );
@@ -63,7 +63,7 @@ export function ComparisonSummary({ comparison, sticky = false }: Props) {
                     <span className="font-medium">{g.label}</span>
                     <span className="text-rose-700">
                       {" "}
-                      {formatMeasureValue(g.gap, def?.valueType ?? "linear")} vs state
+                      {formatGapValue(g.gap, def?.valueType ?? "linear")} vs state
                     </span>
                   </li>
                 );

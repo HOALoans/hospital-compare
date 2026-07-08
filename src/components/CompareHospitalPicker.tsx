@@ -132,7 +132,7 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
-      className={`space-y-3 rounded-xl border p-4 transition ${
+      className={`no-print space-y-3 rounded-xl border p-4 transition ${
         dragOver
           ? "border-2 border-dashed border-indigo-500 bg-indigo-100/70 ring-2 ring-indigo-300"
           : "border-indigo-200/80 bg-indigo-50/40"

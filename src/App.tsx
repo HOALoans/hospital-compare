@@ -215,7 +215,14 @@ export default function App() {
         skipCompareRefetch.current = true;
         await loadComparison(hospital, compareList.map((h) => h.facilityId));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not restore shared link");
+        const message =
+          err instanceof Error ? err.message : "Could not restore shared link";
+        setError(message);
+        // Drop a dead ?saved= code from the URL so the user can start fresh.
+        if (initialUrl.savedCode) {
+          setSavedCode("");
+          setSavedShareUrl(null);
+        }
       } finally {
         setLoading(false);
         restoreInProgress.current = false;
@@ -497,7 +504,7 @@ export default function App() {
               />
             </section>
 
-            {!selected && !comparison && !loading && !error && (
+            {!selected && !comparison && !loading && !error && !initialUrl.savedCode && (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-6 py-12 text-center no-print">
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary">
                   <Building2 className="h-6 w-6" />
@@ -512,10 +519,10 @@ export default function App() {
               </div>
             )}
 
-            {loading && (
+            {(loading || (Boolean(initialUrl.savedCode) && !selected && !error)) && (
               <div className="flex items-center justify-center gap-2 py-12 text-slate-500">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Building comparison…
+                {initialUrl.savedCode ? "Opening saved comparison…" : "Building comparison…"}
               </div>
             )}
 
@@ -540,7 +547,9 @@ export default function App() {
               <div id="comparison-report" className="space-y-8">
                 <ExecutiveSummaryPrint comparison={comparison} hospitalName={selected.name} />
 
-                <ComparisonSummary comparison={comparison} sticky />
+                <div className="print:hidden">
+                  <ComparisonSummary comparison={comparison} sticky />
+                </div>
 
                 <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-orange-50/50 to-white p-6 shadow-sm">
                   <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
@@ -581,27 +590,38 @@ export default function App() {
                           </div>
                         </div>
                       )}
-                      <WatchlistButton hospital={selected} />
-                      <ShareLinkButton onCopy={shareLink} />
-                      <button
-                        type="button"
-                        onClick={exportCsv}
-                        className="no-print inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-primary/90"
-                      >
-                        <Download className="h-4 w-4" />
-                        Export CSV
-                      </button>
-                      <button
-                        type="button"
-                        onClick={printReport}
-                        className="no-print inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-                      >
-                        <Printer className="h-4 w-4" />
-                        Save as PDF
-                      </button>
+                      <div className="no-print flex flex-wrap items-center gap-3">
+                        <WatchlistButton hospital={selected} />
+                        <ShareLinkButton onCopy={shareLink} />
+                        <button
+                          type="button"
+                          onClick={exportCsv}
+                          className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-primary/90"
+                        >
+                          <Download className="h-4 w-4" />
+                          Export CSV
+                        </button>
+                        <button
+                          type="button"
+                          onClick={printReport}
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                        >
+                          <Printer className="h-4 w-4" />
+                          Save as PDF
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </section>
+
+                {compareHospitals.length > 0 && (
+                  <p className="hidden text-sm text-slate-600 print:block">
+                    Compared with:{" "}
+                    <span className="font-medium text-slate-800">
+                      {compareHospitals.map((h) => h.name).join(" · ")}
+                    </span>
+                  </p>
+                )}
 
                 <NearbyHospitals
                   hospital={selected}
@@ -614,11 +634,13 @@ export default function App() {
                 />
 
                 <section className="space-y-4">
-                  <CompareHospitalPicker
-                    baseHospitalId={selected.facilityId}
-                    selected={compareHospitals}
-                    onChange={setCompareHospitals}
-                  />
+                  <div className="no-print">
+                    <CompareHospitalPicker
+                      baseHospitalId={selected.facilityId}
+                      selected={compareHospitals}
+                      onChange={setCompareHospitals}
+                    />
+                  </div>
 
                   {compareLoading && (
                     <div className="flex items-center gap-2 text-sm text-indigo-700">
@@ -694,7 +716,7 @@ export default function App() {
                     </select>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 no-print">
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <span className="text-sm font-medium text-slate-700">
                         Compare groups

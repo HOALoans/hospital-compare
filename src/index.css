@@ -57,8 +57,9 @@ body {
 
 @media print {
   body {
-    background: white;
-    font-size: 11pt;
+    background: white !important;
+    font-size: 10.5pt;
+    color: #0f172a;
   }
 
   header,
@@ -71,31 +72,54 @@ body {
     box-shadow: none !important;
   }
 
-  .comparison-measure-card {
-    break-inside: avoid;
-    page-break-inside: avoid;
-    border: 1px solid #cbd5e1 !important;
-    margin-bottom: 0.75rem;
-  }
-
-  .chart-legend {
-    break-after: avoid;
+  #comparison-report > section {
+    box-shadow: none !important;
+    border-color: #cbd5e1 !important;
+    background: white !important;
   }
 
   .executive-summary-print {
     break-after: page;
-    margin-bottom: 1rem;
+    page-break-after: always;
+    margin-bottom: 0;
+    padding-bottom: 0.5rem;
   }
 
-  .comparison-measure-card:nth-child(n + 4) {
-    display: none;
+  .comparison-measure-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    margin-bottom: 0.6rem;
+    padding: 0.75rem !important;
+  }
+
+  .chart-legend {
+    break-after: avoid;
+    box-shadow: none !important;
+  }
+
+  /* Print a focused report: first page = executive summary; then hospital
+     header + chart key + top measure cards (not the full interactive UI). */
+  .comparison-measure-card:nth-child(n + 7) {
+    display: none !important;
   }
 
   .measure-help-panel {
-    display: block !important;
+    display: none !important;
+  }
+
+  /* Hide hover tooltips that otherwise dump onto every printed bar. */
+  .group\/marker [role="tooltip"] {
+    display: none !important;
+  }
+
+  a {
+    text-decoration: none !important;
+    color: inherit !important;
   }
 
   @page {
-    margin: 0.75in;
+    margin: 0.6in 0.7in;
   }
 }

@@ -170,7 +170,7 @@ function MarkerTooltip({
         />
       </div>
       <div
-        className={`pointer-events-none absolute bottom-full z-40 mb-1 w-max max-w-[240px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-left opacity-0 shadow-xl transition-opacity duration-150 group-hover/marker:opacity-100 group-focus-within/marker:opacity-100 print:opacity-100 ${align}`}
+        className={`pointer-events-none absolute bottom-full z-40 mb-1 w-max max-w-[240px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-left opacity-0 shadow-xl transition-opacity duration-150 group-hover/marker:opacity-100 group-focus-within/marker:opacity-100 print:hidden ${align}`}
         role="tooltip"
       >
         <p className="text-xs font-semibold text-slate-900">{marker.label}</p>
@@ -371,7 +371,9 @@ function MeasureCard({
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-wide text-indigo-700">{groupLabel}</p>
           <h4 className="text-sm font-semibold leading-snug text-slate-900">{measure.label}</h4>
-          <MeasureHelp measure={measure} />
+          <div className="no-print">
+            <MeasureHelp measure={measure} />
+          </div>
         </div>
         <div className="shrink-0 text-right">
           <div className="text-2xl font-bold leading-none" style={{ color: CHART.baseHospital }}>
@@ -508,7 +510,7 @@ export function ComparisonTable({
 
   return (
     <div className="space-y-4">
-      <div className="chart-legend flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
+      <div className="chart-legend flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 print:border-slate-300 print:bg-white">
         <span className="font-bold text-slate-900">Chart key</span>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-4 w-4 rounded-full border-2 border-white shadow" style={{ backgroundColor: CHART.baseHospital }} />
@@ -545,7 +547,7 @@ export function ComparisonTable({
       </div>
 
       {noDataHospitals.length > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900 no-print">
           <p className="font-semibold">
             {noDataHospitals.length === 1
               ? `${noDataHospitals[0].hospital.name} reports no CMS quality data`

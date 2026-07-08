@@ -284,10 +284,40 @@ export function parseNumericValue(raw: string | undefined | null): number | null
 
 export function formatMeasureValue(value: number | null, valueType: MeasureValueType): string {
   if (value === null) return "—";
-  if (valueType === "star") return `${value} ★`;
-  if (valueType === "percent") return `${value}%`;
+  if (valueType === "star") {
+    const rounded = Math.round(value * 10) / 10;
+    return `${rounded} ★`;
+  }
+  if (valueType === "percent") return `${Math.round(value * 10) / 10}%`;
   if (valueType === "sir") return value.toFixed(3);
   return String(Math.round(value * 10) / 10);
+}
+
+
+/** Format a signed gap (already direction-adjusted) for display. */
+export function formatGapValue(gap: number | null, valueType: MeasureValueType): string {
+  if (gap === null) return "—";
+  const abs =
+    valueType === "sir"
+      ? Math.abs(gap).toFixed(3)
+      : String(Math.round(Math.abs(gap) * 10) / 10);
+  const suffix = valueType === "percent" ? "%" : valueType === "star" ? " ★" : "";
+  if (Math.abs(gap) < 0.0005) return `0${suffix}`;
+  return gap > 0 ? `+${abs}${suffix}` : `-${abs}${suffix}`;
+}
+
+/** Human-readable unit label for CSV / print legends. */
+export function measureUnitLabel(valueType: MeasureValueType): string {
+  switch (valueType) {
+    case "star":
+      return "Stars (1–5)";
+    case "percent":
+      return "Percent";
+    case "sir":
+      return "SIR (1.0 = expected)";
+    default:
+      return "Score (0–100)";
+  }
 }
 
 export const DATA_SOURCES = [
