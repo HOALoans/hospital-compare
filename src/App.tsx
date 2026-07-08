@@ -160,11 +160,15 @@ export default function App() {
 
     (async () => {
       try {
+        setLoading(true);
         const hospital = await fetchHospital(initialUrl.hospitalId!);
-        setSelected(hospital);
-        setView(initialUrl.view === "methodology" ? "methodology" : "compare");
-        if (initialUrl.stateFilter) setSearchStateFilter(initialUrl.stateFilter);
 
+        // Fetch every compared hospital BEFORE touching state. If we set
+        // `selected` first and then `await` these, React commits an
+        // intermediate render where `selected` is set but `compareHospitals`
+        // is still empty — the URL-sync effect then runs and strips ?compare=
+        // from the URL (the compared hospitals appear "not saved" on reload/
+        // share, especially when a cold backend makes these fetches slow).
         const compareList: HospitalSummary[] = [];
         for (const id of initialUrl.compareWith) {
           try {
@@ -173,10 +177,15 @@ export default function App() {
             /* skip missing */
           }
         }
+
+        // Apply base + compared hospitals together so the URL-sync effect only
+        // ever observes a fully-restored comparison and keeps ?compare= intact.
+        setSelected(hospital);
+        setView(initialUrl.view === "methodology" ? "methodology" : "compare");
+        if (initialUrl.stateFilter) setSearchStateFilter(initialUrl.stateFilter);
         setCompareHospitals(compareList);
         setVisiblePeers(new Set(initialUrl.peers));
         skipCompareRefetch.current = true;
-        setLoading(true);
         await loadComparison(hospital, compareList.map((h) => h.facilityId));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not restore shared link");
