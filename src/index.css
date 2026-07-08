@@ -56,70 +56,242 @@ body {
 }
 
 @media print {
+  @page {
+    size: letter portrait;
+    margin: 0.5in 0.55in;
+  }
+
+  html,
   body {
     background: white !important;
-    font-size: 10.5pt;
+    font-size: 9.5pt;
+    color: #0f172a;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide interactive app chrome; only .print-report is for PDF. */
+  header,
+  footer,
+  .no-print,
+  #comparison-report,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print-report {
+    display: block !important;
     color: #0f172a;
   }
 
-  header,
-  footer,
-  .no-print {
-    display: none !important;
-  }
-
-  #comparison-report {
-    box-shadow: none !important;
-  }
-
-  #comparison-report > section {
-    box-shadow: none !important;
-    border-color: #cbd5e1 !important;
-    background: white !important;
-  }
-
-  .executive-summary-print {
+  .print-cover {
     break-after: page;
     page-break-after: always;
-    margin-bottom: 0;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.25in;
   }
 
-  .comparison-measure-card {
+  .print-kicker {
+    margin: 0;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+
+  .print-title {
+    margin: 0.2rem 0 0;
+    font-family: var(--font-display);
+    font-size: 26pt;
+    font-weight: 400;
+    line-height: 1.15;
+    color: #0f172a;
+  }
+
+  .print-hospital {
+    margin: 0.55rem 0 0;
+    font-size: 13pt;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .print-meta {
+    margin: 0.2rem 0 0;
+    font-size: 9pt;
+    color: #334155;
+  }
+
+  .print-meta.muted,
+  .muted {
+    color: #64748b;
+  }
+
+  .print-headline {
+    margin: 0.7rem 0 0;
+    font-size: 11pt;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .print-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45in;
+    margin-top: 0.55rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid #cbd5e1;
+  }
+
+  .print-section-label {
+    margin: 0;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .print-section-label.win {
+    color: #166534;
+  }
+
+  .print-section-label.gap {
+    color: #9f1239;
+  }
+
+  .print-list {
+    margin: 0.3rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .print-list li {
+    margin: 0.22rem 0;
+    font-size: 9.5pt;
+    line-height: 1.35;
+  }
+
+  .print-list .win {
+    color: #166534;
+    font-weight: 600;
+  }
+
+  .print-list .gap {
+    color: #9f1239;
+    font-weight: 600;
+  }
+
+  .print-footnote {
+    margin: 0.7rem 0 0;
+    padding-top: 0.35rem;
+    border-top: 1px solid #e2e8f0;
+    font-size: 8pt;
+    line-height: 1.4;
+    color: #64748b;
+  }
+
+  .print-table-section {
+    margin-top: 0;
+  }
+
+  .print-table-title {
+    margin: 0;
+    font-size: 12pt;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .print-table-note {
+    margin: 0.15rem 0 0.4rem;
+    font-size: 8pt;
+    color: #64748b;
+  }
+
+  .print-score-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .print-score-table thead {
+    display: table-header-group;
+  }
+
+  .print-score-table th {
+    background: #f1f5f9 !important;
+    border-bottom: 1.5px solid #94a3b8;
+    padding: 0.28rem 0.2rem;
+    font-size: 7.5pt;
+    font-weight: 700;
+    text-align: right;
+    color: #334155;
+    vertical-align: bottom;
+  }
+
+  .print-score-table th.col-measure {
+    text-align: left;
+    width: 28%;
+  }
+
+  .print-score-table td {
+    border-bottom: 0.5px solid #e2e8f0;
+    padding: 0.28rem 0.2rem;
+    font-size: 8pt;
+    text-align: right;
+    vertical-align: top;
+  }
+
+  .print-score-table td.col-measure {
+    text-align: left;
+  }
+
+  .print-score-table tr {
     break-inside: avoid;
     page-break-inside: avoid;
-    border: 1px solid #cbd5e1 !important;
-    box-shadow: none !important;
-    margin-bottom: 0.6rem;
-    padding: 0.75rem !important;
   }
 
-  .chart-legend {
-    break-after: avoid;
-    box-shadow: none !important;
+  .print-score-table tr.category-start td {
+    border-top: 1.25px solid #94a3b8;
+    padding-top: 0.4rem;
   }
 
-  /* Print a focused report: first page = executive summary; then hospital
-     header + chart key + top measure cards (not the full interactive UI). */
-  .comparison-measure-card:nth-child(n + 7) {
-    display: none !important;
+  .category-label {
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #4338ca;
+    margin-bottom: 0.1rem;
   }
 
-  .measure-help-panel {
-    display: none !important;
+  .measure-label {
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.25;
   }
 
-  /* Hide hover tooltips that otherwise dump onto every printed bar. */
-  .group\/marker [role="tooltip"] {
-    display: none !important;
+  .subcategory-label {
+    font-size: 7pt;
+    color: #64748b;
+    margin-top: 0.05rem;
+  }
+
+  .hospital-score {
+    font-weight: 700;
+    color: #c2410c;
+  }
+
+  .gap-cell.win {
+    color: #166534;
+    font-weight: 700;
+  }
+
+  .gap-cell.gap {
+    color: #9f1239;
+    font-weight: 700;
   }
 
   a {
     text-decoration: none !important;
     color: inherit !important;
-  }
-
-  @page {
-    margin: 0.6in 0.7in;
   }
 }

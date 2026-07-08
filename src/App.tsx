@@ -15,7 +15,6 @@ import {
   MEASURE_GROUPS,
   MEASURE_CATEGORIES,
   COMPARISON_MEASURES,
-  SITE_NAME,
   SITE_TAGLINE,
   type MeasureGroup,
   type MeasureCategory,
@@ -38,7 +37,7 @@ import { NearbyHospitals } from "@/components/NearbyHospitals";
 import { WatchlistButton } from "@/components/WatchlistButton";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 import { SaveComparisonPanel } from "@/components/SaveComparisonPanel";
-import { ExecutiveSummaryPrint } from "@/components/ExecutiveSummaryPrint";
+import { PrintComparisonReport } from "@/components/PrintComparisonReport";
 import { MethodologyPage } from "@/components/MethodologyPage";
 import { PartnerAdminPage } from "@/components/PartnerAdminPage";
 import { SiteDisclaimer } from "@/components/SiteDisclaimer";
@@ -544,21 +543,16 @@ export default function App() {
             )}
 
             {comparison && selected && !loading && (
-              <div id="comparison-report" className="space-y-8">
-                <ExecutiveSummaryPrint comparison={comparison} hospitalName={selected.name} />
-
-                <div className="print:hidden">
-                  <ComparisonSummary comparison={comparison} sticky />
-                </div>
+              <>
+              <PrintComparisonReport comparison={comparison} />
+              <div id="comparison-report" className="space-y-8 print:hidden">
+                <ComparisonSummary comparison={comparison} sticky />
 
                 <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-orange-50/50 to-white p-6 shadow-sm">
                   <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-                    <div className="print:block">
-                      <p className="hidden text-xs font-semibold uppercase tracking-wide text-indigo-700 print:block">
-                        {SITE_NAME} — Hospital Comparison Report
-                      </p>
+                    <div>
                       <div className="flex items-start gap-4">
-                        <HospitalLogo hospital={selected} size={48} showProfileLink className="no-print" />
+                        <HospitalLogo hospital={selected} size={48} showProfileLink />
                         <div>
                           <h2 className="font-display text-3xl text-slate-900">{selected.name}</h2>
                           <p className="mt-1 text-slate-600">
@@ -590,7 +584,7 @@ export default function App() {
                           </div>
                         </div>
                       )}
-                      <div className="no-print flex flex-wrap items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <WatchlistButton hospital={selected} />
                         <ShareLinkButton onCopy={shareLink} />
                         <button
@@ -613,15 +607,6 @@ export default function App() {
                     </div>
                   </div>
                 </section>
-
-                {compareHospitals.length > 0 && (
-                  <p className="hidden text-sm text-slate-600 print:block">
-                    Compared with:{" "}
-                    <span className="font-medium text-slate-800">
-                      {compareHospitals.map((h) => h.name).join(" · ")}
-                    </span>
-                  </p>
-                )}
 
                 <NearbyHospitals
                   hospital={selected}
@@ -823,6 +808,7 @@ export default function App() {
                   )}
                 </section>
               </div>
+              </>
             )}
           </>
         )}
