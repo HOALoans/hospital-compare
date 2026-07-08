@@ -32,6 +32,7 @@ import {
   LOGOS_DIR,
 } from "./partnerStore.js";
 import { ARCHIVE_DIR } from "./dataPaths.js";
+import { getSavedComparison, saveComparison } from "./savedComparisons.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 5175);
@@ -55,6 +56,14 @@ const logoUpload = multer({
 
 const app = express();
 app.use(express.json());
+
+function appOrigin(req: express.Request): string {
+  const fromEnv = process.env.APP_URL?.trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  const proto = req.get("x-forwarded-proto") ?? req.protocol;
+  const host = req.get("host");
+  return host ? `${proto}://${host}` : "https://parigrado.com";
+}
 
 // --- Partner branding (public read) ---
 app.get("/api/partners/:id", (req, res) => {
@@ -219,6 +228,37 @@ app.post("/api/watchlist", (req, res) => {
   }
   console.log(`[watchlist] Interest registered: ${email} for ${facilityId}`);
   res.json({ ok: true, message: "Thanks — email alerts are not live yet; saved locally in your browser." });
+});
+
+app.post("/api/saved-comparisons", (req, res) => {
+  try {
+    const { record, shareUrl } = saveComparison(req.body ?? {}, appOrigin(req));
+    res.status(201).json({
+      code: record.code,
+      label: record.label,
+      shareUrl,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      hospitalId: record.hospitalId,
+      compareWith: record.compareWith,
+      peers: record.peers,
+      stateFilter: record.stateFilter,
+      groupFilter: record.groupFilter,
+      partner: record.partner,
+    });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : "Could not save comparison" });
+  }
+});
+
+app.get("/api/saved-comparisons/:code", (req, res) => {
+  const record = getSavedComparison(req.params.code);
+  if (!record) {
+    res.status(404).json({ error: "Saved comparison not found" });
+    return;
+  }
+  const shareUrl = `${appOrigin(req)}/?saved=${encodeURIComponent(record.code)}`;
+  res.json({ ...record, shareUrl });
 });
 
 app.get("/api/hospitals/:facilityId/compare", (req, res) => {

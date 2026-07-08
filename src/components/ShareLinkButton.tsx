@@ -26,7 +26,7 @@ export function ShareLinkButton({ onCopy }: Props) {
       className="no-print inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-primary/90"
     >
       {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Link2 className="h-4 w-4" />}
-      {copied ? "Link copied" : "Share comparison"}
+      {copied ? "Link copied" : "Copy current link"}
     </button>
   );
 }

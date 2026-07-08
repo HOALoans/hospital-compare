@@ -4,6 +4,7 @@ import type {
   HospitalTrend,
   NearbyHospital,
 } from "@shared/types";
+import type { SaveComparisonRequest, SaveComparisonResponse, SavedComparisonRecord } from "@shared/savedComparison";
 
 const REQUEST_TIMEOUT_MS = 15000;
 const WARMING_UP_MESSAGE =
@@ -52,6 +53,19 @@ async function apiGet<T>(path: string): Promise<T> {
     }
   }
   throw new Error(warmingUpMessage);
+}
+
+async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error((data as { error?: string }).error ?? `Request failed (${res.status})`);
+  }
+  return (await res.json()) as T;
 }
 
 export function searchHospitals(q: string, state?: string) {
@@ -109,4 +123,14 @@ export function fetchArchiveMeta() {
     lastCacheRefresh?: string | null;
     reportingPeriod?: { start: string; end: string };
   }>("/api/meta/archives");
+}
+
+export function saveComparisonForLater(payload: SaveComparisonRequest) {
+  return apiPost<SaveComparisonResponse>("/api/saved-comparisons", payload);
+}
+
+export function fetchSavedComparison(code: string) {
+  return apiGet<SavedComparisonRecord & { shareUrl: string }>(
+    `/api/saved-comparisons/${encodeURIComponent(code)}`,
+  );
 }

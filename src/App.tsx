@@ -22,7 +22,7 @@ import {
 } from "@shared/measures";
 import { OWNERSHIP_LABELS } from "@shared/ownership";
 import { CHART } from "@shared/chartTheme";
-import { fetchComparison, fetchHealth, fetchHospital, fetchTrends } from "@/lib/api";
+import { fetchComparison, fetchHealth, fetchHospital, fetchSavedComparison, fetchTrends, saveComparisonForLater } from "@/lib/api";
 import { downloadComparisonCsv } from "@/lib/exportComparisonCsv";
 import { parseUrlState, syncUrl } from "@/lib/urlState";
 import { usePartner } from "@/context/PartnerContext";
@@ -37,6 +37,7 @@ import { DataFreshnessBadge } from "@/components/DataFreshnessBadge";
 import { NearbyHospitals } from "@/components/NearbyHospitals";
 import { WatchlistButton } from "@/components/WatchlistButton";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
+import { SaveComparisonPanel } from "@/components/SaveComparisonPanel";
 import { ExecutiveSummaryPrint } from "@/components/ExecutiveSummaryPrint";
 import { MethodologyPage } from "@/components/MethodologyPage";
 import { PartnerAdminPage } from "@/components/PartnerAdminPage";
@@ -97,10 +98,14 @@ export default function App() {
   const [trendMeasure, setTrendMeasure] = useState(COMPARISON_MEASURES[0].id);
   const [error, setError] = useState<string | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
+  const [savedCode, setSavedCode] = useState(initialUrl.savedCode ?? "");
+  const [saveLabel, setSaveLabel] = useState("");
+  const [savedShareUrl, setSavedShareUrl] = useState<string | null>(null);
+  const [savingComparison, setSavingComparison] = useState(false);
   const skipCompareRefetch = useRef(false);
   const urlRestored = useRef(false);
   /** True while a deep-link hospital restore fetch is still in flight. */
-  const restoreInProgress = useRef(Boolean(initialUrl.hospitalId));
+  const restoreInProgress = useRef(Boolean(initialUrl.hospitalId || initialUrl.savedCode));
 
   useEffect(() => {
     const poll = async () => {
@@ -131,6 +136,12 @@ export default function App() {
     [],
   );
 
+  const clearSavedComparison = () => {
+    setSavedCode("");
+    setSavedShareUrl(null);
+    setSaveLabel("");
+  };
+
   const loadHospital = useCallback(
     async (hospital: HospitalSummary, compareIds?: string[]) => {
       setView("compare");
@@ -155,22 +166,39 @@ export default function App() {
 
   // Restore state from URL on first ready
   useEffect(() => {
-    if (!directoryReady || urlRestored.current || !initialUrl.hospitalId) return;
+    if (!directoryReady || urlRestored.current) return;
+    if (!initialUrl.savedCode && !initialUrl.hospitalId) return;
     urlRestored.current = true;
 
     (async () => {
       try {
         setLoading(true);
-        const hospital = await fetchHospital(initialUrl.hospitalId!);
+        setError(null);
 
-        // Fetch every compared hospital BEFORE touching state. If we set
-        // `selected` first and then `await` these, React commits an
-        // intermediate render where `selected` is set but `compareHospitals`
-        // is still empty — the URL-sync effect then runs and strips ?compare=
-        // from the URL (the compared hospitals appear "not saved" on reload/
-        // share, especially when a cold backend makes these fetches slow).
+        let hospitalId = initialUrl.hospitalId;
+        let compareIds = [...initialUrl.compareWith];
+        let peers = [...initialUrl.peers];
+        let stateFilter = initialUrl.stateFilter;
+        let groupFilter = initialUrl.groupFilter;
+
+        if (initialUrl.savedCode) {
+          const saved = await fetchSavedComparison(initialUrl.savedCode);
+          hospitalId = saved.hospitalId;
+          compareIds = [...saved.compareWith];
+          peers = saved.peers.length > 0 ? [...saved.peers] : peers;
+          stateFilter = saved.stateFilter || stateFilter;
+          groupFilter = saved.groupFilter || groupFilter;
+          setSavedCode(saved.code);
+          setSaveLabel(saved.label);
+          setSavedShareUrl(saved.shareUrl);
+        }
+
+        if (!hospitalId) return;
+
+        const hospital = await fetchHospital(hospitalId);
+
         const compareList: HospitalSummary[] = [];
-        for (const id of initialUrl.compareWith) {
+        for (const id of compareIds) {
           try {
             compareList.push(await fetchHospital(id));
           } catch {
@@ -178,13 +206,12 @@ export default function App() {
           }
         }
 
-        // Apply base + compared hospitals together so the URL-sync effect only
-        // ever observes a fully-restored comparison and keeps ?compare= intact.
         setSelected(hospital);
         setView(initialUrl.view === "methodology" ? "methodology" : "compare");
-        if (initialUrl.stateFilter) setSearchStateFilter(initialUrl.stateFilter);
+        if (stateFilter) setSearchStateFilter(stateFilter);
+        if (groupFilter && groupFilter !== "all") setCategoryFilter(groupFilter as MeasureCategory);
         setCompareHospitals(compareList);
-        setVisiblePeers(new Set(initialUrl.peers));
+        setVisiblePeers(new Set(peers));
         skipCompareRefetch.current = true;
         await loadComparison(hospital, compareList.map((h) => h.facilityId));
       } catch (err) {
@@ -234,8 +261,9 @@ export default function App() {
       stateFilter: searchStateFilter,
       groupFilter: categoryFilter,
       partner: urlPartner,
+      savedCode: savedCode || undefined,
     });
-  }, [view, selected, compareHospitals, visiblePeers, searchStateFilter, categoryFilter, partnerId]);
+  }, [view, selected, compareHospitals, visiblePeers, searchStateFilter, categoryFilter, partnerId, savedCode]);
 
   const togglePeer = (key: string) => {
     setVisiblePeers((prev) => {
@@ -297,7 +325,43 @@ export default function App() {
       stateFilter: searchStateFilter,
       groupFilter: categoryFilter,
       partner: partnerId ?? undefined,
+      savedCode: savedCode || undefined,
     });
+  };
+
+  const saveForLater = async () => {
+    if (!selected) return;
+    setSavingComparison(true);
+    setError(null);
+    try {
+      const result = await saveComparisonForLater({
+        code: savedCode || undefined,
+        label: saveLabel.trim() || undefined,
+        hospitalId: selected.facilityId,
+        compareWith: compareHospitals.map((h) => h.facilityId),
+        peers: [...visiblePeers],
+        stateFilter: searchStateFilter,
+        groupFilter: categoryFilter,
+        partner: partnerId ?? undefined,
+      });
+      setSavedCode(result.code);
+      setSaveLabel(result.label);
+      setSavedShareUrl(result.shareUrl);
+      syncUrl({
+        view: "compare",
+        hospital: selected,
+        compareHospitals,
+        visiblePeers,
+        stateFilter: searchStateFilter,
+        groupFilter: categoryFilter,
+        partner: partnerId ?? undefined,
+        savedCode: result.code,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save comparison");
+    } finally {
+      setSavingComparison(false);
+    }
   };
 
   return (
@@ -426,6 +490,7 @@ export default function App() {
               <HospitalSearch
                 onSelect={(h) => {
                   setCompareHospitals([]);
+                  clearSavedComparison();
                   loadHospital(h, []);
                 }}
                 initialState={searchStateFilter}
@@ -458,6 +523,17 @@ export default function App() {
               <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
                 {error}
               </div>
+            )}
+
+            {selected && (
+              <SaveComparisonPanel
+                label={saveLabel}
+                onLabelChange={setSaveLabel}
+                shareUrl={savedShareUrl}
+                saving={savingComparison}
+                disabled={!selected}
+                onSave={saveForLater}
+              />
             )}
 
             {comparison && selected && !loading && (
@@ -531,6 +607,7 @@ export default function App() {
                   hospital={selected}
                   onSelect={(h) => {
                     setCompareHospitals([]);
+                    clearSavedComparison();
                     loadHospital(h, []);
                   }}
                   onAddToCompare={addToCompare}

@@ -12,3 +12,4 @@ export const PARTNERS_FILE = path.join(DATA_DIR, "partners.json");
 export const LOGOS_DIR = path.join(DATA_DIR, "partner-logos");
 export const HOSPITALS_CACHE_FILE = path.join(DATA_DIR, "hospitals.json");
 export const SCORES_CACHE_FILE = path.join(DATA_DIR, "hcahps-scores.json");
+export const SAVED_COMPARISONS_FILE = path.join(DATA_DIR, "saved-comparisons.json");

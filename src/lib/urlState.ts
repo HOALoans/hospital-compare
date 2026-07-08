@@ -8,6 +8,8 @@ export interface CompareUrlState {
   stateFilter: string;
   groupFilter: string;
   partner?: string;
+  /** Short code from a server-saved comparison (?saved=abc12345). */
+  savedCode?: string;
 }
 
 const DEFAULT_PEERS = [
@@ -27,7 +29,7 @@ export function parseUrlState(search: string): CompareUrlState {
       ? "admin"
       : viewParam === "methodology"
         ? "methodology"
-        : viewParam === "compare" || params.get("hospital")
+        : viewParam === "compare" || params.get("hospital") || params.get("saved")
           ? "compare"
           : "home";
 
@@ -42,6 +44,7 @@ export function parseUrlState(search: string): CompareUrlState {
     : [...DEFAULT_PEERS];
 
   const partner = params.get("partner") ?? undefined;
+  const savedCode = params.get("saved")?.trim().toLowerCase() || undefined;
 
   return {
     view,
@@ -51,6 +54,7 @@ export function parseUrlState(search: string): CompareUrlState {
     stateFilter: params.get("state") ?? "",
     groupFilter: params.get("category") ?? "all",
     partner,
+    savedCode,
   };
 }
 
@@ -62,6 +66,7 @@ export function buildUrlState(state: {
   stateFilter?: string;
   groupFilter?: string;
   partner?: string;
+  savedCode?: string;
 }): string {
   const params = new URLSearchParams();
 
@@ -76,6 +81,12 @@ export function buildUrlState(state: {
   }
 
   if (state.view === "home") {
+    const qs = params.toString();
+    return qs ? `?${qs}` : "";
+  }
+
+  if (state.savedCode) {
+    params.set("saved", state.savedCode);
     const qs = params.toString();
     return qs ? `?${qs}` : "";
   }
