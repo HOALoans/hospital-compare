@@ -272,6 +272,11 @@ function buildMarkers(
   return markers;
 }
 
+function shortHospitalName(name: string, max = 14): string {
+  if (name.length <= max) return name;
+  return `${name.slice(0, max - 1)}…`;
+}
+
 function MeasureRow({
   measure,
   comparison,
@@ -316,17 +321,43 @@ function MeasureRow({
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-slate-400 transition ${expanded ? "rotate-180" : ""}`}
         />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-[12rem]">
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
             {groupLabel}
           </p>
           <p className="text-sm font-semibold text-slate-900">{measure.label}</p>
         </div>
-        <div
-          className="shrink-0 text-right text-base font-bold tabular-nums"
-          style={{ color: CHART.baseHospital }}
-        >
-          {formatMeasureValue(value, def.valueType)}
+        {compareHospitals.length > 0 && (
+          <div className="hidden min-w-0 flex-1 flex-wrap items-center justify-end gap-x-4 gap-y-1 md:flex">
+            {compareHospitals.map((ch, i) => (
+              <span
+                key={ch.groupKey}
+                className="inline-flex max-w-[9.5rem] items-baseline gap-1.5 text-xs"
+                title={ch.hospital.name}
+              >
+                <span className="truncate text-slate-500">
+                  {shortHospitalName(ch.hospital.name)}
+                </span>
+                <span
+                  className="font-semibold tabular-nums"
+                  style={{ color: individualHospitalColor(i) }}
+                >
+                  {formatMeasureValue(ch.scores[measure.id] ?? null, def.valueType)}
+                </span>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="w-16 shrink-0 text-right sm:w-20">
+          <div
+            className="text-base font-bold tabular-nums"
+            style={{ color: CHART.baseHospital }}
+          >
+            {formatMeasureValue(value, def.valueType)}
+          </div>
+          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+            You
+          </div>
         </div>
         <div
           className={`hidden w-28 shrink-0 items-center justify-end gap-1 text-xs font-semibold sm:flex ${
@@ -529,8 +560,11 @@ export function ComparisonTable({
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="hidden items-center gap-3 border-b border-slate-100 px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:flex">
           <span className="w-4" />
-          <span className="flex-1">Measure</span>
-          <span className="w-16 text-right">Score</span>
+          <span className="min-w-0 flex-1 basis-[12rem]">Measure</span>
+          {compareHospitals.length > 0 && (
+            <span className="hidden min-w-0 flex-1 text-right md:block">Compared scores</span>
+          )}
+          <span className="w-16 text-right sm:w-20">You</span>
           <span className="w-28 text-right">Gap vs state</span>
         </div>
         {rows.map((measure) => (
