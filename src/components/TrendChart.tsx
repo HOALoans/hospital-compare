@@ -188,7 +188,9 @@ export function TrendChart({
 
   const seriesById = useMemo(() => new Map(series.map((s) => [s.id, s])), [series]);
 
-  // First pass: raw scores by year (needed to compute domain before stacking)
+  // First pass: raw scores by year (needed to compute domain before stacking).
+  // Use string year keys so the X-axis is categorical — a numeric axis collapses
+  // sparse years (e.g. 2018 + 2025) into two distant ticks with empty space.
   const rawByYear = useMemo(() => {
     const yearSet = new Set<number>();
     for (const s of series) {
@@ -199,7 +201,7 @@ export function TrendChart({
     const years = Array.from(yearSet).sort((a, b) => a - b);
     const recent = years.slice(-Math.max(1, maxYears));
     return recent.map((year) => {
-      const row: Record<string, number | string | null> = { year };
+      const row: Record<string, number | string | null> = { year: String(year) };
       for (const s of series) {
         const pt = s.trend?.points.find((p) => p.year === year);
         const score = pt?.scores[selectedMeasureId];
@@ -308,7 +310,13 @@ export function TrendChart({
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-            <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+            <XAxis
+              dataKey="year"
+              type="category"
+              tick={{ fontSize: 12 }}
+              interval={0}
+              padding={{ left: 12, right: 12 }}
+            />
             <YAxis domain={domain} tick={{ fontSize: 12 }} allowDataOverflow />
             <Tooltip
               shared={false}
@@ -340,7 +348,7 @@ export function TrendChart({
                 legendType="none"
                 tooltipType="none"
                 isAnimationActive={false}
-                maxBarSize={48}
+                maxBarSize={40}
               />,
               <Bar
                 key={s.id}
@@ -349,7 +357,7 @@ export function TrendChart({
                 name={s.name}
                 fill={s.color}
                 radius={[3, 3, 0, 0]}
-                maxBarSize={48}
+                maxBarSize={40}
                 isAnimationActive={false}
               />,
             ])}

@@ -22,6 +22,8 @@ const execFileAsync = promisify(execFile);
 const RAW_DIR = ARCHIVE_RAW_DIR;
 const EXTRACT_DIR = ARCHIVE_EXTRACT_DIR;
 const LOCK_FILE = ARCHIVE_LOCK_FILE;
+/** Bump when ingest year-keying or merge rules change so redeploys rebuild trends. */
+const INGEST_VERSION = 2;
 
 const CMS_BASE = "https://data.cms.gov";
 const CMS_ARCHIVE_CATALOG =
@@ -313,13 +315,19 @@ async function extractZip(zipPath: string, destDir: string) {
 }
 
 function flushTrendFiles(byFacility: Map<string, HospitalTrend["points"]>) {
+  const allowedYears = new Set(ARCHIVE_YEARS);
+  // Current snapshot may use the calendar year outside ARCHIVE_YEARS
+  allowedYears.add(new Date().getFullYear());
+
   for (const [facilityId, points] of byFacility) {
     points.sort((a, b) => a.year - b.year);
     const existingPath = path.join(ARCHIVE_DIR, `${facilityId}.json`);
     let merged = points;
     if (fs.existsSync(existingPath)) {
       const existing = JSON.parse(fs.readFileSync(existingPath, "utf8")) as HospitalTrend;
-      const byYear = new Map(existing.points.map((p) => [p.year, p]));
+      const byYear = new Map(
+        existing.points.filter((p) => allowedYears.has(p.year)).map((p) => [p.year, p]),
+      );
       for (const p of points) byYear.set(p.year, p);
       merged = [...byYear.values()].sort((a, b) => a.year - b.year);
     }
@@ -338,6 +346,8 @@ function flushTrendFiles(byFacility: Map<string, HospitalTrend["points"]>) {
 function shouldSkipIngest(): boolean {
   if (process.env.FORCE_INGEST_ARCHIVES === "1") return false;
   if (!fs.existsSync(LOCK_FILE)) return false;
+  const lockBody = fs.readFileSync(LOCK_FILE, "utf8");
+  if (!lockBody.includes(`version=${INGEST_VERSION}`)) return false;
   const age = Date.now() - fs.statSync(LOCK_FILE).mtimeMs;
   if (age >= 6 * 60 * 60 * 1000) return false;
   if (!fs.existsSync(ARCHIVE_DIR)) return false;
@@ -351,10 +361,25 @@ export async function runArchiveIngest() {
     return;
   }
 
+  const lockNeedsRebuild =
+    !fs.existsSync(LOCK_FILE) ||
+    !fs.readFileSync(LOCK_FILE, "utf8").includes(`version=${INGEST_VERSION}`);
+
   fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
   fs.mkdirSync(RAW_DIR, { recursive: true });
   fs.mkdirSync(EXTRACT_DIR, { recursive: true });
-  fs.writeFileSync(LOCK_FILE, new Date().toISOString());
+
+  // Drop previously keyed trend files when ingest rules change so period-end
+  // years (e.g. 2018) do not linger beside correct snapshot years.
+  if (lockNeedsRebuild && fs.existsSync(ARCHIVE_DIR)) {
+    for (const file of fs.readdirSync(ARCHIVE_DIR)) {
+      if (file.endsWith(".json")) fs.rmSync(path.join(ARCHIVE_DIR, file), { force: true });
+    }
+    console.log("[archives] Cleared trend files for ingest version rebuild");
+  }
+
+  // Remove stale lock until ingest finishes so a crash mid-run does not skip rebuild.
+  fs.rmSync(LOCK_FILE, { force: true });
 
   const archiveSources = await loadArchiveSources();
 
@@ -395,8 +420,10 @@ export async function runArchiveIngest() {
 
     for (const csvPath of csvFiles) {
       const matched = await streamScoreCsv(csvPath, (row) => {
-        const yearFromPeriod = row.periodEnd ? Number(row.periodEnd.slice(-4)) : source.year;
-        const year = Number.isFinite(yearFromPeriod) ? yearFromPeriod : source.year;
+        // Key by CMS archive snapshot year (not HCAHPS period-end year).
+        // Period-end years collapse multiple archives onto the same point and
+        // skip snapshot years (e.g. 2023/2024), which made the chart look empty.
+        const year = source.year;
 
         const points = byFacility.get(row.facilityId) ?? [];
         let point = points.find((p) => p.year === year);
@@ -427,6 +454,7 @@ export async function runArchiveIngest() {
     byFacility.clear();
   }
 
+  fs.writeFileSync(LOCK_FILE, `version=${INGEST_VERSION}\n${new Date().toISOString()}`);
   console.log(`[archives] Trend ingest complete across ${archiveSources.length} sources`);
 }
 

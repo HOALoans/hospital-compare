@@ -786,6 +786,8 @@ export default function App() {
                       <div className="space-y-4 border-t border-slate-100 px-5 py-5">
                         <p className="text-sm text-slate-600">
                           Year-over-year scores from CMS archived hospital snapshots (2019–2026).
+                          Each bar group is one CMS release year; missing years mean that archive
+                          has not finished importing yet.
                         </p>
                         <div className="flex flex-wrap items-center gap-3">
                           <select
