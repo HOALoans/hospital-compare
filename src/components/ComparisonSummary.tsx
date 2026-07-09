@@ -47,8 +47,10 @@ function ScoreRow({
         </span>
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-        <span className="inline-flex items-baseline gap-1.5">
-          <span className="text-slate-500">You</span>
+        <span className="inline-flex max-w-[12rem] items-baseline gap-1.5">
+          <span className="truncate text-slate-500" title={comparison.hospital.name}>
+            {shortName(comparison.hospital.name)}
+          </span>
           <span className="font-bold tabular-nums" style={{ color: CHART.baseHospital }}>
             {formatMeasureValue(hospitalValue, valueType)}
           </span>

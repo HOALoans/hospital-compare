@@ -266,7 +266,12 @@ function buildMarkers(
   });
 
   if (baseValue != null) {
-    markers.push({ key: "hospital", label: "Your hospital", value: baseValue, kind: "hospital" });
+    markers.push({
+      key: "hospital",
+      label: comparison.hospital.name,
+      value: baseValue,
+      kind: "hospital",
+    });
   }
 
   return markers;
@@ -348,15 +353,18 @@ function MeasureRow({
             ))}
           </div>
         )}
-        <div className="w-16 shrink-0 text-right sm:w-20">
+        <div className="w-20 shrink-0 text-right sm:w-28">
           <div
             className="text-base font-bold tabular-nums"
             style={{ color: CHART.baseHospital }}
           >
             {formatMeasureValue(value, def.valueType)}
           </div>
-          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-            You
+          <div
+            className="truncate text-[10px] font-medium tracking-wide text-slate-400"
+            title={comparison.hospital.name}
+          >
+            {shortHospitalName(comparison.hospital.name, 18)}
           </div>
         </div>
         <div
@@ -398,7 +406,9 @@ function MeasureRow({
 
           <div className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200">
-              <span className="text-slate-500">Your hospital</span>
+              <span className="line-clamp-2 text-slate-500" title={comparison.hospital.name}>
+                {comparison.hospital.name}
+              </span>
               <p className="font-bold" style={{ color: CHART.baseHospital }}>
                 {formatMeasureValue(value, def.valueType)}
               </p>
@@ -509,12 +519,14 @@ export function ComparisonTable({
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600">
         <span className="font-semibold text-slate-800">Chart key</span>
-        <span className="inline-flex items-center gap-1.5">
+        <span className="inline-flex max-w-[220px] items-center gap-1.5">
           <span
-            className="h-3 w-3 rounded-full"
+            className="h-3 w-3 shrink-0 rounded-full"
             style={{ backgroundColor: CHART.baseHospital }}
-          />{" "}
-          Your hospital
+          />
+          <span className="truncate" title={comparison.hospital.name}>
+            {comparison.hospital.name}
+          </span>
         </span>
         {visiblePeerKeys.has(NATIONAL_KEY) && (
           <span className="inline-flex items-center gap-1.5">
@@ -564,7 +576,12 @@ export function ComparisonTable({
           {compareHospitals.length > 0 && (
             <span className="hidden min-w-0 flex-1 text-right md:block">Compared scores</span>
           )}
-          <span className="w-16 text-right sm:w-20">You</span>
+          <span
+            className="w-20 truncate text-right sm:w-28"
+            title={comparison.hospital.name}
+          >
+            {shortHospitalName(comparison.hospital.name, 18)}
+          </span>
           <span className="w-28 text-right">Gap vs state</span>
         </div>
         {rows.map((measure) => (
