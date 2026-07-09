@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -10,10 +10,16 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { HospitalComparePeer, HospitalTrend } from "@shared/types";
-import { COMPARISON_MEASURES, formatMeasureValue } from "@shared/measures";
+import {
+  COMPARISON_MEASURES,
+  formatMeasureValue,
+  type MeasureValueType,
+} from "@shared/measures";
 import { CHART, individualHospitalColor } from "@shared/chartTheme";
 
 import { TrendEmptyState } from "@/components/TrendEmptyState";
+
+type YAxisMode = "full" | "fit" | "from50" | "from75";
 
 interface Props {
   trend: HospitalTrend;
@@ -23,6 +29,65 @@ interface Props {
   selectedMeasureId: string;
   facilityId: string;
   maxYears: number;
+}
+
+function collectNumericValues(
+  data: Record<string, number | string | null>[],
+  seriesIds: string[],
+): number[] {
+  const values: number[] = [];
+  for (const row of data) {
+    for (const id of seriesIds) {
+      const v = row[id];
+      if (typeof v === "number" && Number.isFinite(v)) values.push(v);
+    }
+  }
+  return values;
+}
+
+function yDomain(
+  mode: YAxisMode,
+  valueType: MeasureValueType,
+  values: number[],
+): [number | "auto", number | "auto"] {
+  if (valueType === "star") {
+    if (mode === "fit" && values.length > 0) {
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      return [Math.max(0, Math.floor(min - 0.5)), Math.min(5, Math.ceil(max + 0.5))];
+    }
+    return [0, 5];
+  }
+
+  if (valueType === "sir") {
+    if (mode === "fit" && values.length > 0) {
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const pad = Math.max((max - min) * 0.15, 0.05);
+      return [Math.max(0, min - pad), max + pad];
+    }
+    return [0, "auto"];
+  }
+
+  // linear / percent — typically 0–100
+  if (mode === "from75") return [75, 100];
+  if (mode === "from50") return [50, 100];
+  if (mode === "fit" && values.length > 0) {
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const pad = Math.max((max - min) * 0.15, 1);
+    const lo = Math.max(0, Math.floor(min - pad));
+    const hi = Math.min(100, Math.ceil(max + pad));
+    if (hi <= lo) return [Math.max(0, lo - 1), Math.min(100, lo + 1)];
+    return [lo, hi];
+  }
+  return [0, 100];
+}
+
+function fullAxisLabel(valueType: MeasureValueType): string {
+  if (valueType === "star") return "Full (0–5)";
+  if (valueType === "sir") return "Full (from 0)";
+  return "Full (0–100)";
 }
 
 interface Series {
@@ -41,6 +106,7 @@ export function TrendChart({
   facilityId,
   maxYears,
 }: Props) {
+  const [yAxisMode, setYAxisMode] = useState<YAxisMode>("fit");
   const measure = COMPARISON_MEASURES.find((m) => m.id === selectedMeasureId);
 
   const series: Series[] = useMemo(() => {
@@ -87,6 +153,28 @@ export function TrendChart({
     [compareHospitals, compareTrends, selectedMeasureId],
   );
 
+  const values = useMemo(
+    () => collectNumericValues(data, series.map((s) => s.id)),
+    [data, series],
+  );
+
+  const showZoomPresets =
+    measure?.valueType === "linear" || measure?.valueType === "percent";
+
+  useEffect(() => {
+    if (!showZoomPresets && (yAxisMode === "from50" || yAxisMode === "from75")) {
+      setYAxisMode("fit");
+    }
+  }, [showZoomPresets, yAxisMode]);
+
+  const domain = useMemo(
+    () =>
+      measure
+        ? yDomain(yAxisMode, measure.valueType, values)
+        : ([0, 100] as [number, number]),
+    [yAxisMode, measure, values],
+  );
+
   const missingNote = noTrendHospitals.length > 0 && (
     <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
       <span className="font-semibold">No historical CMS data for this measure:</span>{" "}
@@ -112,21 +200,31 @@ export function TrendChart({
 
   return (
     <div>
+      <div className="mb-3">
+        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+          Y-axis
+          <select
+            value={yAxisMode}
+            onChange={(e) => setYAxisMode(e.target.value as YAxisMode)}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+          >
+            <option value="fit">Fit to scores</option>
+            <option value="full">{fullAxisLabel(measure.valueType)}</option>
+            {showZoomPresets && (
+              <>
+                <option value="from50">Zoom from 50</option>
+                <option value="from75">Zoom from 75</option>
+              </>
+            )}
+          </select>
+        </label>
+      </div>
       <div className="h-80 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-            <YAxis
-              domain={
-                measure.valueType === "star"
-                  ? [0, 5]
-                  : measure.valueType === "sir"
-                    ? ["auto", "auto"]
-                    : [0, 100]
-              }
-              tick={{ fontSize: 12 }}
-            />
+            <YAxis domain={domain} tick={{ fontSize: 12 }} allowDataOverflow />
             <Tooltip
               formatter={(value: number, name: string) => [
                 formatMeasureValue(value, measure.valueType),
