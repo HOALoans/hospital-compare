@@ -294,7 +294,18 @@ export default function App() {
     [selected],
   );
 
-  const printReport = () => window.print();
+  const printReport = () => {
+    // Prefer a clean document title so browser PDF headers don't show a long URL/timestamp title.
+    const previousTitle = document.title;
+    const hospitalName = selected?.name ?? "Hospital";
+    document.title = `Parigrado — ${hospitalName}`;
+    const restore = () => {
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
+    window.print();
+  };
 
   const exportCsv = () => {
     if (!comparison) return;

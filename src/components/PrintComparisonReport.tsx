@@ -4,12 +4,14 @@ import {
   MEASURE_CATEGORIES,
   MEASURE_GROUPS,
   SITE_NAME,
+  SITE_TAGLINE,
   formatGapValue,
   formatMeasureValue,
   getMeasureDefinition,
   measureUnitLabel,
 } from "@shared/measures";
 import { computeComparisonSummary } from "@/lib/comparisonSummary";
+import { usePartner } from "@/context/PartnerContext";
 
 interface Props {
   comparison: ComparisonResult;
@@ -25,10 +27,14 @@ function shortName(name: string, max = 22): string {
  * when the user chooses Save as PDF / Print.
  */
 export function PrintComparisonReport({ comparison }: Props) {
+  const { partner, isPartnerMode } = usePartner();
   const stats = computeComparisonSummary(comparison, "state");
   const { hospital, period } = comparison;
   // Cap columns so the score table fits letter portrait without clipping.
   const compareHospitals = (comparison.compareHospitals ?? []).slice(0, 2);
+  const brandName = isPartnerMode ? partner.displayName : SITE_NAME;
+  const brandTagline = partner.tagline ?? SITE_TAGLINE;
+  const logoSrc = partner.logoUrl || "/parigrado-mark.svg";
 
   const rows = COMPARISON_MEASURES.map((measure) => {
     const def = getMeasureDefinition(measure.id)!;
@@ -66,16 +72,29 @@ export function PrintComparisonReport({ comparison }: Props) {
 
   return (
     <div className="print-report hidden print:block">
+      <header className="print-brand-bar">
+        <div className="print-brand-left">
+          <img
+            src={logoSrc}
+            alt={partner.logoAlt ?? brandName}
+            className="print-logo"
+          />
+          <div>
+            <p className="print-brand-name">{brandName}</p>
+            <p className="print-brand-tagline">{brandTagline}</p>
+          </div>
+        </div>
+        <p className="print-brand-right">Hospital Quality Report</p>
+      </header>
+
       <section className="print-cover">
-        <p className="print-kicker">{SITE_NAME}</p>
-        <h1 className="print-title">Hospital Quality Report</h1>
-        <h2 className="print-hospital">{hospital.name}</h2>
+        <h1 className="print-hospital">{hospital.name}</h1>
         <p className="print-meta">
           {hospital.city}, {hospital.state} {hospital.zip} · {hospital.county} County
+          {hospital.overallRating != null ? ` · CMS overall stars: ${hospital.overallRating}` : ""}
         </p>
         <p className="print-meta muted">
           {hospital.hospitalType} · {hospital.ownership}
-          {hospital.overallRating != null ? ` · CMS overall stars: ${hospital.overallRating}` : ""}
         </p>
         <p className="print-headline">
           Above {hospital.state} average on {stats.aboveState} of {stats.totalWithData} measures with
@@ -83,7 +102,8 @@ export function PrintComparisonReport({ comparison }: Props) {
         </p>
         {(comparison.compareHospitals ?? []).length > 0 && (
           <p className="print-meta">
-            Compared with: {(comparison.compareHospitals ?? []).map((ch) => ch.hospital.name).join("; ")}
+            Compared with:{" "}
+            {(comparison.compareHospitals ?? []).map((ch) => ch.hospital.name).join("; ")}
             {(comparison.compareHospitals ?? []).length > compareHospitals.length
               ? " (table shows first 2)"
               : ""}
@@ -123,10 +143,30 @@ export function PrintComparisonReport({ comparison }: Props) {
           </div>
         </div>
 
+        <div className="print-about">
+          <div>
+            <h3 className="print-section-label">About {SITE_NAME}</h3>
+            <p>
+              Search any Medicare-certified hospital and see how it stacks up against county, ZIP,
+              state, and national peers. We chart HCAHPS patient experience scores and CDC NHSN
+              infection measures side by side — so you can spot strengths and gaps at a glance.
+            </p>
+          </div>
+          <div>
+            <h3 className="print-section-label">How the data is collected</h3>
+            <p>
+              Every score comes from public federal datasets: CMS Hospital Compare (HCAHPS surveys,
+              general hospital information) and healthcare-associated infection measures reported
+              through CDC&apos;s NHSN. Historical trends use CMS archived hospital snapshots. No
+              hospital payments, sponsorships, or proprietary ratings — just what agencies publish.
+            </p>
+          </div>
+        </div>
+
         <p className="print-footnote">
           Reporting period {period.start} – {period.end}. Public CMS / CDC data for informational
           purposes only. Positive gaps mean better than the benchmark (already adjusted for
-          higher-is-better vs lower-is-better measures).
+          higher-is-better vs lower-is-better measures). {SITE_NAME} · parigrado.com
         </p>
       </section>
 
