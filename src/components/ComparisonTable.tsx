@@ -57,8 +57,9 @@ function stateGap(
 }
 
 function scaleBounds(values: number[], valueType: MeasureValueType) {
+  // Star ratings always use the full CMS 1–5 scale so tick marks stay meaningful.
+  if (valueType === "star") return { min: 1, max: 5 };
   if (values.length === 0) {
-    if (valueType === "star") return { min: 1, max: 5 };
     if (valueType === "sir") return { min: 0, max: 1 };
     return { min: 0, max: 100 };
   }
@@ -69,6 +70,39 @@ function scaleBounds(values: number[], valueType: MeasureValueType) {
     min: Math.max(0, min - pad),
     max: max + pad,
   };
+}
+
+/** Axis tick values for the comparison bar (placed below the track). */
+function scaleTicks(
+  min: number,
+  max: number,
+  valueType: MeasureValueType,
+): number[] {
+  if (valueType === "star") return [1, 2, 3, 4, 5];
+  if (valueType === "sir") {
+    const hi = Math.max(max, 1);
+    const step = hi <= 1.2 ? 0.25 : hi <= 2 ? 0.5 : 1;
+    const ticks: number[] = [];
+    for (let v = 0; v <= hi + step / 2; v += step) {
+      ticks.push(Math.round(v * 100) / 100);
+    }
+    return ticks;
+  }
+  // linear / percent — typically 0–100
+  const span = max - min;
+  if (span <= 0) return [min];
+  const niceSteps = [5, 10, 20, 25];
+  const step =
+    niceSteps.find((s) => span / s <= 6) ??
+    Math.max(10, Math.ceil(span / 5 / 10) * 10);
+  const start = Math.ceil(min / step) * step;
+  const ticks: number[] = [];
+  for (let v = start; v <= max + 1e-9; v += step) {
+    ticks.push(Math.round(v * 100) / 100);
+  }
+  if (ticks[0] !== min) ticks.unshift(Math.round(min * 100) / 100);
+  if (ticks[ticks.length - 1] !== max) ticks.push(Math.round(max * 100) / 100);
+  return ticks;
 }
 
 function toPercent(value: number, min: number, max: number) {
@@ -171,6 +205,7 @@ function ComparisonBar({
 }) {
   const values = markers.map((m) => m.value);
   const { min, max } = scaleBounds(values, valueType);
+  const ticks = scaleTicks(min, max, valueType);
   const hospital = markers.find((m) => m.kind === "hospital");
   const trackGradient = higherIsBetter
     ? `linear-gradient(90deg, ${CHART.trackLow}, ${CHART.trackMid}, ${CHART.trackHigh})`
@@ -183,6 +218,15 @@ function ComparisonBar({
           className="absolute inset-x-0 top-1/2 h-7 -translate-y-1/2 rounded-full shadow-inner"
           style={{ background: trackGradient }}
         />
+        {/* Light tick guides on the track (star: 1–5 segment boundaries) */}
+        {ticks.slice(1, -1).map((tick) => (
+          <div
+            key={`guide-${tick}`}
+            className="pointer-events-none absolute top-1/2 z-10 h-7 w-px -translate-y-1/2 bg-white/70"
+            style={{ left: `${toPercent(tick, min, max)}%` }}
+            aria-hidden
+          />
+        ))}
         {hospital && (
           <div
             className="absolute top-1/2 h-7 -translate-y-1/2 rounded-full opacity-90"
@@ -210,15 +254,26 @@ function ComparisonBar({
           />
         ))}
       </div>
-      <div className="mt-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-slate-500">
-        <span>
-          {formatMeasureValue(min, valueType)} ·{" "}
-          {higherIsBetter ? "Lower scores" : "Lower is better"}
-        </span>
-        <span>
-          {higherIsBetter ? "Higher scores" : "Higher is worse"} ·{" "}
-          {formatMeasureValue(max, valueType)}
-        </span>
+      {/* Numeric scale below the bar — clearer than labels inside the colored track */}
+      <div className="relative mt-1.5 h-4">
+        {ticks.map((tick) => {
+          const left = toPercent(tick, min, max);
+          const align =
+            left <= 2 ? "translate-x-0" : left >= 98 ? "-translate-x-full" : "-translate-x-1/2";
+          return (
+            <span
+              key={`tick-${tick}`}
+              className={`absolute top-0 text-[10px] font-semibold tabular-nums text-slate-600 ${align}`}
+              style={{ left: `${left}%` }}
+            >
+              {valueType === "star" ? `${tick}★` : formatMeasureValue(tick, valueType)}
+            </span>
+          );
+        })}
+      </div>
+      <div className="mt-1 flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-slate-400">
+        <span>{higherIsBetter ? "Lower scores" : "Lower is better"}</span>
+        <span>{higherIsBetter ? "Higher scores" : "Higher is worse"}</span>
       </div>
     </div>
   );
