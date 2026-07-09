@@ -147,14 +147,14 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
           className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary/90 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none no-print"
         >
           <Plus className="h-4 w-4" />
-          {open ? "Close search" : "Add hospital"}
+          {open ? "Close search" : "Add hospital to compare"}
         </button>
         <div>
-          <h3 className="text-sm font-semibold text-slate-900">Compare with individual hospitals</h3>
+          <h3 className="text-sm font-semibold text-slate-900">Compare hospitals</h3>
           <p className="text-xs text-slate-600">
-            Overlay up to {MAX_COMPARE} specific hospitals on every chart
-            <span className="ml-1 font-semibold text-indigo-700">
-              ({selected.length}/{MAX_COMPARE} selected)
+            Overlay up to {MAX_COMPARE} hospitals on every chart
+            <span className="ml-1 font-semibold text-brand-primary">
+              ({selected.length}/{MAX_COMPARE})
             </span>
           </p>
         </div>
@@ -172,7 +172,7 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
                 style={{ backgroundColor: individualHospitalColor(i) }}
               />
-              <span className="truncate font-medium text-slate-800" title={h.name}>
+              <span className="line-clamp-2 max-w-[14rem] font-medium leading-snug text-slate-800" title={h.name}>
                 {h.name}
               </span>
               <span className="shrink-0 text-slate-400">

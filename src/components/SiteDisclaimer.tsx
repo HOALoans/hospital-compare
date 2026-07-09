@@ -78,16 +78,25 @@ export function SiteDisclaimer({
 
         <p className="mt-4 text-center text-xs text-slate-400">
           © 2026 Parigrado. All rights reserved.
-          {showAdminLink && onOpenAdmin && (
+          {showAdminLink && (
             <>
               {" · "}
-              <button
-                type="button"
-                onClick={onOpenAdmin}
-                className="text-slate-400 underline decoration-slate-300 underline-offset-2 hover:text-indigo-600"
-              >
-                Partner admin
-              </button>
+              {onOpenAdmin ? (
+                <button
+                  type="button"
+                  onClick={onOpenAdmin}
+                  className="text-slate-400 underline decoration-slate-300 underline-offset-2 hover:text-indigo-600"
+                >
+                  Partner admin
+                </button>
+              ) : (
+                <a
+                  href="/admin"
+                  className="text-slate-400 underline decoration-slate-300 underline-offset-2 hover:text-indigo-600"
+                >
+                  Partner admin
+                </a>
+              )}
             </>
           )}
         </p>

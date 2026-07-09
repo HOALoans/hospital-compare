@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity,
   BarChart3,
+  Bookmark,
   BookOpen,
   Building2,
   Check,
+  ChevronDown,
   Download,
   Home,
   Loader2,
@@ -12,11 +14,8 @@ import {
 } from "lucide-react";
 import type { ComparisonResult, HospitalSummary, HospitalTrend } from "@shared/types";
 import {
-  MEASURE_GROUPS,
-  MEASURE_CATEGORIES,
   COMPARISON_MEASURES,
   SITE_TAGLINE,
-  type MeasureGroup,
   type MeasureCategory,
 } from "@shared/measures";
 import { OWNERSHIP_LABELS } from "@shared/ownership";
@@ -44,22 +43,8 @@ import { SiteDisclaimer } from "@/components/SiteDisclaimer";
 
 type AppView = "home" | "compare" | "methodology" | "admin";
 
-type SortKey = "category" | "measure" | "gap-national" | "gap-state" | "gap-county";
+const CORE_PEER_KEYS = new Set(["national", "state-all", "county-all"]);
 
-const DEFAULT_PEERS = new Set([
-  "county-all",
-  "county-for-profit",
-  "county-non-profit",
-  "zip3-all",
-  "state-all",
-  "national",
-]);
-
-/**
- * Marker color a peer group maps to on the comparison bars. Keeps the toggle
- * pills color-coded to match the markers they switch on/off (national/state/
- * county have dedicated marker colors; every other group is a peer-group avg).
- */
 function peerToggleColor(groupKey: string): string {
   if (groupKey === "national") return CHART.national;
   if (groupKey === "state-all") return CHART.state;
@@ -73,7 +58,9 @@ export default function App() {
   // is unsafe because the URL-sync effect below rewrites window.location before
   // the deep-link restore effect runs — which would drop the hospital param and
   // leave the Compare page blank for shared/bookmarked links.
-  const [initialUrl] = useState(() => parseUrlState(window.location.search));
+  const [initialUrl] = useState(() =>
+    parseUrlState(window.location.search, window.location.pathname),
+  );
   const [view, setView] = useState<AppView>(initialUrl.view);
   const searchSectionRef = useRef<HTMLElement>(null);
   const [ready, setReady] = useState(false);
@@ -85,14 +72,14 @@ export default function App() {
   const [trend, setTrend] = useState<HospitalTrend | null>(null);
   const [compareTrends, setCompareTrends] = useState<HospitalTrend[]>([]);
   const [trendYears, setTrendYears] = useState(10);
-  const [groupFilter, setGroupFilter] = useState<MeasureGroup | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<MeasureCategory | "all">(
     (initialUrl.groupFilter as MeasureCategory | "all") || "all",
   );
   const [searchStateFilter, setSearchStateFilter] = useState(initialUrl.stateFilter);
-  const [sortBy, setSortBy] = useState<SortKey>("category");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [visiblePeers, setVisiblePeers] = useState<Set<string>>(new Set(initialUrl.peers));
+  const [showAdvancedPeers, setShowAdvancedPeers] = useState(false);
+  const [showTrends, setShowTrends] = useState(false);
+  const [showSavePanel, setShowSavePanel] = useState(false);
   const [compareHospitals, setCompareHospitals] = useState<HospitalSummary[]>([]);
   const [trendMeasure, setTrendMeasure] = useState(COMPARISON_MEASURES[0].id);
   const [error, setError] = useState<string | null>(null);
@@ -208,7 +195,12 @@ export default function App() {
         setSelected(hospital);
         setView(initialUrl.view === "methodology" ? "methodology" : "compare");
         if (stateFilter) setSearchStateFilter(stateFilter);
-        if (groupFilter && groupFilter !== "all") setCategoryFilter(groupFilter as MeasureCategory);
+        if (groupFilter && groupFilter !== "all") {
+          // URL "category" may be a measure group or a top-level category id.
+          if (["patient-experience", "infections", "readmissions"].includes(groupFilter)) {
+            setCategoryFilter(groupFilter as MeasureCategory);
+          }
+        }
         setCompareHospitals(compareList);
         setVisiblePeers(new Set(peers));
         skipCompareRefetch.current = true;
@@ -319,8 +311,20 @@ export default function App() {
 
   const goAdmin = () => {
     setView("admin");
+    // Prefer the memorable path over ?view=admin
+    window.history.pushState(null, "", "/admin");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  // Keep the SPA in sync when the user hits back/forward (including /admin).
+  useEffect(() => {
+    const onPopState = () => {
+      const next = parseUrlState(window.location.search, window.location.pathname);
+      setView(next.view);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   const shareLink = () => {
     syncUrl({
@@ -475,33 +479,57 @@ export default function App() {
 
         {view === "compare" && (
           <>
-            <section
-              ref={searchSectionRef}
-              className="relative overflow-hidden rounded-2xl border-2 border-indigo-300/40 bg-gradient-to-br from-indigo-50 via-white to-orange-50/30 p-6 shadow-xl shadow-indigo-900/5 ring-1 ring-indigo-200/50 sm:p-8 no-print"
-            >
-              <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-indigo-400/10 blur-2xl" />
-              <div className="pointer-events-none absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-orange-300/10 blur-2xl" />
-              <div className="relative mb-6 flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-700 text-white shadow-md">
-                  <Building2 className="h-5 w-5" />
+            {!selected ? (
+              <section
+                ref={searchSectionRef}
+                className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-brand-primary/5 via-white to-brand-secondary/10 p-6 shadow-sm sm:p-8 no-print"
+              >
+                <div className="relative mb-5 flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-white shadow-md">
+                    <Building2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-slate-900">Find your hospital</h2>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Search by name, city, or ZIP to see quality scores vs county, state, and national peers.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900">Find your hospital</h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Search by name, city, or ZIP — compare HCAHPS, infections, and readmissions
-                    against county, ZIP, state, and national peers.
-                  </p>
-                </div>
-              </div>
-              <HospitalSearch
-                onSelect={(h) => {
-                  setCompareHospitals([]);
-                  clearSavedComparison();
-                  loadHospital(h, []);
-                }}
-                initialState={searchStateFilter}
-              />
-            </section>
+                <HospitalSearch
+                  onSelect={(h) => {
+                    setCompareHospitals([]);
+                    clearSavedComparison();
+                    loadHospital(h, []);
+                  }}
+                  initialState={searchStateFilter}
+                />
+              </section>
+            ) : (
+              <section
+                ref={searchSectionRef}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 no-print"
+              >
+                <p className="text-sm text-slate-600">
+                  Viewing{" "}
+                  <span className="font-semibold text-slate-900">{selected.name}</span>
+                </p>
+                <details className="group">
+                  <summary className="cursor-pointer list-none text-sm font-semibold text-brand-primary hover:underline">
+                    Change hospital
+                  </summary>
+                  <div className="mt-3 w-full min-w-[min(100%,28rem)] sm:min-w-[28rem]">
+                    <HospitalSearch
+                      onSelect={(h) => {
+                        setCompareHospitals([]);
+                        clearSavedComparison();
+                        loadHospital(h, []);
+                      }}
+                      initialState={searchStateFilter}
+                    />
+                  </div>
+                </details>
+              </section>
+            )}
 
             {!selected && !comparison && !loading && !error && !initialUrl.savedCode && (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-6 py-12 text-center no-print">
@@ -512,8 +540,8 @@ export default function App() {
                   Search and select a hospital above to start comparing
                 </h3>
                 <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
-                  Pick any Medicare-certified hospital to see how it stacks up against county,
-                  ZIP, state, and national peers — with quality scores, trends, and export options.
+                  Pick any Medicare-certified hospital for a scorecard summary, then drill into
+                  individual measures.
                 </p>
               </div>
             )}
@@ -531,26 +559,12 @@ export default function App() {
               </div>
             )}
 
-            {selected && (
-              <SaveComparisonPanel
-                label={saveLabel}
-                onLabelChange={setSaveLabel}
-                shareUrl={savedShareUrl}
-                saving={savingComparison}
-                disabled={!selected}
-                onSave={saveForLater}
-              />
-            )}
-
             {comparison && selected && !loading && (
               <>
-              <PrintComparisonReport comparison={comparison} />
-              <div id="comparison-report" className="space-y-8 print:hidden">
-                <ComparisonSummary comparison={comparison} sticky />
-
-                <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-orange-50/50 to-white p-6 shadow-sm">
-                  <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-                    <div>
+                <PrintComparisonReport comparison={comparison} />
+                <div id="comparison-report" className="space-y-6 print:hidden">
+                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="flex items-start gap-4">
                         <HospitalLogo hospital={selected} size={48} showProfileLink />
                         <div>
@@ -572,246 +586,245 @@ export default function App() {
                           </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      {selected.overallRating && (
-                        <div className="rounded-xl border border-orange-200 bg-white px-5 py-3 text-center shadow-sm">
-                          <div className="text-3xl font-bold" style={{ color: CHART.baseHospital }}>
-                            {selected.overallRating}
-                          </div>
-                          <div className="text-xs uppercase tracking-wide text-slate-500">
-                            CMS overall stars
-                          </div>
-                        </div>
-                      )}
                       <div className="flex flex-wrap items-center gap-3">
-                        <WatchlistButton hospital={selected} />
-                        <ShareLinkButton onCopy={shareLink} />
-                        <button
-                          type="button"
-                          onClick={exportCsv}
-                          className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-primary/90"
-                        >
-                          <Download className="h-4 w-4" />
-                          Export CSV
-                        </button>
-                        <button
-                          type="button"
-                          onClick={printReport}
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-                        >
-                          <Printer className="h-4 w-4" />
-                          Save as PDF
-                        </button>
+                        {selected.overallRating && (
+                          <div className="rounded-xl border border-orange-200 bg-orange-50/50 px-5 py-3 text-center">
+                            <div className="text-3xl font-bold" style={{ color: CHART.baseHospital }}>
+                              {selected.overallRating}
+                            </div>
+                            <div className="text-xs uppercase tracking-wide text-slate-500">
+                              CMS overall stars
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <WatchlistButton hospital={selected} />
+                          <ShareLinkButton onCopy={shareLink} />
+                          <button
+                            type="button"
+                            onClick={() => setShowSavePanel((v) => !v)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                          >
+                            <Bookmark className="h-4 w-4" />
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={exportCsv}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                          >
+                            <Download className="h-4 w-4" />
+                            CSV
+                          </button>
+                          <button
+                            type="button"
+                            onClick={printReport}
+                            className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-primary/90"
+                          >
+                            <Printer className="h-4 w-4" />
+                            PDF
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </section>
+                    {showSavePanel && (
+                      <div className="mt-4">
+                        <SaveComparisonPanel
+                          label={saveLabel}
+                          onLabelChange={setSaveLabel}
+                          shareUrl={savedShareUrl}
+                          saving={savingComparison}
+                          disabled={!selected}
+                          onSave={saveForLater}
+                        />
+                      </div>
+                    )}
+                  </section>
 
-                <NearbyHospitals
-                  hospital={selected}
-                  onSelect={(h) => {
-                    setCompareHospitals([]);
-                    clearSavedComparison();
-                    loadHospital(h, []);
-                  }}
-                  onAddToCompare={addToCompare}
-                />
+                  <ComparisonSummary
+                    comparison={comparison}
+                    compareHospitals={compareHospitals}
+                    onSelectCategory={(id) => setCategoryFilter(id as MeasureCategory)}
+                  />
 
-                <section className="space-y-4">
-                  <div className="no-print">
+                  <div className="space-y-3 no-print">
                     <CompareHospitalPicker
                       baseHospitalId={selected.facilityId}
                       selected={compareHospitals}
                       onChange={setCompareHospitals}
                     />
+                    <NearbyHospitals
+                      hospital={selected}
+                      onSelect={(h) => {
+                        setCompareHospitals([]);
+                        clearSavedComparison();
+                        loadHospital(h, []);
+                      }}
+                      onAddToCompare={addToCompare}
+                    />
                   </div>
 
                   {compareLoading && (
-                    <div className="flex items-center gap-2 text-sm text-indigo-700">
+                    <div className="flex items-center gap-2 text-sm text-brand-primary">
                       <Loader2 className="h-4 w-4 animate-spin" /> Updating comparison…
                     </div>
                   )}
 
-                  <div className="flex flex-wrap gap-2 no-print">
-                    {MEASURE_CATEGORIES.map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => {
-                          setCategoryFilter(cat.id);
-                          setGroupFilter("all");
-                        }}
-                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                          categoryFilter === cat.id
-                            ? "bg-orange-600 text-white"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        }`}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => setCategoryFilter("all")}
-                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                        categoryFilter === "all"
-                          ? "bg-orange-600 text-white"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
-                    >
-                      All measures
-                    </button>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3 no-print">
-                    <label className="text-sm font-medium text-slate-700">Subcategory</label>
-                    <select
-                      value={groupFilter}
-                      onChange={(e) => setGroupFilter(e.target.value as MeasureGroup | "all")}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                    >
-                      <option value="all">All subcategories</option>
-                      {MEASURE_GROUPS.map((g) => (
-                        <option key={g.id} value={g.id}>
-                          {g.label}
-                        </option>
-                      ))}
-                    </select>
-
-                    <label className="ml-2 text-sm font-medium text-slate-700">Sort by</label>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as SortKey)}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                    >
-                      <option value="category">Category</option>
-                      <option value="measure">Measure name</option>
-                      <option value="gap-national">Gap vs national</option>
-                      <option value="gap-county">Gap vs county</option>
-                      <option value="gap-state">Gap vs state</option>
-                    </select>
-                    <select
-                      value={sortDir}
-                      onChange={(e) => setSortDir(e.target.value as "asc" | "desc")}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                    >
-                      <option value="asc">Ascending</option>
-                      <option value="desc">Descending</option>
-                    </select>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 no-print">
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-slate-700">
-                        Compare groups
-                        <span className="ml-1.5 text-xs font-normal text-slate-500">
-                          — tap to show or hide each benchmark on the bars
-                        </span>
-                      </span>
-                      <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-200">
-                        {visiblePeers.size} shown
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {comparison.peers.map((peer) => {
-                        const active = visiblePeers.has(peer.groupKey);
-                        const color = peerToggleColor(peer.groupKey);
-                        return (
-                          <button
-                            key={peer.groupKey}
-                            type="button"
-                            onClick={() => togglePeer(peer.groupKey)}
-                            aria-pressed={active}
-                            title={active ? `Hide ${peer.label}` : `Show ${peer.label}`}
-                            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                              active
-                                ? "border-transparent bg-indigo-700 text-white shadow-sm"
-                                : "border-slate-300 bg-white text-slate-500 hover:border-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                            }`}
-                          >
-                            {active ? (
-                              <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} />
-                            ) : (
-                              <span className="h-3 w-3 shrink-0 rounded-full border-2 border-slate-300" />
-                            )}
-                            <span
-                              className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                                active ? "ring-1 ring-white/70" : ""
+                  <section className="space-y-3 no-print">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {comparison.peers
+                        .filter((peer) => CORE_PEER_KEYS.has(peer.groupKey))
+                        .map((peer) => {
+                          const active = visiblePeers.has(peer.groupKey);
+                          const color = peerToggleColor(peer.groupKey);
+                          const short =
+                            peer.groupKey === "national"
+                              ? "National"
+                              : peer.groupKey === "state-all"
+                                ? "State"
+                                : "County";
+                          return (
+                            <button
+                              key={peer.groupKey}
+                              type="button"
+                              onClick={() => togglePeer(peer.groupKey)}
+                              aria-pressed={active}
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                                active
+                                  ? "border-transparent bg-brand-primary text-white shadow-sm"
+                                  : "border-slate-300 bg-white text-slate-500 hover:bg-slate-100"
                               }`}
-                              style={{ backgroundColor: color }}
-                            />
-                            {peer.label}
-                          </button>
-                        );
-                      })}
+                            >
+                              {active ? (
+                                <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} />
+                              ) : (
+                                <span className="h-3 w-3 shrink-0 rounded-full border-2 border-slate-300" />
+                              )}
+                              <span
+                                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                style={{ backgroundColor: color }}
+                              />
+                              {short}
+                            </button>
+                          );
+                        })}
+                      <button
+                        type="button"
+                        onClick={() => setShowAdvancedPeers((v) => !v)}
+                        className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                      >
+                        More benchmarks
+                        <ChevronDown
+                          className={`h-3.5 w-3.5 transition ${showAdvancedPeers ? "rotate-180" : ""}`}
+                        />
+                      </button>
                     </div>
-                  </div>
+                    {showAdvancedPeers && (
+                      <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                        {comparison.peers
+                          .filter((peer) => !CORE_PEER_KEYS.has(peer.groupKey))
+                          .map((peer) => {
+                            const active = visiblePeers.has(peer.groupKey);
+                            const color = peerToggleColor(peer.groupKey);
+                            return (
+                              <button
+                                key={peer.groupKey}
+                                type="button"
+                                onClick={() => togglePeer(peer.groupKey)}
+                                aria-pressed={active}
+                                title={peer.label}
+                                className={`inline-flex max-w-full items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                                  active
+                                    ? "border-transparent bg-slate-800 text-white"
+                                    : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100"
+                                }`}
+                              >
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                  style={{ backgroundColor: color }}
+                                />
+                                <span className="truncate">{peer.label}</span>
+                              </button>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </section>
 
                   <ComparisonTable
                     comparison={comparison}
-                    groupFilter={groupFilter}
                     categoryFilter={categoryFilter}
-                    sortBy={sortBy}
-                    sortDir={sortDir}
+                    onCategoryChange={setCategoryFilter}
                     visiblePeerKeys={visiblePeers}
                   />
-                </section>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm no-print">
-                  <div className="mb-4 flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-teal-700" />
-                    <h3 className="text-lg font-semibold text-slate-900">Historical trends</h3>
-                  </div>
-                  <p className="mb-4 text-sm text-slate-600">
-                    Year-over-year scores from CMS archived hospital snapshots (2019–2026), shown as
-                    grouped vertical bars. Individually compared hospitals appear alongside your
-                    hospital using the same colors as the comparison charts above.
-                  </p>
-                  <div className="mb-4 flex flex-wrap items-center gap-3">
-                    <select
-                      value={trendMeasure}
-                      onChange={(e) => setTrendMeasure(e.target.value)}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                  <section className="rounded-2xl border border-slate-200 bg-white no-print">
+                    <button
+                      type="button"
+                      onClick={() => setShowTrends((v) => !v)}
+                      className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+                      aria-expanded={showTrends}
                     >
-                      {COMPARISON_MEASURES.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
-                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                      Years shown
-                      <select
-                        value={trendYears}
-                        onChange={(e) => setTrendYears(Number(e.target.value))}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                      >
-                        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                          <option key={n} value={n}>
-                            {n === 1 ? "Last year" : `Last ${n} years`}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                  {trend && (
-                    <TrendChart
-                      trend={trend}
-                      compareTrends={compareTrends}
-                      compareHospitals={comparison.compareHospitals}
-                      baseHospitalName={selected.name}
-                      selectedMeasureId={trendMeasure}
-                      facilityId={selected.facilityId}
-                      maxYears={trendYears}
-                    />
-                  )}
-                </section>
-              </div>
+                      <span className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5 text-brand-primary" />
+                        <span className="text-lg font-semibold text-slate-900">Historical trends</span>
+                      </span>
+                      <ChevronDown
+                        className={`h-5 w-5 text-slate-400 transition ${showTrends ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    {showTrends && (
+                      <div className="space-y-4 border-t border-slate-100 px-5 py-5">
+                        <p className="text-sm text-slate-600">
+                          Year-over-year scores from CMS archived hospital snapshots (2019–2026).
+                        </p>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <select
+                            value={trendMeasure}
+                            onChange={(e) => setTrendMeasure(e.target.value)}
+                            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                          >
+                            {COMPARISON_MEASURES.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.label}
+                              </option>
+                            ))}
+                          </select>
+                          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                            Years shown
+                            <select
+                              value={trendYears}
+                              onChange={(e) => setTrendYears(Number(e.target.value))}
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                            >
+                              {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                                <option key={n} value={n}>
+                                  {n === 1 ? "Last year" : `Last ${n} years`}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                        {trend && (
+                          <TrendChart
+                            trend={trend}
+                            compareTrends={compareTrends}
+                            compareHospitals={comparison.compareHospitals}
+                            baseHospitalName={selected.name}
+                            selectedMeasureId={trendMeasure}
+                            facilityId={selected.facilityId}
+                            maxYears={trendYears}
+                          />
+                        )}
+                      </div>
+                    )}
+                  </section>
+                </div>
               </>
             )}
           </>
         )}
+
       </main>
 
       <SiteDisclaimer onOpenAdmin={goAdmin} showAdminLink={view !== "admin"} />

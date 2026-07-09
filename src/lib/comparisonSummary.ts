@@ -1,7 +1,9 @@
 import type { ComparisonResult } from "@shared/types";
 import {
   COMPARISON_MEASURES,
+  MEASURE_CATEGORIES,
   getMeasureDefinition,
+  type MeasureCategory,
 } from "@shared/measures";
 
 export interface ComparisonSummaryStats {
@@ -13,6 +15,14 @@ export interface ComparisonSummaryStats {
   belowNational: number;
   biggestWins: GapItem[];
   biggestGaps: GapItem[];
+  byCategory: CategorySummary[];
+}
+
+export interface CategorySummary {
+  id: MeasureCategory;
+  label: string;
+  above: number;
+  total: number;
 }
 
 export interface GapItem {
@@ -22,6 +32,7 @@ export interface GapItem {
   hospitalValue: number;
   benchmarkValue: number;
   benchmarkLabel: string;
+  category: MeasureCategory;
 }
 
 function gapVsBenchmark(
@@ -66,12 +77,26 @@ export function computeComparisonSummary(
       hospitalValue,
       benchmarkValue,
       benchmarkLabel,
+      category: measure.category,
     });
   }
 
   const sorted = [...gaps].sort((a, b) => b.gap - a.gap);
   const biggestWins = sorted.filter((g) => g.gap > 0.05).slice(0, 3);
-  const biggestGaps = [...gaps].sort((a, b) => a.gap - b.gap).filter((g) => g.gap < -0.05).slice(0, 3);
+  const biggestGaps = [...gaps]
+    .sort((a, b) => a.gap - b.gap)
+    .filter((g) => g.gap < -0.05)
+    .slice(0, 3);
+
+  const byCategory: CategorySummary[] = MEASURE_CATEGORIES.map((cat) => {
+    const inCat = gaps.filter((g) => g.category === cat.id);
+    return {
+      id: cat.id,
+      label: cat.label,
+      above: inCat.filter((g) => g.gap > 0.05).length,
+      total: inCat.length,
+    };
+  });
 
   return {
     totalWithData: gaps.length,
@@ -82,5 +107,6 @@ export function computeComparisonSummary(
     belowNational: benchmark === "national" ? below : 0,
     biggestWins,
     biggestGaps,
+    byCategory,
   };
 }

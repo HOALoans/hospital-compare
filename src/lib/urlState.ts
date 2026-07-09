@@ -12,20 +12,21 @@ export interface CompareUrlState {
   savedCode?: string;
 }
 
-const DEFAULT_PEERS = [
-  "county-all",
-  "county-for-profit",
-  "county-non-profit",
-  "zip3-all",
-  "state-all",
-  "national",
-];
+/** Simple defaults: core benchmarks only. Advanced ownership/ZIP peers stay off. */
+const DEFAULT_PEERS = ["national", "state-all", "county-all"];
 
-export function parseUrlState(search: string): CompareUrlState {
+export function parseUrlState(
+  search: string,
+  pathname: string = typeof window !== "undefined" ? window.location.pathname : "/",
+): CompareUrlState {
   const params = new URLSearchParams(search);
+  const path = pathname.replace(/\/+$/, "") || "/";
+  const isAdminPath = path === "/admin";
+
   const viewParam = params.get("view");
-  const view: CompareUrlState["view"] =
-    viewParam === "admin"
+  const view: CompareUrlState["view"] = isAdminPath
+    ? "admin"
+    : viewParam === "admin"
       ? "admin"
       : viewParam === "methodology"
         ? "methodology"
@@ -67,13 +68,11 @@ export function buildUrlState(state: {
   groupFilter?: string;
   partner?: string;
   savedCode?: string;
-}): string {
+}): { pathname: string; search: string } {
   const params = new URLSearchParams();
 
   if (state.view === "admin") {
-    params.set("view", "admin");
-    const qs = params.toString();
-    return qs ? `?${qs}` : "";
+    return { pathname: "/admin", search: "" };
   }
 
   if (state.partner) {
@@ -82,13 +81,13 @@ export function buildUrlState(state: {
 
   if (state.view === "home") {
     const qs = params.toString();
-    return qs ? `?${qs}` : "";
+    return { pathname: "/", search: qs ? `?${qs}` : "" };
   }
 
   if (state.savedCode) {
     params.set("saved", state.savedCode);
     const qs = params.toString();
-    return qs ? `?${qs}` : "";
+    return { pathname: "/", search: qs ? `?${qs}` : "" };
   }
 
   params.set("view", state.view);
@@ -121,12 +120,12 @@ export function buildUrlState(state: {
   }
 
   const qs = params.toString();
-  return qs ? `?${qs}` : "";
+  return { pathname: "/", search: qs ? `?${qs}` : "" };
 }
 
 export function syncUrl(state: Parameters<typeof buildUrlState>[0], replace = true) {
-  const path = buildUrlState(state);
-  const url = `${window.location.pathname}${path}`;
+  const { pathname, search } = buildUrlState(state);
+  const url = `${pathname}${search}`;
   if (replace) {
     window.history.replaceState(null, "", url);
   } else {
