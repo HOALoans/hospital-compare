@@ -34,11 +34,12 @@ interface Props {
 function collectNumericValues(
   data: Record<string, number | string | null>[],
   seriesIds: string[],
+  rawSuffix: string,
 ): number[] {
   const values: number[] = [];
   for (const row of data) {
     for (const id of seriesIds) {
-      const v = row[id];
+      const v = row[`${id}${rawSuffix}`];
       if (typeof v === "number" && Number.isFinite(v)) values.push(v);
     }
   }
@@ -69,7 +70,6 @@ function yDomain(
     return [0, "auto"];
   }
 
-  // linear / percent — typically 0–100
   if (mode === "from75") return [75, 100];
   if (mode === "from50") return [50, 100];
   if (mode === "fit" && values.length > 0) {
@@ -97,6 +97,66 @@ interface Series {
   trend?: HospitalTrend;
 }
 
+const RAW = "__raw";
+const PAD = "__pad";
+
+type TooltipPayloadItem = {
+  dataKey?: string | number;
+  name?: string;
+  color?: string;
+  payload?: Record<string, number | string | null>;
+};
+
+function TrendTooltip({
+  active,
+  payload,
+  label,
+  valueType,
+  seriesById,
+}: {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string | number;
+  valueType: MeasureValueType;
+  seriesById: Map<string, Series>;
+}) {
+  if (!active || !payload?.length) return null;
+
+  // Prefer the visible (non-pad) bar under the cursor
+  const item =
+    payload.find((p) => {
+      const key = String(p.dataKey ?? "");
+      return key && !key.endsWith(PAD) && !key.endsWith(RAW);
+    }) ?? payload[0];
+  if (!item) return null;
+
+  const dataKey = String(item.dataKey ?? "").replace(PAD, "").replace(RAW, "");
+  const series = seriesById.get(dataKey);
+  const hospitalName = series?.name ?? String(item.name ?? dataKey);
+  const color = series?.color ?? item.color ?? "#64748b";
+  const raw = item.payload?.[`${dataKey}${RAW}`];
+  if (typeof raw !== "number") return null;
+
+  return (
+    <div className="max-w-xs rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-lg">
+      <p className="text-xs font-medium text-slate-500">Year {label}</p>
+      <div className="mt-1.5 flex items-start gap-2">
+        <span
+          className="mt-1.5 h-3 w-3 shrink-0 rounded-sm"
+          style={{ backgroundColor: color }}
+          aria-hidden
+        />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold leading-snug text-slate-900">{hospitalName}</p>
+          <p className="mt-0.5 text-base font-bold tabular-nums text-slate-800">
+            {formatMeasureValue(raw, valueType)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function TrendChart({
   trend,
   compareTrends = [],
@@ -110,6 +170,7 @@ export function TrendChart({
   const measure = COMPARISON_MEASURES.find((m) => m.id === selectedMeasureId);
 
   const series: Series[] = useMemo(() => {
+    const byFacility = new Map(compareTrends.map((t) => [t.facilityId, t]));
     const base: Series = {
       id: facilityId,
       name: baseHospitalName,
@@ -120,12 +181,15 @@ export function TrendChart({
       id: ch.hospital.facilityId,
       name: ch.hospital.name,
       color: individualHospitalColor(i),
-      trend: compareTrends.find((t) => t.facilityId === ch.hospital.facilityId),
+      trend: byFacility.get(ch.hospital.facilityId),
     }));
     return [base, ...others];
   }, [trend, compareTrends, compareHospitals, baseHospitalName, facilityId]);
 
-  const data = useMemo(() => {
+  const seriesById = useMemo(() => new Map(series.map((s) => [s.id, s])), [series]);
+
+  // First pass: raw scores by year (needed to compute domain before stacking)
+  const rawByYear = useMemo(() => {
     const yearSet = new Set<number>();
     for (const s of series) {
       for (const p of s.trend?.points ?? []) {
@@ -138,24 +202,16 @@ export function TrendChart({
       const row: Record<string, number | string | null> = { year };
       for (const s of series) {
         const pt = s.trend?.points.find((p) => p.year === year);
-        row[s.id] = pt?.scores[selectedMeasureId] ?? null;
+        const score = pt?.scores[selectedMeasureId];
+        row[`${s.id}${RAW}`] = score == null ? null : score;
       }
       return row;
     });
   }, [series, selectedMeasureId, maxYears]);
 
-  const noTrendHospitals = useMemo(
-    () =>
-      compareHospitals.filter((ch) => {
-        const chTrend = compareTrends.find((t) => t.facilityId === ch.hospital.facilityId);
-        return !chTrend?.points.some((p) => p.scores[selectedMeasureId] != null);
-      }),
-    [compareHospitals, compareTrends, selectedMeasureId],
-  );
-
   const values = useMemo(
-    () => collectNumericValues(data, series.map((s) => s.id)),
-    [data, series],
+    () => collectNumericValues(rawByYear, series.map((s) => s.id), RAW),
+    [rawByYear, series],
   );
 
   const showZoomPresets =
@@ -175,10 +231,39 @@ export function TrendChart({
     [yAxisMode, measure, values],
   );
 
+  const axisMin = typeof domain[0] === "number" ? domain[0] : 0;
+
+  // Stack a transparent pad from 0→axisMin so bars render correctly when zoomed
+  const data = useMemo(() => {
+    return rawByYear.map((rawRow) => {
+      const row: Record<string, number | string | null> = { year: rawRow.year };
+      for (const s of series) {
+        const score = rawRow[`${s.id}${RAW}`];
+        row[`${s.id}${RAW}`] = score;
+        if (typeof score === "number") {
+          row[`${s.id}${PAD}`] = axisMin;
+          row[s.id] = Math.max(0, score - axisMin);
+        } else {
+          row[`${s.id}${PAD}`] = null;
+          row[s.id] = null;
+        }
+      }
+      return row;
+    });
+  }, [rawByYear, series, axisMin]);
+
+  const noTrendHospitals = useMemo(
+    () =>
+      series
+        .filter((s) => s.id !== facilityId)
+        .filter((s) => !s.trend?.points.some((p) => p.scores[selectedMeasureId] != null)),
+    [series, facilityId, selectedMeasureId],
+  );
+
   const missingNote = noTrendHospitals.length > 0 && (
     <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
       <span className="font-semibold">No historical CMS data for this measure:</span>{" "}
-      {noTrendHospitals.map((ch) => ch.hospital.name).join(", ")}. These hospitals have no bars
+      {noTrendHospitals.map((s) => s.name).join(", ")}. These hospitals have no bars
       because they did not report this measure to CMS.
     </p>
   );
@@ -226,23 +311,48 @@ export function TrendChart({
             <XAxis dataKey="year" tick={{ fontSize: 12 }} />
             <YAxis domain={domain} tick={{ fontSize: 12 }} allowDataOverflow />
             <Tooltip
-              formatter={(value: number, name: string) => [
-                formatMeasureValue(value, measure.valueType),
-                name,
-              ]}
-              labelFormatter={(year) => `Year ${year}`}
+              shared={false}
+              cursor={{ fill: "rgba(148, 163, 184, 0.12)" }}
+              content={(props) => (
+                <TrendTooltip
+                  active={props.active}
+                  payload={props.payload as TooltipPayloadItem[] | undefined}
+                  label={props.label as string | number | undefined}
+                  valueType={measure.valueType}
+                  seriesById={seriesById}
+                />
+              )}
             />
-            <Legend />
-            {series.map((s) => (
+            <Legend
+              wrapperStyle={{ paddingTop: 12 }}
+              formatter={(value) => (
+                <span className="text-xs text-slate-700" title={String(value)}>
+                  {value}
+                </span>
+              )}
+            />
+            {series.flatMap((s) => [
+              <Bar
+                key={`${s.id}${PAD}`}
+                dataKey={`${s.id}${PAD}`}
+                stackId={s.id}
+                fill="transparent"
+                legendType="none"
+                tooltipType="none"
+                isAnimationActive={false}
+                maxBarSize={48}
+              />,
               <Bar
                 key={s.id}
                 dataKey={s.id}
+                stackId={s.id}
                 name={s.name}
                 fill={s.color}
                 radius={[3, 3, 0, 0]}
                 maxBarSize={48}
-              />
-            ))}
+                isAnimationActive={false}
+              />,
+            ])}
           </BarChart>
         </ResponsiveContainer>
       </div>

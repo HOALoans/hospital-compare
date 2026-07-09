@@ -110,14 +110,23 @@ export default function App() {
 
   const loadComparison = useCallback(
     async (hospital: HospitalSummary, compareIds: string[]) => {
-      const [comp, tr, cmpTrends] = await Promise.all([
+      const [comp, tr, cmpTrendResults] = await Promise.all([
         fetchComparison(hospital.facilityId, compareIds),
         fetchTrends(hospital.facilityId),
-        Promise.all(compareIds.map((id) => fetchTrends(id))),
+        Promise.allSettled(compareIds.map((id) => fetchTrends(id))),
       ]);
       setComparison(comp);
-      setTrend(tr);
-      setCompareTrends(cmpTrends);
+      setTrend({ ...tr, facilityId: tr.facilityId || hospital.facilityId });
+      // Keep trends aligned to requested IDs; one failed fetch must not drop the rest
+      setCompareTrends(
+        cmpTrendResults.map((result, i) => {
+          const facilityId = compareIds[i]!;
+          if (result.status === "fulfilled") {
+            return { ...result.value, facilityId: result.value.facilityId || facilityId };
+          }
+          return { facilityId, points: [] };
+        }),
+      );
     },
     [],
   );
