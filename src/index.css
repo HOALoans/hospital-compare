@@ -42,10 +42,13 @@ body {
 }
 
 @media print {
-  /* Zero browser chrome margins so URL / date / page headers don't print. */
+  /*
+   * Browser headers/footers (title, URL, date) are a print-dialog setting — CSS cannot
+   * fully disable them. Keep modest margins; blank document.title during print helps.
+   */
   @page {
     size: letter portrait;
-    margin: 0.45in 0.5in;
+    margin: 0.5in;
   }
 
   html,

@@ -295,10 +295,11 @@ export default function App() {
   );
 
   const printReport = () => {
-    // Prefer a clean document title so browser PDF headers don't show a long URL/timestamp title.
+    // Browser PDF headers (title + URL) are controlled by the print dialog, not CSS.
+    // Blank the document title so Chrome has less to stamp on each page; user must also
+    // uncheck "Headers and footers" under More settings for a clean export.
     const previousTitle = document.title;
-    const hospitalName = selected?.name ?? "Hospital";
-    document.title = `Parigrado — ${hospitalName}`;
+    document.title = " ";
     const restore = () => {
       document.title = previousTitle;
       window.removeEventListener("afterprint", restore);
@@ -639,12 +640,20 @@ export default function App() {
                           <button
                             type="button"
                             onClick={printReport}
+                            title='In the print dialog: More settings → uncheck "Headers and footers"'
                             className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-primary/90"
                           >
                             <Printer className="h-4 w-4" />
                             PDF
                           </button>
                         </div>
+                        <p className="mt-2 text-[11px] text-slate-500">
+                          PDF tip: in the print dialog open{" "}
+                          <span className="font-medium text-slate-700">More settings</span> and
+                          uncheck{" "}
+                          <span className="font-medium text-slate-700">Headers and footers</span>{" "}
+                          to remove the Parigrado title and URL from each page.
+                        </p>
                       </div>
                     </div>
                     {showSavePanel && (
