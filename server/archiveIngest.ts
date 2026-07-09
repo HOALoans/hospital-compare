@@ -23,7 +23,7 @@ const RAW_DIR = ARCHIVE_RAW_DIR;
 const EXTRACT_DIR = ARCHIVE_EXTRACT_DIR;
 const LOCK_FILE = ARCHIVE_LOCK_FILE;
 /** Bump when ingest year-keying or merge rules change so redeploys rebuild trends. */
-const INGEST_VERSION = 2;
+const INGEST_VERSION = 3;
 
 const CMS_BASE = "https://data.cms.gov";
 const CMS_ARCHIVE_CATALOG =
@@ -369,13 +369,11 @@ export async function runArchiveIngest() {
   fs.mkdirSync(RAW_DIR, { recursive: true });
   fs.mkdirSync(EXTRACT_DIR, { recursive: true });
 
-  // Drop previously keyed trend files when ingest rules change so period-end
-  // years (e.g. 2018) do not linger beside correct snapshot years.
-  if (lockNeedsRebuild && fs.existsSync(ARCHIVE_DIR)) {
-    for (const file of fs.readdirSync(ARCHIVE_DIR)) {
-      if (file.endsWith(".json")) fs.rmSync(path.join(ARCHIVE_DIR, file), { force: true });
-    }
-    console.log("[archives] Cleared trend files for ingest version rebuild");
+  // Do not wipe trend files on version bump — a mid-ingest crash would leave only
+  // the latest snapshot year (e.g. 2026). flushTrendFiles drops disallowed years
+  // (like old period-end 2018) while merging snapshot years as they complete.
+  if (lockNeedsRebuild) {
+    console.log("[archives] Ingest version rebuild — merging into existing trend files");
   }
 
   // Remove stale lock until ingest finishes so a crash mid-run does not skip rebuild.

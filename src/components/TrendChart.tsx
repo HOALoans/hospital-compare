@@ -308,14 +308,20 @@ export function TrendChart({
       </div>
       <div className="h-80 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+          <BarChart
+            data={data}
+            margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
+            // Keep hospitals clustered under each year (especially when only 1 year is loaded).
+            barCategoryGap={data.length <= 2 ? "55%" : "18%"}
+            barGap={2}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis
               dataKey="year"
               type="category"
               tick={{ fontSize: 12 }}
               interval={0}
-              padding={{ left: 12, right: 12 }}
+              padding={{ left: 8, right: 8 }}
             />
             <YAxis domain={domain} tick={{ fontSize: 12 }} allowDataOverflow />
             <Tooltip
@@ -348,7 +354,7 @@ export function TrendChart({
                 legendType="none"
                 tooltipType="none"
                 isAnimationActive={false}
-                maxBarSize={40}
+                maxBarSize={36}
               />,
               <Bar
                 key={s.id}
@@ -357,7 +363,7 @@ export function TrendChart({
                 name={s.name}
                 fill={s.color}
                 radius={[3, 3, 0, 0]}
-                maxBarSize={40}
+                maxBarSize={36}
                 isAnimationActive={false}
               />,
             ])}
