@@ -23,10 +23,17 @@ const RAW_DIR = ARCHIVE_RAW_DIR;
 const EXTRACT_DIR = ARCHIVE_EXTRACT_DIR;
 const LOCK_FILE = ARCHIVE_LOCK_FILE;
 /** Bump when ingest year-keying or merge rules change so redeploys rebuild trends. */
-const INGEST_VERSION = 3;
+const INGEST_VERSION = 4;
 
 const CMS_BASE = "https://data.cms.gov";
+/**
+ * CMS theme archive catalog. Prefer the non-`/relative` endpoint — as of mid-2026
+ * `/relative` returns an empty `data` array, which left production with only the
+ * current-year snapshot and empty historical charts.
+ */
 const CMS_ARCHIVE_CATALOG =
+  "https://data.cms.gov/provider-data/api/1/archive/aggregate/theme/hospitals";
+const CMS_ARCHIVE_CATALOG_FALLBACK =
   "https://data.cms.gov/provider-data/api/1/archive/aggregate/theme/hospitals/relative";
 const CURRENT_HOSPITAL_ZIP =
   "https://data.cms.gov/provider-data/sites/default/files/archive/Hospitals/current/hospitals_current_data.zip";
@@ -50,6 +57,28 @@ function toAbsoluteCmsUrl(url: string): string {
   return `${CMS_BASE}${url.startsWith("/") ? url : `/${url}`}`;
 }
 
+async function fetchArchiveCatalog(): Promise<CmsArchiveEntry[]> {
+  for (const url of [CMS_ARCHIVE_CATALOG, CMS_ARCHIVE_CATALOG_FALLBACK]) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        console.warn(`[archives] CMS archive catalog ${url} returned ${res.status}`);
+        continue;
+      }
+      const payload = (await res.json()) as { data?: CmsArchiveEntry[] };
+      const data = payload.data ?? [];
+      if (data.length === 0) {
+        console.warn(`[archives] CMS archive catalog ${url} returned 0 entries`);
+        continue;
+      }
+      return data;
+    } catch (err) {
+      console.warn(`[archives] Could not fetch CMS archive catalog ${url}:`, err);
+    }
+  }
+  return [];
+}
+
 export async function loadArchiveSources(): Promise<ArchiveSource[]> {
   const sources: ArchiveSource[] = [
     {
@@ -60,42 +89,49 @@ export async function loadArchiveSources(): Promise<ArchiveSource[]> {
     },
   ];
 
-  try {
-    const res = await fetch(CMS_ARCHIVE_CATALOG);
-    if (!res.ok) {
-      console.warn(`[archives] CMS archive catalog returned ${res.status}`);
-      return sources;
+  const catalog = await fetchArchiveCatalog();
+  const latestThemeByYear = new Map<string, CmsArchiveEntry>();
+
+  for (const entry of catalog) {
+    // Quarterly theme snapshots (~14MB) are preferred over annual_theme bundles
+    // (30–80MB). Fall back to annual_theme only when no theme exists for a year.
+    if (entry.type !== "theme" && entry.type !== "annual_theme") continue;
+    const year = entry.date.slice(0, 4);
+    const minYear = ARCHIVE_YEARS[0];
+    const maxYear = ARCHIVE_YEARS[ARCHIVE_YEARS.length - 1];
+    if (Number(year) < minYear || Number(year) > maxYear) continue;
+
+    const existing = latestThemeByYear.get(year);
+    if (!existing) {
+      latestThemeByYear.set(year, entry);
+      continue;
     }
-
-    const payload = (await res.json()) as { data?: CmsArchiveEntry[] };
-    const latestThemeByYear = new Map<string, CmsArchiveEntry>();
-
-    for (const entry of payload.data ?? []) {
-      if (entry.type !== "theme") continue;
-      const year = entry.date.slice(0, 4);
-      const minYear = ARCHIVE_YEARS[0];
-      const maxYear = ARCHIVE_YEARS[ARCHIVE_YEARS.length - 1];
-      if (Number(year) < minYear || Number(year) > maxYear) continue;
-
-      const existing = latestThemeByYear.get(year);
-      if (!existing || entry.date > existing.date) {
-        latestThemeByYear.set(year, entry);
-      }
+    // Prefer theme over annual_theme; within the same type, take the latest date.
+    if (existing.type === "annual_theme" && entry.type === "theme") {
+      latestThemeByYear.set(year, entry);
+    } else if (existing.type === entry.type && entry.date > existing.date) {
+      latestThemeByYear.set(year, entry);
     }
+  }
 
-    for (const year of [...latestThemeByYear.keys()].sort()) {
-      const entry = latestThemeByYear.get(year)!;
-      sources.push({
-        id: entry.date,
-        year: Number(year),
-        label: entry.name,
-        urls: [toAbsoluteCmsUrl(entry.url)],
-      });
-    }
+  for (const year of [...latestThemeByYear.keys()].sort()) {
+    const entry = latestThemeByYear.get(year)!;
+    sources.push({
+      id: entry.date,
+      year: Number(year),
+      label: entry.name,
+      urls: [toAbsoluteCmsUrl(entry.url)],
+    });
+  }
 
-    console.log(`[archives] Loaded ${sources.length} archive sources from CMS catalog`);
-  } catch (err) {
-    console.warn("[archives] Could not fetch CMS archive catalog:", err);
+  if (latestThemeByYear.size === 0) {
+    console.warn(
+      "[archives] No historical theme archives found in CMS catalog — trends will only have the current snapshot",
+    );
+  } else {
+    console.log(
+      `[archives] Loaded ${sources.length} archive sources (${latestThemeByYear.size} historical years + current)`,
+    );
   }
 
   return sources;
@@ -339,9 +375,43 @@ function flushTrendFiles(byFacility: Map<string, HospitalTrend["points"]>) {
 }
 
 /**
- * Skip re-ingest when the lock is fresh (<6h) and trend files already exist on
- * the persistent data disk. First deploy after this change starts with an empty
- * disk and runs a full ingest once; later redeploys reuse stored archives.
+ * Sample on-disk trend files to see whether historical years actually landed.
+ * A catalog outage can leave thousands of files that only contain the current
+ * year — those should not count as a successful ingest for skip purposes.
+ */
+export function sampleTrendYearCoverage(sampleSize = 25): {
+  fileCount: number;
+  maxYearsInSample: number;
+  yearsSeen: number[];
+} {
+  if (!fs.existsSync(ARCHIVE_DIR)) {
+    return { fileCount: 0, maxYearsInSample: 0, yearsSeen: [] };
+  }
+  const files = fs.readdirSync(ARCHIVE_DIR).filter((f) => f.endsWith(".json"));
+  const years = new Set<number>();
+  let maxYearsInSample = 0;
+  for (const file of files.slice(0, sampleSize)) {
+    try {
+      const trend = JSON.parse(
+        fs.readFileSync(path.join(ARCHIVE_DIR, file), "utf8"),
+      ) as HospitalTrend;
+      const pointYears = (trend.points ?? []).map((p) => p.year);
+      maxYearsInSample = Math.max(maxYearsInSample, pointYears.length);
+      for (const y of pointYears) years.add(y);
+    } catch {
+      // ignore corrupt samples
+    }
+  }
+  return {
+    fileCount: files.length,
+    maxYearsInSample,
+    yearsSeen: [...years].sort((a, b) => a - b),
+  };
+}
+
+/**
+ * Skip re-ingest when the lock is fresh (<6h), trend files exist, and those
+ * files actually contain multiple snapshot years (not just current).
  */
 function shouldSkipIngest(): boolean {
   if (process.env.FORCE_INGEST_ARCHIVES === "1") return false;
@@ -350,9 +420,15 @@ function shouldSkipIngest(): boolean {
   if (!lockBody.includes(`version=${INGEST_VERSION}`)) return false;
   const age = Date.now() - fs.statSync(LOCK_FILE).mtimeMs;
   if (age >= 6 * 60 * 60 * 1000) return false;
-  if (!fs.existsSync(ARCHIVE_DIR)) return false;
-  const hasTrendFiles = fs.readdirSync(ARCHIVE_DIR).some((f) => f.endsWith(".json"));
-  return hasTrendFiles;
+  const coverage = sampleTrendYearCoverage();
+  if (coverage.fileCount === 0) return false;
+  if (coverage.maxYearsInSample < 3) {
+    console.log(
+      `[archives] Trend files look incomplete (max ${coverage.maxYearsInSample} year(s) in sample: ${coverage.yearsSeen.join(",") || "none"}); re-ingesting`,
+    );
+    return false;
+  }
+  return true;
 }
 
 export async function runArchiveIngest() {
@@ -380,6 +456,12 @@ export async function runArchiveIngest() {
   fs.rmSync(LOCK_FILE, { force: true });
 
   const archiveSources = await loadArchiveSources();
+  const historicalSources = archiveSources.filter((s) => s.id !== "current");
+  if (historicalSources.length === 0) {
+    console.warn(
+      "[archives] Aborting lock write path will still run current snapshot only — historical catalog empty",
+    );
+  }
 
   // Process one archive source at a time. The per-source map is scoped to the
   // loop body and flushed (merged into the on-disk trend files) before the next
@@ -452,8 +534,19 @@ export async function runArchiveIngest() {
     byFacility.clear();
   }
 
-  fs.writeFileSync(LOCK_FILE, `version=${INGEST_VERSION}\n${new Date().toISOString()}`);
-  console.log(`[archives] Trend ingest complete across ${archiveSources.length} sources`);
+  const coverage = sampleTrendYearCoverage();
+  // Only treat ingest as complete when historical years actually landed. Otherwise
+  // leave the lock absent so the next boot retries instead of skipping for 6h.
+  if (historicalSources.length > 0 && coverage.maxYearsInSample >= 3) {
+    fs.writeFileSync(LOCK_FILE, `version=${INGEST_VERSION}\n${new Date().toISOString()}`);
+    console.log(
+      `[archives] Trend ingest complete across ${archiveSources.length} sources (sample years: ${coverage.yearsSeen.join(",")})`,
+    );
+  } else {
+    console.warn(
+      `[archives] Ingest finished but coverage is incomplete (sample max years=${coverage.maxYearsInSample}, years=${coverage.yearsSeen.join(",") || "none"}); not writing lock so next boot retries`,
+    );
+  }
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

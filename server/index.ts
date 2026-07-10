@@ -17,7 +17,7 @@ import {
   getLastCacheRefresh,
 } from "./cache.js";
 import { buildComparison } from "./comparisons.js";
-import { scheduleArchiveIngest } from "./archiveIngest.js";
+import { scheduleArchiveIngest, sampleTrendYearCoverage } from "./archiveIngest.js";
 import { handleAdminLogin, handleAdminLogout, requireAdmin } from "./adminAuth.js";
 import {
   initPartnerStore,
@@ -298,21 +298,17 @@ app.get("/api/hospitals/:facilityId/trends", (req, res) => {
 });
 
 app.get("/api/meta/archives", (_req, res) => {
-  const ingested = fs.existsSync(ARCHIVE_DIR)
-    ? fs.readdirSync(ARCHIVE_DIR).filter((f) => f.endsWith(".json")).length
-    : 0;
+  const coverage = sampleTrendYearCoverage(40);
   const totalHospitals = getHospitals().length;
   const estimatedYears = ARCHIVE_YEARS.length;
-  const yearProgress = totalHospitals > 0
-    ? Math.min(estimatedYears, Math.ceil((ingested / totalHospitals) * estimatedYears))
-    : 0;
   res.json({
     archiveYears: ARCHIVE_YEARS,
     cmsArchiveUrl: "https://data.cms.gov/provider-data/archived-data/hospitals",
-    ingestedHospitalCount: ingested,
+    ingestedHospitalCount: coverage.fileCount,
     totalHospitalCount: totalHospitals,
-    estimatedYearProgress: yearProgress,
+    estimatedYearProgress: coverage.yearsSeen.length,
     estimatedYearsTotal: estimatedYears,
+    sampleYears: coverage.yearsSeen,
     lastCacheRefresh: getLastCacheRefresh(),
     reportingPeriod: getCurrentPeriod(),
     note: "CMS maintains downloadable hospital data archives for the past 7 years per federal policy.",
