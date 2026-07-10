@@ -1,4 +1,4 @@
-import type { ComparisonResult } from "@shared/types";
+import type { ComparisonResult, HospitalTrend } from "@shared/types";
 import {
   COMPARISON_MEASURES,
   MEASURE_CATEGORIES,
@@ -12,9 +12,20 @@ import {
 } from "@shared/measures";
 import { computeComparisonSummary } from "@/lib/comparisonSummary";
 import { usePartner } from "@/context/PartnerContext";
+import { PrintTrendChart } from "@/components/PrintTrendChart";
+
+const NATIONAL_KEY = "national";
+const STATE_KEY = "state-all";
+const COUNTY_KEY = "county-all";
 
 interface Props {
   comparison: ComparisonResult;
+  /** Same peer toggle set as the on-screen comparison (national, state-all, county-all, …). */
+  visiblePeerKeys: Set<string>;
+  trend?: HospitalTrend | null;
+  compareTrends?: HospitalTrend[];
+  /** Measure charted in the historical trends section (falls back to overall rating). */
+  trendMeasureId?: string;
 }
 
 function shortName(name: string, max = 22): string {
@@ -26,10 +37,23 @@ function shortName(name: string, max = 22): string {
  * Dedicated print/PDF layout. Hidden on screen; becomes the only content
  * when the user chooses Save as PDF / Print.
  */
-export function PrintComparisonReport({ comparison }: Props) {
+export function PrintComparisonReport({
+  comparison,
+  visiblePeerKeys,
+  trend,
+  compareTrends = [],
+  trendMeasureId,
+}: Props) {
   const { partner, isPartnerMode } = usePartner();
   const stats = computeComparisonSummary(comparison, "state");
   const { hospital, period } = comparison;
+  // Respect the same benchmark toggles the user set on screen.
+  const showNational = visiblePeerKeys.has(NATIONAL_KEY);
+  const showState = visiblePeerKeys.has(STATE_KEY);
+  const showCounty = visiblePeerKeys.has(COUNTY_KEY);
+  // "Gap vs state" is only meaningful when the state benchmark is shown.
+  const showGap = showState;
+  const trendMeasure = trendMeasureId ?? COMPARISON_MEASURES[0].id;
   // Cap columns so the score table fits letter portrait without clipping.
   const compareHospitals = (comparison.compareHospitals ?? []).slice(0, 2);
   const brandName = isPartnerMode ? partner.displayName : SITE_NAME;
@@ -185,15 +209,15 @@ export function PrintComparisonReport({ comparison }: Props) {
               <th className="col-num" title={hospital.name}>
                 {shortName(hospital.name)}
               </th>
-              <th className="col-num">National</th>
-              <th className="col-num">{hospital.state}</th>
-              <th className="col-num">County</th>
+              {showNational && <th className="col-num">National</th>}
+              {showState && <th className="col-num">{hospital.state}</th>}
+              {showCounty && <th className="col-num">County</th>}
               {compareCols.map((name) => (
                 <th key={name} className="col-num" title={name}>
                   {name}
                 </th>
               ))}
-              <th className="col-num">Gap vs state</th>
+              {showGap && <th className="col-num">Gap vs state</th>}
             </tr>
           </thead>
           <tbody>
@@ -215,35 +239,61 @@ export function PrintComparisonReport({ comparison }: Props) {
                   <td className="col-num hospital-score">
                     {formatMeasureValue(row.hospitalValue, row.def.valueType)}
                   </td>
-                  <td className="col-num">
-                    {formatMeasureValue(row.national, row.def.valueType)}
-                  </td>
-                  <td className="col-num">{formatMeasureValue(row.state, row.def.valueType)}</td>
-                  <td className="col-num">{formatMeasureValue(row.county, row.def.valueType)}</td>
+                  {showNational && (
+                    <td className="col-num">
+                      {formatMeasureValue(row.national, row.def.valueType)}
+                    </td>
+                  )}
+                  {showState && (
+                    <td className="col-num">{formatMeasureValue(row.state, row.def.valueType)}</td>
+                  )}
+                  {showCounty && (
+                    <td className="col-num">{formatMeasureValue(row.county, row.def.valueType)}</td>
+                  )}
                   {row.compareValues.map((v, i) => (
                     <td key={compareHospitals[i]!.hospital.facilityId} className="col-num">
                       {formatMeasureValue(v, row.def.valueType)}
                     </td>
                   ))}
-                  <td
-                    className={`col-num gap-cell ${
-                      row.gapState == null
-                        ? ""
-                        : row.gapState > 0.05
-                          ? "win"
-                          : row.gapState < -0.05
-                            ? "gap"
-                            : ""
-                    }`}
-                  >
-                    {formatGapValue(row.gapState, row.def.valueType)}
-                  </td>
+                  {showGap && (
+                    <td
+                      className={`col-num gap-cell ${
+                        row.gapState == null
+                          ? ""
+                          : row.gapState > 0.05
+                            ? "win"
+                            : row.gapState < -0.05
+                              ? "gap"
+                              : ""
+                      }`}
+                    >
+                      {formatGapValue(row.gapState, row.def.valueType)}
+                    </td>
+                  )}
                 </tr>
               );
             })}
           </tbody>
         </table>
       </section>
+
+      {trend && trend.points.length > 0 && (
+        <section className="print-trends-section">
+          <h2 className="print-table-title">Historical trends</h2>
+          <p className="print-table-note">
+            Year-over-year {getMeasureDefinition(trendMeasure)?.label ?? "scores"} from CMS archived
+            hospital snapshots. Missing years mean that archive has not finished importing yet.
+          </p>
+          <PrintTrendChart
+            trend={trend}
+            compareTrends={compareTrends}
+            compareHospitals={comparison.compareHospitals}
+            baseHospitalName={hospital.name}
+            facilityId={hospital.facilityId}
+            selectedMeasureId={trendMeasure}
+          />
+        </section>
+      )}
     </div>
   );
 }

@@ -582,7 +582,13 @@ export default function App() {
 
             {comparison && selected && !loading && (
               <>
-                <PrintComparisonReport comparison={comparison} />
+                <PrintComparisonReport
+                  comparison={comparison}
+                  visiblePeerKeys={visiblePeers}
+                  trend={trend}
+                  compareTrends={compareTrends}
+                  trendMeasureId={trendMeasure}
+                />
                 <div id="comparison-report" className="space-y-6 print:hidden">
                   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                     <div className="flex flex-wrap items-start justify-between gap-4">

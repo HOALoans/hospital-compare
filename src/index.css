@@ -337,6 +337,27 @@ body {
     font-weight: 700;
   }
 
+  .print-trends-section {
+    margin-top: 0.4rem;
+    padding-top: 0.3rem;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-trends-chart {
+    margin-top: 0.2rem;
+  }
+
+  /* Ensure recharts bar fills and axes print with color. */
+  .print-trends-chart svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .print-trends-chart .recharts-surface {
+    overflow: visible;
+  }
+
   a {
     text-decoration: none !important;
     color: inherit !important;
