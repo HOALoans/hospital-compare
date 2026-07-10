@@ -182,7 +182,9 @@ export function PrintComparisonReport({ comparison }: Props) {
             <tr>
               <th className="col-measure">Measure</th>
               <th className="col-num">Unit</th>
-              <th className="col-num">Hospital</th>
+              <th className="col-num" title={hospital.name}>
+                {shortName(hospital.name)}
+              </th>
               <th className="col-num">National</th>
               <th className="col-num">{hospital.state}</th>
               <th className="col-num">County</th>
