@@ -114,7 +114,11 @@ export async function loadArchiveSources(): Promise<ArchiveSource[]> {
     }
   }
 
-  for (const year of [...latestThemeByYear.keys()].sort()) {
+  // Ingest newest year first (after the current snapshot). If a redeploy has to
+  // rebuild from scratch, the "Last N years" chart then fills the recent,
+  // contiguous years first (2026, 2025, 2024…) instead of surfacing a jarring
+  // first-and-last gap like 2019 + 2026 while the middle years are still loading.
+  for (const year of [...latestThemeByYear.keys()].sort().reverse()) {
     const entry = latestThemeByYear.get(year)!;
     sources.push({
       id: entry.date,
@@ -410,8 +414,15 @@ export function sampleTrendYearCoverage(sampleSize = 25): {
 }
 
 /**
- * Skip re-ingest when the lock is fresh (<6h), trend files exist, and those
- * files actually contain multiple snapshot years (not just current).
+ * Skip re-ingest when trend files on the persistent disk already look good.
+ *
+ * Two skip paths:
+ *  - Near-complete coverage (≈all snapshot years) is treated as durable: skip
+ *    for a full week regardless of the usual 6h lock window, so back-to-back
+ *    redeploys never churn through a full re-ingest (which briefly leaves only
+ *    the newest year or two visible — the "2019 + 2026" symptom).
+ *  - Otherwise keep the short 6h freshness window and require ≥3 years so a
+ *    partial/incomplete ingest keeps getting retried on the next boot.
  */
 function shouldSkipIngest(): boolean {
   if (process.env.FORCE_INGEST_ARCHIVES === "1") return false;
@@ -419,9 +430,18 @@ function shouldSkipIngest(): boolean {
   const lockBody = fs.readFileSync(LOCK_FILE, "utf8");
   if (!lockBody.includes(`version=${INGEST_VERSION}`)) return false;
   const age = Date.now() - fs.statSync(LOCK_FILE).mtimeMs;
-  if (age >= 6 * 60 * 60 * 1000) return false;
   const coverage = sampleTrendYearCoverage();
   if (coverage.fileCount === 0) return false;
+
+  const nearComplete = coverage.maxYearsInSample >= ARCHIVE_YEARS.length - 1;
+  if (nearComplete && age < 7 * 24 * 60 * 60 * 1000) {
+    console.log(
+      `[archives] Trend files already have durable coverage (${coverage.maxYearsInSample} years: ${coverage.yearsSeen.join(",")}); skipping re-ingest`,
+    );
+    return true;
+  }
+
+  if (age >= 6 * 60 * 60 * 1000) return false;
   if (coverage.maxYearsInSample < 3) {
     console.log(
       `[archives] Trend files look incomplete (max ${coverage.maxYearsInSample} year(s) in sample: ${coverage.yearsSeen.join(",") || "none"}); re-ingesting`,
@@ -432,6 +452,15 @@ function shouldSkipIngest(): boolean {
 }
 
 export async function runArchiveIngest() {
+  // Persistence diagnostic: if DATA_DIR is on the mounted Render disk, previously
+  // ingested trend files should already be present on a fresh container. A count
+  // of 0 here right after a deploy means the disk is NOT persisting (or DATA_DIR
+  // points off-mount) and every deploy pays for a full re-ingest.
+  const startupCoverage = sampleTrendYearCoverage();
+  console.log(
+    `[archives] Boot data check — ARCHIVE_DIR=${ARCHIVE_DIR}, existing trend files=${startupCoverage.fileCount}, sample years=${startupCoverage.yearsSeen.join(",") || "none"}`,
+  );
+
   if (shouldSkipIngest()) {
     console.log("[archives] Ingest already ran recently, skipping");
     return;

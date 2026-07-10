@@ -20,7 +20,7 @@ import {
 } from "@shared/measures";
 import { OWNERSHIP_LABELS } from "@shared/ownership";
 import { CHART } from "@shared/chartTheme";
-import { fetchComparison, fetchHealth, fetchHospital, fetchSavedComparison, fetchTrends, saveComparisonForLater } from "@/lib/api";
+import { fetchArchiveMeta, fetchComparison, fetchHealth, fetchHospital, fetchSavedComparison, fetchTrends, saveComparisonForLater } from "@/lib/api";
 import { downloadComparisonCsv } from "@/lib/exportComparisonCsv";
 import { parseUrlState, syncUrl } from "@/lib/urlState";
 import { usePartner } from "@/context/PartnerContext";
@@ -71,6 +71,7 @@ export default function App() {
   const [comparison, setComparison] = useState<ComparisonResult | null>(null);
   const [trend, setTrend] = useState<HospitalTrend | null>(null);
   const [compareTrends, setCompareTrends] = useState<HospitalTrend[]>([]);
+  const [trendsImporting, setTrendsImporting] = useState(false);
   const [trendYears, setTrendYears] = useState(10);
   const [categoryFilter, setCategoryFilter] = useState<MeasureCategory | "all">(
     (initialUrl.groupFilter as MeasureCategory | "all") || "all",
@@ -130,6 +131,50 @@ export default function App() {
     },
     [],
   );
+
+  // While CMS archives are still importing in the background (e.g. right after a
+  // redeploy triggers a rebuild), poll for progress and re-fetch trends so newly
+  // ingested years appear without the user needing a manual hard-refresh.
+  useEffect(() => {
+    if (view !== "compare" || !selected) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const compareIds = comparison?.compareHospitals.map((c) => c.hospital.facilityId) ?? [];
+
+    const tick = async () => {
+      try {
+        const meta = await fetchArchiveMeta();
+        if (cancelled) return;
+        const incomplete = meta.estimatedYearProgress < meta.estimatedYearsTotal;
+        setTrendsImporting(incomplete);
+        if (!incomplete) return;
+
+        const [tr, cmp] = await Promise.all([
+          fetchTrends(selected.facilityId),
+          Promise.allSettled(compareIds.map((id) => fetchTrends(id))),
+        ]);
+        if (cancelled) return;
+        setTrend({ ...tr, facilityId: tr.facilityId || selected.facilityId });
+        setCompareTrends(
+          cmp.map((result, i) => {
+            const facilityId = compareIds[i]!;
+            return result.status === "fulfilled"
+              ? { ...result.value, facilityId: result.value.facilityId || facilityId }
+              : { facilityId, points: [] };
+          }),
+        );
+        timer = setTimeout(tick, 20000);
+      } catch {
+        if (!cancelled) timer = setTimeout(tick, 30000);
+      }
+    };
+
+    tick();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [view, selected, comparison]);
 
   const clearSavedComparison = () => {
     setSavedCode("");
@@ -815,6 +860,13 @@ export default function App() {
                           Each year shows every compared hospital side by side. Missing years mean
                           that archive has not finished importing yet.
                         </p>
+                        {trendsImporting && (
+                          <p className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                            More years are still importing from the CMS archives. Newest years
+                            appear first and this chart updates automatically — no refresh needed.
+                          </p>
+                        )}
                         <div className="flex flex-wrap items-center gap-3">
                           <select
                             value={trendMeasure}
