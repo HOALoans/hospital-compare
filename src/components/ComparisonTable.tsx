@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, Minus } from "lucide-react";
-import type { ComparisonResult, HospitalComparePeer, PeerAverage } from "@shared/types";
+import type { ComparisonResult, HospitalComparePeer } from "@shared/types";
 import { CHART, individualHospitalColor } from "@shared/chartTheme";
 import {
   COMPARISON_MEASURES,
@@ -14,11 +14,13 @@ import {
   type MeasureValueType,
 } from "@shared/measures";
 import { MeasureHelp } from "@/components/MeasureHelp";
-
-const NATIONAL_KEY = "national";
-const STATE_KEY = "state-all";
-const COUNTY_KEY = "county-all";
-const DEDICATED_PEER_KEYS = new Set([NATIONAL_KEY, STATE_KEY, COUNTY_KEY]);
+import {
+  COUNTY_KEY,
+  NATIONAL_KEY,
+  STATE_KEY,
+  selectedBenchmarks,
+  type SelectedBenchmark,
+} from "@/lib/selectedBenchmarks";
 
 interface Props {
   comparison: ComparisonResult;
@@ -282,29 +284,31 @@ function ComparisonBar({
 function buildMarkers(
   measureId: string,
   comparison: ComparisonResult,
-  visiblePeers: PeerAverage[],
+  benchmarks: SelectedBenchmark[],
   compareHospitals: HospitalComparePeer[],
   baseValue: number | null,
-  visiblePeerKeys: Set<string>,
 ): BarMarker[] {
   const markers: BarMarker[] = [];
-  const national = comparison.nationalScores[measureId];
-  const state = comparison.stateScores[measureId];
-  const county = comparison.countyScores[measureId];
 
-  if (national != null && visiblePeerKeys.has(NATIONAL_KEY))
-    markers.push({ key: "national", label: "National", value: national, kind: "national" });
-  if (state != null && visiblePeerKeys.has(STATE_KEY))
-    markers.push({ key: "state", label: "State", value: state, kind: "state" });
-  if (county != null && visiblePeerKeys.has(COUNTY_KEY))
-    markers.push({ key: "county", label: "County", value: county, kind: "county" });
-
-  for (const peer of visiblePeers) {
-    if (DEDICATED_PEER_KEYS.has(peer.groupKey)) continue;
-    const v = peer.scores[measureId];
-    if (v != null) {
-      markers.push({ key: peer.groupKey, label: peer.label, value: v, kind: "peer" });
-    }
+  // Same selected-benchmark list that drives the chart key + score cards, so
+  // every dot/diamond on the bar has a matching legend entry (and vice versa).
+  for (const benchmark of benchmarks) {
+    const v = benchmark.scores[measureId];
+    if (v == null) continue;
+    const kind: MarkerKind =
+      benchmark.key === NATIONAL_KEY
+        ? "national"
+        : benchmark.key === STATE_KEY
+          ? "state"
+          : benchmark.key === COUNTY_KEY
+            ? "county"
+            : "peer";
+    markers.push({
+      key: benchmark.key,
+      label: benchmark.shortLabel,
+      value: v,
+      kind,
+    });
   }
 
   compareHospitals.forEach((ch, i) => {
@@ -340,16 +344,14 @@ function shortHospitalName(name: string, max = 14): string {
 function MeasureRow({
   measure,
   comparison,
-  visiblePeers,
-  visiblePeerKeys,
+  benchmarks,
   compareHospitals,
   expanded,
   onToggle,
 }: {
   measure: MeasureDefinition;
   comparison: ComparisonResult;
-  visiblePeers: PeerAverage[];
-  visiblePeerKeys: Set<string>;
+  benchmarks: SelectedBenchmark[];
   compareHospitals: HospitalComparePeer[];
   expanded: boolean;
   onToggle: () => void;
@@ -358,17 +360,9 @@ function MeasureRow({
   const value =
     comparison.hospitalScores.find((s) => s.measureId === measure.id)?.value ?? null;
   const state = comparison.stateScores[measure.id] ?? null;
-  const national = comparison.nationalScores[measure.id] ?? null;
   const gap = stateGap(value, state, def.higherIsBetter);
   const groupLabel = MEASURE_GROUPS.find((g) => g.id === measure.group)?.label;
-  const markers = buildMarkers(
-    measure.id,
-    comparison,
-    visiblePeers,
-    compareHospitals,
-    value,
-    visiblePeerKeys,
-  );
+  const markers = buildMarkers(measure.id, comparison, benchmarks, compareHospitals, value);
 
   return (
     <div className="border-b border-slate-100 last:border-b-0">
@@ -468,30 +462,30 @@ function MeasureRow({
                 {formatMeasureValue(value, def.valueType)}
               </p>
             </div>
-            {visiblePeerKeys.has(NATIONAL_KEY) && (
-              <div className="rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200">
-                <span className="text-slate-500">National</span>
+            {benchmarks.map((benchmark) => (
+              <div
+                key={benchmark.key}
+                className="rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200"
+              >
+                <span
+                  className="inline-flex items-center gap-1.5 text-slate-500"
+                  title={benchmark.label}
+                >
+                  <span
+                    className="h-2.5 w-2.5 shrink-0"
+                    style={{
+                      backgroundColor: benchmark.color,
+                      borderRadius: benchmark.shape === "diamond" ? 2 : "9999px",
+                      transform: benchmark.shape === "diamond" ? "rotate(45deg)" : undefined,
+                    }}
+                  />
+                  <span className="line-clamp-2">{benchmark.label}</span>
+                </span>
                 <p className="font-semibold text-slate-900">
-                  {formatMeasureValue(national, def.valueType)}
+                  {formatMeasureValue(benchmark.scores[measure.id] ?? null, def.valueType)}
                 </p>
               </div>
-            )}
-            {visiblePeerKeys.has(STATE_KEY) && (
-              <div className="rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200">
-                <span className="text-slate-500">{comparison.hospital.state}</span>
-                <p className="font-semibold text-slate-900">
-                  {formatMeasureValue(state, def.valueType)}
-                </p>
-              </div>
-            )}
-            {visiblePeerKeys.has(COUNTY_KEY) && (
-              <div className="rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200">
-                <span className="text-slate-500">County</span>
-                <p className="font-semibold text-slate-900">
-                  {formatMeasureValue(comparison.countyScores[measure.id] ?? null, def.valueType)}
-                </p>
-              </div>
-            )}
+            ))}
             {compareHospitals.map((ch, i) => (
               <div key={ch.groupKey} className="rounded-lg bg-white px-3 py-2 ring-1 ring-slate-200">
                 <span className="line-clamp-2 text-slate-500" title={ch.hospital.name}>
@@ -534,7 +528,7 @@ export function ComparisonTable({
     return measures;
   }, [categoryFilter]);
 
-  const visiblePeers = comparison.peers.filter((p) => visiblePeerKeys.has(p.groupKey));
+  const benchmarks = selectedBenchmarks(comparison, visiblePeerKeys);
   const compareHospitals = comparison.compareHospitals ?? [];
   const noDataHospitals = compareHospitals.filter(hasNoReportedData);
 
@@ -583,24 +577,23 @@ export function ComparisonTable({
             {comparison.hospital.name}
           </span>
         </span>
-        {visiblePeerKeys.has(NATIONAL_KEY) && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: CHART.national }} />{" "}
-            National
+        {benchmarks.map((benchmark) => (
+          <span
+            key={benchmark.key}
+            className="inline-flex max-w-[220px] items-center gap-1.5"
+            title={benchmark.label}
+          >
+            <span
+              className="h-2.5 w-2.5 shrink-0"
+              style={{
+                backgroundColor: benchmark.color,
+                borderRadius: benchmark.shape === "diamond" ? 2 : "9999px",
+                transform: benchmark.shape === "diamond" ? "rotate(45deg)" : undefined,
+              }}
+            />
+            <span className="truncate">{benchmark.shortLabel}</span>
           </span>
-        )}
-        {visiblePeerKeys.has(STATE_KEY) && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: CHART.state }} />{" "}
-            State
-          </span>
-        )}
-        {visiblePeerKeys.has(COUNTY_KEY) && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: CHART.county }} />{" "}
-            County
-          </span>
-        )}
+        ))}
         {compareHospitals.map((ch, i) => (
           <span key={ch.groupKey} className="inline-flex max-w-[180px] items-center gap-1.5">
             <span
@@ -644,8 +637,7 @@ export function ComparisonTable({
             key={measure.id}
             measure={measure}
             comparison={comparison}
-            visiblePeers={visiblePeers}
-            visiblePeerKeys={visiblePeerKeys}
+            benchmarks={benchmarks}
             compareHospitals={compareHospitals}
             expanded={expandedId === measure.id}
             onToggle={() =>

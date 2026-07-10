@@ -724,6 +724,7 @@ export default function App() {
                   <ComparisonSummary
                     comparison={comparison}
                     compareHospitals={compareHospitals}
+                    visiblePeerKeys={visiblePeers}
                     onSelectCategory={(id) => setCategoryFilter(id as MeasureCategory)}
                   />
 

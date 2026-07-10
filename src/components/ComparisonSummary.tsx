@@ -7,10 +7,13 @@ import {
   getMeasureDefinition,
 } from "@shared/measures";
 import { CHART, individualHospitalColor } from "@shared/chartTheme";
+import { selectedBenchmarks, type SelectedBenchmark } from "@/lib/selectedBenchmarks";
 
 interface Props {
   comparison: ComparisonResult;
   compareHospitals?: HospitalSummary[];
+  /** Same benchmark toggle set as the drill-down so both stay in sync. */
+  visiblePeerKeys?: Set<string>;
   onSelectCategory?: (categoryId: string) => void;
 }
 
@@ -22,10 +25,12 @@ function shortName(name: string, max = 16): string {
 function ScoreRow({
   item,
   comparison,
+  benchmarks,
   tone,
 }: {
   item: GapItem;
   comparison: ComparisonResult;
+  benchmarks: SelectedBenchmark[];
   tone: "win" | "gap";
 }) {
   const def = getMeasureDefinition(item.measureId);
@@ -55,6 +60,18 @@ function ScoreRow({
             {formatMeasureValue(hospitalValue, valueType)}
           </span>
         </span>
+        {benchmarks.map((benchmark) => (
+          <span
+            key={benchmark.key}
+            className="inline-flex max-w-[11rem] items-baseline gap-1.5"
+            title={benchmark.label}
+          >
+            <span className="truncate text-slate-500">{benchmark.shortLabel}</span>
+            <span className="font-semibold tabular-nums" style={{ color: benchmark.color }}>
+              {formatMeasureValue(benchmark.scores[item.measureId] ?? null, valueType)}
+            </span>
+          </span>
+        ))}
         {peers.map((ch, i) => (
           <span key={ch.groupKey} className="inline-flex max-w-[11rem] items-baseline gap-1.5">
             <span className="truncate text-slate-500" title={ch.hospital.name}>
@@ -76,11 +93,13 @@ function ScoreRow({
 export function ComparisonSummary({
   comparison,
   compareHospitals = [],
+  visiblePeerKeys,
   onSelectCategory,
 }: Props) {
   const stats = computeComparisonSummary(comparison, "state");
   const { aboveState, totalWithData, biggestWins, biggestGaps, byCategory } = stats;
   const hasCompare = (comparison.compareHospitals?.length ?? 0) > 0;
+  const benchmarks = selectedBenchmarks(comparison, visiblePeerKeys ?? new Set());
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -135,7 +154,13 @@ export function ComparisonSummary({
             </p>
             <ul className="space-y-2">
               {biggestWins.map((g) => (
-                <ScoreRow key={g.measureId} item={g} comparison={comparison} tone="win" />
+                <ScoreRow
+                  key={g.measureId}
+                  item={g}
+                  comparison={comparison}
+                  benchmarks={benchmarks}
+                  tone="win"
+                />
               ))}
             </ul>
           </div>
@@ -147,7 +172,13 @@ export function ComparisonSummary({
             </p>
             <ul className="space-y-2">
               {biggestGaps.map((g) => (
-                <ScoreRow key={g.measureId} item={g} comparison={comparison} tone="gap" />
+                <ScoreRow
+                  key={g.measureId}
+                  item={g}
+                  comparison={comparison}
+                  benchmarks={benchmarks}
+                  tone="gap"
+                />
               ))}
             </ul>
           </div>
