@@ -380,15 +380,87 @@ function MeasureRow({
             {groupLabel}
           </p>
           <p className="text-sm font-semibold text-slate-900">{measure.label}</p>
+          {(benchmarks.length > 0 || compareHospitals.length > 0) && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 md:hidden">
+              {benchmarks.map((benchmark) => (
+                <span
+                  key={benchmark.key}
+                  className="inline-flex items-center gap-1 text-[11px]"
+                  title={benchmark.label}
+                >
+                  <span
+                    className="h-1.5 w-1.5 shrink-0"
+                    style={{
+                      backgroundColor: benchmark.color,
+                      borderRadius: benchmark.shape === "diamond" ? 1 : "9999px",
+                      transform: benchmark.shape === "diamond" ? "rotate(45deg)" : undefined,
+                    }}
+                  />
+                  <span className="text-slate-400">{benchmark.shortLabel}</span>
+                  <span className="font-semibold tabular-nums" style={{ color: benchmark.color }}>
+                    {formatMeasureValue(benchmark.scores[measure.id] ?? null, def.valueType)}
+                  </span>
+                </span>
+              ))}
+              {compareHospitals.map((ch, i) => (
+                <span
+                  key={ch.groupKey}
+                  className="inline-flex items-center gap-1 text-[11px]"
+                  title={ch.hospital.name}
+                >
+                  <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: individualHospitalColor(i) }}
+                  />
+                  <span className="max-w-[6rem] truncate text-slate-400">
+                    {shortHospitalName(ch.hospital.name)}
+                  </span>
+                  <span
+                    className="font-semibold tabular-nums"
+                    style={{ color: individualHospitalColor(i) }}
+                  >
+                    {formatMeasureValue(ch.scores[measure.id] ?? null, def.valueType)}
+                  </span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-        {compareHospitals.length > 0 && (
+        {(benchmarks.length > 0 || compareHospitals.length > 0) && (
           <div className="hidden min-w-0 flex-1 flex-wrap items-center justify-end gap-x-4 gap-y-1 md:flex">
+            {benchmarks.map((benchmark) => (
+              <span
+                key={benchmark.key}
+                className="inline-flex max-w-[10rem] items-baseline gap-1.5 text-xs"
+                title={benchmark.label}
+              >
+                <span
+                  className="h-2 w-2 shrink-0 self-center"
+                  style={{
+                    backgroundColor: benchmark.color,
+                    borderRadius: benchmark.shape === "diamond" ? 2 : "9999px",
+                    transform: benchmark.shape === "diamond" ? "rotate(45deg)" : undefined,
+                  }}
+                />
+                <span className="truncate text-slate-500">{benchmark.shortLabel}</span>
+                <span
+                  className="font-semibold tabular-nums"
+                  style={{ color: benchmark.color }}
+                >
+                  {formatMeasureValue(benchmark.scores[measure.id] ?? null, def.valueType)}
+                </span>
+              </span>
+            ))}
             {compareHospitals.map((ch, i) => (
               <span
                 key={ch.groupKey}
                 className="inline-flex max-w-[9.5rem] items-baseline gap-1.5 text-xs"
                 title={ch.hospital.name}
               >
+                <span
+                  className="h-2 w-2 shrink-0 self-center rounded-full"
+                  style={{ backgroundColor: individualHospitalColor(i) }}
+                />
                 <span className="truncate text-slate-500">
                   {shortHospitalName(ch.hospital.name)}
                 </span>
@@ -621,8 +693,10 @@ export function ComparisonTable({
         <div className="hidden items-center gap-3 border-b border-slate-100 px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:flex">
           <span className="w-4" />
           <span className="min-w-0 flex-1 basis-[12rem]">Measure</span>
-          {compareHospitals.length > 0 && (
-            <span className="hidden min-w-0 flex-1 text-right md:block">Compared scores</span>
+          {(benchmarks.length > 0 || compareHospitals.length > 0) && (
+            <span className="hidden min-w-0 flex-1 text-right md:block">
+              Selected benchmarks
+            </span>
           )}
           <span
             className="w-20 truncate text-right sm:w-28"
