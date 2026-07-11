@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 150" role="img" aria-label="AARP (partnership concept)">
+  <title>AARP wordmark (partnership concept placeholder)</title>
+  <!--
+    Typographic placeholder wordmark for a partnership CONCEPT demo.
+    This is NOT the official trademarked AARP logo. A production co-brand
+    would use licensed brand assets supplied by AARP.
+  -->
+  <text
+    x="50%"
+    y="52%"
+    dominant-baseline="middle"
+    text-anchor="middle"
+    font-family="'Arial Black', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-weight="900"
+    font-size="118"
+    letter-spacing="-4"
+    fill="#EC1300"
+  >AARP</text>
+</svg>

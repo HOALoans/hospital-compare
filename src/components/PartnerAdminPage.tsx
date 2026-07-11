@@ -38,6 +38,7 @@ type FormState = {
   heroDescription: string;
   tagline: string;
   showPoweredBy: boolean;
+  gated: boolean;
 };
 
 const EMPTY_FORM: FormState = {
@@ -50,6 +51,7 @@ const EMPTY_FORM: FormState = {
   heroDescription: "",
   tagline: "",
   showPoweredBy: true,
+  gated: false,
 };
 
 function partnerToForm(partner: PartnerBranding): FormState {
@@ -63,6 +65,7 @@ function partnerToForm(partner: PartnerBranding): FormState {
     heroDescription: partner.heroDescription ?? "",
     tagline: partner.tagline ?? "",
     showPoweredBy: partner.showPoweredBy ?? false,
+    gated: partner.gated ?? false,
   };
 }
 
@@ -91,6 +94,7 @@ function formPayload(form: FormState) {
     heroDescription: form.heroDescription.trim() || undefined,
     tagline: form.tagline.trim() || undefined,
     showPoweredBy: form.showPoweredBy,
+    gated: form.gated,
   };
 }
 
@@ -133,6 +137,11 @@ function LogoUploadPanel({
               : "Upload your partner's logo. It appears in the navbar and share links."}
           </p>
           <p className="mt-1 text-xs text-slate-500">PNG, JPG, SVG, or WebP · max 2 MB</p>
+          <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs leading-relaxed text-amber-800">
+            <span className="font-semibold">Trademark note:</span> demo/concept previews may use a
+            typographic placeholder wordmark (e.g. the AARP concept preview). A production co-brand
+            must use licensed brand assets supplied by the partner under a signed agreement.
+          </p>
         </div>
       </div>
 
@@ -709,6 +718,17 @@ export function PartnerAdminPage({ onExit }: Props) {
                     className="rounded border-slate-300 text-indigo-600"
                   />
                   Show &quot;Powered by Parigrado&quot;
+                </label>
+              </div>
+              <div className="flex items-end">
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.gated}
+                    onChange={(e) => setForm((f) => ({ ...f, gated: e.target.checked }))}
+                    className="rounded border-slate-300 text-indigo-600"
+                  />
+                  Gate behind demo access code (private preview)
                 </label>
               </div>
               <div>

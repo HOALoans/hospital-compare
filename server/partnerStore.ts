@@ -47,13 +47,36 @@ function seedIfEmpty(): void {
   if (Object.keys(customPartners).length > 0) return;
   customPartners = { ...SEED_PARTNERS };
   persistCustomPartners();
-  console.log("[partners] Seeded initial partners (acme) to data/partners.json");
+  console.log(
+    `[partners] Seeded initial partners (${Object.keys(SEED_PARTNERS).join(", ")}) to data/partners.json`,
+  );
+}
+
+/**
+ * Add any built-in seed partners that are missing from the store without
+ * clobbering existing (possibly admin-edited) records. This lets new seed
+ * partners — e.g. the AARP demo — appear on deployments whose partners.json
+ * already contains earlier seeds.
+ */
+function ensureSeedPartners(): void {
+  let added = false;
+  for (const [id, partner] of Object.entries(SEED_PARTNERS)) {
+    if (!(id in customPartners)) {
+      customPartners[id] = { ...partner, id };
+      added = true;
+    }
+  }
+  if (added) {
+    persistCustomPartners();
+    console.log("[partners] Added missing seed partners to data/partners.json");
+  }
 }
 
 export function initPartnerStore(): void {
   ensureDataDirs();
   customPartners = loadCustomPartners();
   seedIfEmpty();
+  ensureSeedPartners();
 }
 
 export function getPartner(id: string | null | undefined): PartnerBranding {
@@ -84,6 +107,7 @@ export type PartnerInput = {
   tagline?: string;
   showPoweredBy?: boolean;
   logoAlt?: string;
+  gated?: boolean;
 };
 
 function validatePartnerInput(
@@ -127,6 +151,7 @@ function validatePartnerInput(
       heroDescription: input.heroDescription?.trim() || undefined,
       tagline: input.tagline?.trim() || undefined,
       showPoweredBy: Boolean(input.showPoweredBy),
+      gated: Boolean(input.gated),
     },
   };
 }
