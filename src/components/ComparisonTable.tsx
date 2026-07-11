@@ -427,11 +427,11 @@ function MeasureRow({
           )}
         </div>
         {(benchmarks.length > 0 || compareHospitals.length > 0) && (
-          <div className="hidden min-w-0 flex-1 flex-wrap items-center justify-end gap-x-4 gap-y-1 md:flex">
+          <div className="hidden min-w-0 flex-1 flex-wrap items-center justify-end gap-x-4 gap-y-1 self-stretch border-l border-slate-100 pl-3 md:flex">
             {benchmarks.map((benchmark) => (
               <span
                 key={benchmark.key}
-                className="inline-flex max-w-[10rem] items-baseline gap-1.5 text-xs"
+                className="flex w-[8.5rem] items-baseline gap-1.5 text-xs"
                 title={benchmark.label}
               >
                 <span
@@ -442,9 +442,11 @@ function MeasureRow({
                     transform: benchmark.shape === "diamond" ? "rotate(45deg)" : undefined,
                   }}
                 />
-                <span className="truncate text-slate-500">{benchmark.shortLabel}</span>
+                <span className="min-w-0 flex-1 truncate text-slate-500">
+                  {benchmark.shortLabel}
+                </span>
                 <span
-                  className="font-semibold tabular-nums"
+                  className="shrink-0 font-semibold tabular-nums"
                   style={{ color: benchmark.color }}
                 >
                   {formatMeasureValue(benchmark.scores[measure.id] ?? null, def.valueType)}
@@ -454,18 +456,18 @@ function MeasureRow({
             {compareHospitals.map((ch, i) => (
               <span
                 key={ch.groupKey}
-                className="inline-flex max-w-[9.5rem] items-baseline gap-1.5 text-xs"
+                className="flex w-[8.5rem] items-baseline gap-1.5 text-xs"
                 title={ch.hospital.name}
               >
                 <span
                   className="h-2 w-2 shrink-0 self-center rounded-full"
                   style={{ backgroundColor: individualHospitalColor(i) }}
                 />
-                <span className="truncate text-slate-500">
+                <span className="min-w-0 flex-1 truncate text-slate-500">
                   {shortHospitalName(ch.hospital.name)}
                 </span>
                 <span
-                  className="font-semibold tabular-nums"
+                  className="shrink-0 font-semibold tabular-nums"
                   style={{ color: individualHospitalColor(i) }}
                 >
                   {formatMeasureValue(ch.scores[measure.id] ?? null, def.valueType)}
@@ -474,7 +476,7 @@ function MeasureRow({
             ))}
           </div>
         )}
-        <div className="w-20 shrink-0 text-right sm:w-28">
+        <div className="w-20 shrink-0 self-stretch border-l border-slate-100 pl-3 text-right sm:w-28">
           <div
             className="text-base font-bold tabular-nums"
             style={{ color: CHART.baseHospital }}
@@ -489,7 +491,7 @@ function MeasureRow({
           </div>
         </div>
         <div
-          className={`hidden w-28 shrink-0 items-center justify-end gap-1 text-xs font-semibold sm:flex ${
+          className={`hidden w-28 shrink-0 items-center justify-end gap-1 self-stretch border-l border-slate-100 pl-3 text-xs font-semibold sm:flex ${
             gap == null
               ? "text-slate-400"
               : gap > 0.05
@@ -500,7 +502,7 @@ function MeasureRow({
           }`}
         >
           {deltaIcon(gap)}
-          <span>{formatGapValue(gap, def.valueType)}</span>
+          <span className="tabular-nums">{formatGapValue(gap, def.valueType)}</span>
         </div>
       </button>
 
@@ -690,21 +692,23 @@ export function ComparisonTable({
       )}
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="hidden items-center gap-3 border-b border-slate-100 px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:flex">
+        <div className="hidden items-stretch gap-3 border-b border-slate-100 px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:flex">
           <span className="w-4" />
-          <span className="min-w-0 flex-1 basis-[12rem]">Measure</span>
+          <span className="min-w-0 flex-1 basis-[12rem] self-center">Measure</span>
           {(benchmarks.length > 0 || compareHospitals.length > 0) && (
-            <span className="hidden min-w-0 flex-1 text-right md:block">
+            <span className="hidden min-w-0 flex-1 self-center border-l border-slate-100 pl-3 text-right md:block">
               Selected benchmarks
             </span>
           )}
           <span
-            className="w-20 truncate text-right sm:w-28"
+            className="w-20 self-center truncate border-l border-slate-100 pl-3 text-right sm:w-28"
             title={comparison.hospital.name}
           >
             {shortHospitalName(comparison.hospital.name, 18)}
           </span>
-          <span className="w-28 text-right">Gap vs state</span>
+          <span className="w-28 self-center border-l border-slate-100 pl-3 text-right">
+            Gap vs state
+          </span>
         </div>
         {rows.map((measure) => (
           <MeasureRow
