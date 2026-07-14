@@ -2,13 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Check,
+  Clock,
   Copy,
+  Database,
   ExternalLink,
   ImageIcon,
   Loader2,
   Lock,
   Pencil,
   Plus,
+  RefreshCw,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -23,6 +26,7 @@ import {
   getStoredAdminEmail,
   getStoredAdminToken,
   listPartners,
+  refreshDataApi,
   setStoredAdminSession,
   updatePartnerApi,
   uploadPartnerLogo,
@@ -96,6 +100,15 @@ function formPayload(form: FormState) {
     showPoweredBy: form.showPoweredBy,
     gated: form.gated,
   };
+}
+
+function formatRefreshDate(iso: string | null): string {
+  if (!iso) return "never";
+  try {
+    return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  } catch {
+    return iso;
+  }
 }
 
 interface Props {
@@ -228,6 +241,13 @@ export function PartnerAdminPage({ onExit }: Props) {
   const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [freshness, setFreshness] = useState<{
+    reportingPeriod: { start: string; end: string };
+    lastCacheRefresh: string | null;
+  } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [reingestArchives, setReingestArchives] = useState(false);
+
   const existingIds = useMemo(
     () => partners.filter((p) => p.id !== "default").map((p) => p.id),
     [partners],
@@ -266,6 +286,26 @@ export function PartnerAdminPage({ onExit }: Props) {
   useEffect(() => {
     if (adminToken) loadPartners(adminToken);
   }, [adminToken, loadPartners]);
+
+  useEffect(() => {
+    if (!adminToken) return;
+    let cancelled = false;
+    fetch("/api/health")
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        setFreshness({
+          reportingPeriod: data.reportingPeriod ?? { start: "", end: "" },
+          lastCacheRefresh: data.lastCacheRefresh ?? null,
+        });
+      })
+      .catch(() => {
+        /* freshness panel is best-effort */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [adminToken]);
 
   useEffect(() => {
     if (!logoFile) {
@@ -391,6 +431,35 @@ export function PartnerAdminPage({ onExit }: Props) {
       await loadPartners(adminToken);
     } catch (err) {
       flash("err", err instanceof Error ? err.message : "Delete failed");
+    }
+  };
+
+  const handleRefreshData = async () => {
+    if (!adminToken || refreshing) return;
+    setRefreshing(true);
+    try {
+      const result = await refreshDataApi(adminToken, reingestArchives);
+      setFreshness({
+        reportingPeriod: result.reportingPeriod,
+        lastCacheRefresh: result.lastCacheRefresh,
+      });
+      flash(
+        "ok",
+        result.archiveReingestStarted
+          ? "CMS scores refreshed. Archive trend re-ingest started in the background."
+          : "CMS scores refreshed from the latest CMS data.",
+      );
+    } catch (err) {
+      if (err instanceof AdminAuthError && err.status === 401) {
+        clearStoredAdminSession();
+        setAdminToken(null);
+        setAdminEmail(null);
+        setAuthError("Your session expired. Please sign in again.");
+        return;
+      }
+      flash("err", err instanceof Error ? err.message : "Refresh failed");
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -527,6 +596,56 @@ export function PartnerAdminPage({ onExit }: Props) {
         >
           {message.text}
         </div>
+      )}
+
+      {mode === "list" && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">Data freshness</h3>
+              <p className="mt-1 max-w-2xl text-sm text-slate-600">
+                CMS scores refresh automatically about weekly. Use{" "}
+                <span className="font-medium">Refresh now</span> to pull the latest CMS data
+                immediately (e.g. after CMS publishes a new reporting period).
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700 ring-1 ring-slate-200">
+                  <Database className="h-3.5 w-3.5 text-indigo-600" />
+                  CMS period: {freshness?.reportingPeriod.start || "—"} –{" "}
+                  {freshness?.reportingPeriod.end || "—"}
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-900 ring-1 ring-emerald-200">
+                  <Clock className="h-3.5 w-3.5" />
+                  Refreshed {formatRefreshDate(freshness?.lastCacheRefresh ?? null)}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col items-start gap-2">
+              <button
+                type="button"
+                onClick={handleRefreshData}
+                disabled={refreshing}
+                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+              >
+                {refreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                {refreshing ? "Refreshing…" : "Refresh now"}
+              </button>
+              <label className="flex items-center gap-2 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={reingestArchives}
+                  onChange={(e) => setReingestArchives(e.target.checked)}
+                  className="rounded border-slate-300 text-indigo-600"
+                />
+                Also re-ingest trend archives
+              </label>
+            </div>
+          </div>
+        </section>
       )}
 
       {mode === "list" && (

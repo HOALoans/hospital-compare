@@ -81,6 +81,24 @@ export async function adminLogin(
   return body as { token: string; email: string };
 }
 
+export interface RefreshDataResult {
+  ok: boolean;
+  refreshed: boolean;
+  reason: string;
+  reportingPeriod: { start: string; end: string };
+  lastCacheRefresh: string | null;
+  archiveReingestStarted: boolean;
+}
+
+export function refreshDataApi(adminToken: string, reingestArchives = false) {
+  return adminFetch<RefreshDataResult>("/api/admin/refresh", {
+    method: "POST",
+    adminToken,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reingestArchives }),
+  });
+}
+
 export function listPartners(adminToken: string) {
   return adminFetch<{ partners: PartnerBranding[] }>("/api/admin/partners", {
     adminToken,

@@ -15,9 +15,11 @@ import {
   findNearbyHospitals,
   getCurrentPeriod,
   getLastCacheRefresh,
+  refreshScoreCache,
+  startScheduledRefresh,
 } from "./cache.js";
 import { buildComparison } from "./comparisons.js";
-import { scheduleArchiveIngest, sampleTrendYearCoverage } from "./archiveIngest.js";
+import { scheduleArchiveIngest, sampleTrendYearCoverage, runArchiveIngest } from "./archiveIngest.js";
 import { handleAdminLogin, handleAdminLogout, requireAdmin } from "./adminAuth.js";
 import {
   initPartnerStore,
@@ -163,6 +165,30 @@ app.post(
     res.json(result.partner);
   },
 );
+
+// Force an immediate CMS score-cache reload (and optionally re-ingest archive
+// trends in the background). Complements the in-process scheduled refresh.
+app.post("/api/admin/refresh", requireAdmin, async (req, res) => {
+  const reingestArchives = req.body?.reingestArchives === true;
+  try {
+    const result = await refreshScoreCache({ force: true });
+    if (reingestArchives) {
+      runArchiveIngest({ force: true }).catch((err) => {
+        console.warn("[archives] Admin-triggered re-ingest error:", err);
+      });
+    }
+    res.json({
+      ok: true,
+      refreshed: result.refreshed,
+      reason: result.reason,
+      reportingPeriod: getCurrentPeriod(),
+      lastCacheRefresh: getLastCacheRefresh(),
+      archiveReingestStarted: reingestArchives,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : "Refresh failed" });
+  }
+});
 
 app.get("/api/health", (_req, res) => {
   res.json({
@@ -350,6 +376,11 @@ async function start() {
   initializeCache().catch((err) => {
     console.error("[cache] Failed to initialize:", err);
   });
+
+  // Keep a long-lived instance from serving stale CMS scores: periodically
+  // reload from CMS when the cache ages past the refresh window (default 7d)
+  // or CMS publishes a newer reporting period.
+  startScheduledRefresh();
 
   if (process.env.INGEST_ARCHIVES !== "false") {
     // Wait until the primary score cache is ready before starting the heavy

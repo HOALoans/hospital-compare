@@ -3,7 +3,7 @@ import type { HospitalSummary, NearbyHospital } from "../shared/types.js";
 import { classifyOwnership } from "../shared/ownership.js";
 import { HCAHPS_MEASURES, HAI_MEASURES, READMISSION_MEASURES } from "../shared/measures.js";
 import { HOSPITAL_SEARCH_ALIASES } from "../shared/hospitalAliases.js";
-import { cmsQueryAll, DATASETS } from "./cmsClient.js";
+import { cmsQuery, cmsQueryAll, DATASETS } from "./cmsClient.js";
 import { DATA_DIR, HOSPITALS_CACHE_FILE, SCORES_CACHE_FILE } from "./dataPaths.js";
 
 const HOSPITALS_FILE = HOSPITALS_CACHE_FILE;
@@ -71,6 +71,14 @@ let currentPeriod = { start: "", end: "" };
 let hospitalsReady = false;
 let scoresReady = false;
 let lastCacheRefresh: string | null = null;
+let refreshing = false;
+
+/**
+ * How stale the CMS score cache may get before an in-process refresh reloads it.
+ * Aligned with the archive ingest's 7-day durable-coverage skip window so a
+ * long-lived instance never serves score data more than a week out of date.
+ */
+const DEFAULT_REFRESH_DAYS = Number(process.env.SCORE_REFRESH_DAYS ?? 7);
 
 function parseCoord(raw: string | undefined): number | null {
   if (!raw || raw === "Not Available") return null;
@@ -378,6 +386,9 @@ async function loadFromCms() {
   scoresByPeer = new Map();
   nationalBenchmarks = new Map();
   nationalCounts = new Map();
+  // Reset so a refresh adopts the latest CMS reporting period instead of keeping
+  // the previously cached one (currentPeriod is only filled while empty below).
+  currentPeriod = { start: "", end: "" };
 
   console.log("[cache] Loading HCAHPS scores...");
   for (const measure of HCAHPS_MEASURES) {
@@ -502,4 +513,125 @@ export async function initializeCache(maxAgeHours = 24) {
   await loadFromCms();
   scoresReady = true;
   console.log(`[cache] Ready — ${hospitals.length} hospitals indexed`);
+}
+
+/** Milliseconds since the last successful CMS load, or null if never loaded. */
+export function getCacheAgeMs(): number | null {
+  if (!lastCacheRefresh) return null;
+  const t = Date.parse(lastCacheRefresh);
+  return Number.isFinite(t) ? Date.now() - t : null;
+}
+
+export function isScoreCacheStale(maxAgeDays = DEFAULT_REFRESH_DAYS): boolean {
+  const age = getCacheAgeMs();
+  if (age === null) return true;
+  return age >= maxAgeDays * 24 * 60 * 60 * 1000;
+}
+
+/**
+ * Cheap single-row probe of the current CMS HCAHPS reporting period so a
+ * scheduled refresh can compare it against the cached period before paying for
+ * the full multi-dataset reload.
+ */
+async function probeCmsReportingPeriod(): Promise<{ start: string; end: string } | null> {
+  const probeMeasure = HCAHPS_MEASURES[0]?.id;
+  if (!probeMeasure) return null;
+  const { results } = await cmsQuery<CmsHcahpsRow>({
+    dataset: DATASETS.hcahps,
+    conditions: [{ property: "hcahps_measure_id", value: probeMeasure }],
+    limit: 1,
+  });
+  const row = results[0];
+  if (!row?.start_date) return null;
+  return { start: row.start_date, end: row.end_date };
+}
+
+export interface RefreshResult {
+  refreshed: boolean;
+  reason: string;
+  reportingPeriod: { start: string; end: string };
+  lastCacheRefresh: string | null;
+}
+
+/**
+ * Reloads the score cache from CMS. When `force` is false it first checks the
+ * cache age and probes the CMS reporting period, skipping the expensive reload
+ * unless the cache is stale or CMS has published a newer reporting period.
+ */
+export async function refreshScoreCache(
+  opts: { force?: boolean; maxAgeDays?: number } = {},
+): Promise<RefreshResult> {
+  const { force = false, maxAgeDays = DEFAULT_REFRESH_DAYS } = opts;
+  const snapshot = (): { start: string; end: string } => ({ ...currentPeriod });
+
+  if (refreshing) {
+    console.log("[cache] Refresh already in progress — skipping duplicate request");
+    return { refreshed: false, reason: "already-refreshing", reportingPeriod: snapshot(), lastCacheRefresh };
+  }
+
+  refreshing = true;
+  try {
+    if (!force) {
+      const stale = isScoreCacheStale(maxAgeDays);
+      let periodAdvanced = false;
+      try {
+        const probe = await probeCmsReportingPeriod();
+        if (probe?.end && probe.end !== currentPeriod.end) {
+          periodAdvanced = true;
+          console.log(
+            `[cache] CMS reporting period advanced: ${currentPeriod.end || "none"} → ${probe.end}`,
+          );
+        }
+      } catch (err) {
+        console.warn("[cache] Reporting period probe failed:", err);
+      }
+
+      if (!stale && !periodAdvanced) {
+        console.log(
+          `[cache] Skipping refresh — cache fresh (age < ${maxAgeDays}d) and reporting period unchanged`,
+        );
+        return { refreshed: false, reason: "fresh", reportingPeriod: snapshot(), lastCacheRefresh };
+      }
+      console.log(
+        `[cache] Refreshing score cache from CMS (${stale ? "cache stale" : "reporting period advanced"})...`,
+      );
+    } else {
+      console.log("[cache] Forced score cache refresh from CMS...");
+    }
+
+    await loadFromCms();
+    scoresReady = true;
+    console.log(
+      `[cache] Refresh complete — period ${currentPeriod.start || "?"}–${currentPeriod.end || "?"}, ${hospitals.length} hospitals`,
+    );
+    return {
+      refreshed: true,
+      reason: force ? "forced" : "refreshed",
+      reportingPeriod: snapshot(),
+      lastCacheRefresh,
+    };
+  } finally {
+    refreshing = false;
+  }
+}
+
+/**
+ * Starts an in-process timer that periodically checks whether the score cache
+ * is stale (or the CMS reporting period advanced) and reloads it if so, keeping
+ * a long-lived instance from serving week-old CMS scores forever.
+ */
+export function startScheduledRefresh(
+  { intervalHours = 24, maxAgeDays = DEFAULT_REFRESH_DAYS } = {},
+): NodeJS.Timeout {
+  const intervalMs = intervalHours * 60 * 60 * 1000;
+  const timer = setInterval(() => {
+    refreshScoreCache({ maxAgeDays }).catch((err) => {
+      console.error("[cache] Scheduled refresh failed:", err);
+    });
+  }, intervalMs);
+  timer.unref?.();
+  console.log(
+    `[cache] Scheduled score refresh every ${intervalHours}h (reload when older than ${maxAgeDays}d or reporting period advances)`,
+  );
+  return timer;
 }

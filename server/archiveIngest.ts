@@ -451,7 +451,7 @@ function shouldSkipIngest(): boolean {
   return true;
 }
 
-export async function runArchiveIngest() {
+export async function runArchiveIngest(opts: { force?: boolean } = {}) {
   // Persistence diagnostic: if DATA_DIR is on the mounted Render disk, previously
   // ingested trend files should already be present on a fresh container. A count
   // of 0 here right after a deploy means the disk is NOT persisting (or DATA_DIR
@@ -461,7 +461,7 @@ export async function runArchiveIngest() {
     `[archives] Boot data check — ARCHIVE_DIR=${ARCHIVE_DIR}, existing trend files=${startupCoverage.fileCount}, sample years=${startupCoverage.yearsSeen.join(",") || "none"}`,
   );
 
-  if (shouldSkipIngest()) {
+  if (!opts.force && shouldSkipIngest()) {
     console.log("[archives] Ingest already ran recently, skipping");
     return;
   }
