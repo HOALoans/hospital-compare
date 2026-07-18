@@ -754,31 +754,50 @@ function renderDashboard(cache) {
   }
   $("banner").textContent = bannerBits.join(" ");
 
-  // --- IJ overlay (always show card; empty state when not curated for this hospital) ---
+  // --- IJ overlay: curated series when present; otherwise year strip of zeros (not empty panel) ---
   const strip = $("ijStrip");
   const ijLegend = $("ijLegend");
   strip.innerHTML = "";
-  if (overlay?.ij) {
-    if (ijLegend) ijLegend.style.display = "";
-    setEmptyPanel(strip, false);
-    const ijWin = windowByYears(overlay.ij.years, [overlay.ij.counts]);
-    const ijYears = ijWin.labels;
-    const ijCounts = ijWin.series[0];
-    ijYears.forEach((y, i) => {
-      const count = ijCounts[i] || 0;
-      const cell = document.createElement("div");
-      cell.className = "yearcell " + (count > 0 ? "ij" : "clear");
-      cell.innerHTML = `<span class="yr">${y}</span><span class="mark">${count}</span>`;
-      strip.appendChild(cell);
-    });
-    $("noteIj").textContent = appendWindowNote(overlay.ij.note || "", ijWin.windowNote);
-    setTrendEl("trendIj", seriesTrend(ijCounts, false), false);
+  if (ijLegend) ijLegend.style.display = "";
+  setEmptyPanel(strip, false);
+
+  let ijYears;
+  let ijCounts;
+  let ijWinNote = "";
+  let ijNote;
+  if (overlay?.ij?.years?.length) {
+    const ijWin = windowByYears(overlay.ij.years, [overlay.ij.counts || []]);
+    ijYears = ijWin.labels;
+    ijCounts = ijWin.series[0];
+    ijWinNote = ijWin.windowNote;
+    ijNote = overlay.ij.note || "";
   } else {
-    if (ijLegend) ijLegend.style.display = "none";
-    setEmptyPanel(strip, true);
-    setTrendNoData("trendIj");
-    $("noteIj").textContent = NO_DATA + " — Immediate Jeopardy history is curated for selected hospitals only.";
+    // Prefer Mission’s curated year span when available; else 2019 → current year.
+    const missionYears = overlays?.hospitals?.[DEFAULT_CCN]?.ij?.years;
+    if (missionYears?.length) {
+      ijYears = missionYears.slice();
+    } else {
+      const end = new Date().getFullYear();
+      ijYears = [];
+      for (let y = 2019; y <= end; y++) ijYears.push(String(y));
+    }
+    ijCounts = ijYears.map(() => 0);
+    const ijWin = windowByYears(ijYears, [ijCounts]);
+    ijYears = ijWin.labels;
+    ijCounts = ijWin.series[0];
+    ijWinNote = ijWin.windowNote;
+    ijNote = "No Immediate Jeopardy events on file for this hospital.";
   }
+
+  ijYears.forEach((y, i) => {
+    const count = Number(ijCounts[i]) || 0;
+    const cell = document.createElement("div");
+    cell.className = "yearcell " + (count > 0 ? "ij" : "clear");
+    cell.innerHTML = `<span class="yr">${y}</span><span class="mark">${count}</span>`;
+    strip.appendChild(cell);
+  });
+  $("noteIj").textContent = appendWindowNote(ijNote, ijWinNote);
+  setTrendEl("trendIj", seriesTrend(ijCounts, false), false);
 
   // --- Stars ---
   const starWin = windowByYears(starLabels, [starVals]);
