@@ -9,7 +9,7 @@ Linked from the Parigrado homepage and header nav. CMS pulls go through `/api/cm
 ## What it does
 
 - Load **any hospital** by CCN or name search (uses Parigrado `/api/hospitals/*` when available, otherwise CMS APIs).
-- CMS Care Compare: HCAHPS stars, overall rating, HAIs, mortality, complications, readmissions, patient rating mix (9–10 vs ≤6) with **national** comparison.
+- CMS Care Compare: HCAHPS stars, overall rating, HAIs, mortality, complications, readmissions, top vs low patient ratings (9–10 vs ≤6) with **national** comparison.
 - Optional **overlays** (Immediate Jeopardy, staff-to-bed, travelers, overall CMS star history) from `overlays.json` when curated for that CCN (Mission `340002` included).
 - Configurable **trend window** (3 / 5 / 7 / 10 years) with increasing / decreasing / staying-the-same badges.
 
@@ -27,4 +27,4 @@ Linked from the Parigrado homepage and header nav. CMS pulls go through `/api/cm
 
 - FY2019–FY2020 staff-to-bed are charted as gaps until HCRIS rows are loaded.
 - Traveler 2023 has no published single % — year is shown with a gap.
-- Patient rating **ratio** = (% 9–10) ÷ (% ≤6); national from CMS dataset `99ue-w85f`. Long history of the 9–10/≤6 split is limited in archives, so the trend badge uses HCAHPS summary stars.
+- Top vs low rating **ratio** = (% 9–10) ÷ (% ≤6); national from CMS dataset `99ue-w85f`. Shown as a current snapshot (CMS does not publish a long public 9–10/≤6 history); year-over-year trend is on the HCAHPS stars card.
