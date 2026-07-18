@@ -5,23 +5,39 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Hospital — Road to Recovery (unlisted)</title>
-<script src="vendor/chart.umd.js?v=20260718c"></script>
+<title>Hospital Health Dashboard (unlisted)</title>
+<script src="vendor/chart.umd.js?v=20260718d"></script>
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f6f7f9; color: #1a202c; padding: 20px; }
   h1 { font-size: 1.35rem; margin-bottom: 2px; }
-  .sub { color: #64748b; font-size: 0.82rem; margin-bottom: 16px; }
+  .sub { color: #64748b; font-size: 0.82rem; margin-bottom: 12px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; max-width: 1800px; margin: 0 auto 14px; }
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field label { font-size: 0.68rem; color: #64748b; font-weight: 600; }
+  .field input, .field select { border: 1px solid #cbd5e1; border-radius: 8px; padding: 7px 10px; font-size: 0.85rem; min-width: 160px; background: #fff; }
+  .field input[type="search"] { min-width: 260px; }
+  .btn { border: 1px solid #94a3b8; background: #fff; border-radius: 8px; padding: 7px 12px; font-size: 0.82rem; cursor: pointer; }
+  .btn:hover { background: #f8fafc; }
+  .btn.primary { background: #1e293b; color: #fff; border-color: #1e293b; }
+  .suggest { position: absolute; z-index: 20; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 240px; overflow: auto; width: min(420px, 90vw); box-shadow: 0 8px 24px rgba(15,23,42,.08); }
+  .suggest button { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 8px 10px; font-size: 0.8rem; cursor: pointer; }
+  .suggest button:hover { background: #f1f5f9; }
+  .searchwrap { position: relative; }
   .grid { display: flex; flex-direction: column; gap: 14px; max-width: 1800px; margin: 0 auto; }
   .grid-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
   @media (max-width: 1400px) { .grid-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 900px) { .grid-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 560px) { .grid-row { grid-template-columns: 1fr; } }
   .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+  .card.hidden { display: none; }
   .card h2 { font-size: 0.88rem; margin-bottom: 2px; line-height: 1.25; }
   .card .meta { font-size: 0.68rem; color: #94a3b8; margin-bottom: 6px; }
-  .goal { display: inline-block; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 999px; font-size: 0.65rem; padding: 1px 8px; margin-bottom: 6px; }
+  .trend { display: inline-block; border-radius: 999px; font-size: 0.65rem; padding: 1px 8px; margin-bottom: 6px; border: 1px solid #e2e8f0; color: #475569; background: #f8fafc; }
+  .trend.up { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+  .trend.down { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+  .trend.flat { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
   .chartbox { position: relative; height: 200px; }
   .chartbox.tall { height: 260px; }
   .minitable { width: 100%; border-collapse: collapse; font-size: 0.68rem; margin-top: 4px; }
@@ -30,6 +46,10 @@
   .minitable th { color: #64748b; font-weight: 600; }
   .minitable .better { color: #047857; }
   .minitable .same { color: #64748b; }
+  .minitable .worse { color: #b91c1c; }
+  .statrow { display: flex; gap: 16px; flex-wrap: wrap; margin: 4px 0 8px; }
+  .stat { font-size: 1.4rem; font-weight: 700; line-height: 1.1; }
+  .statlbl { font-size: 0.68rem; color: #64748b; }
   .note { font-size: 0.7rem; color: #64748b; line-height: 1.4; margin-top: 6px; }
   .banner { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 14px; font-size: 0.8rem; margin-bottom: 14px; max-width: 1800px; margin-left: auto; margin-right: auto; }
   .err { color: #b91c1c; font-size: 0.8rem; padding: 8px 0; display: none; }
@@ -42,294 +62,591 @@
   .yearcell.clear .mark { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
   .yearcell.ij { background: #fef2f2; border-color: #fecaca; }
   .yearcell.ij .mark { background: #dc2626; color: #fff; }
-  .yearcell.future { background: #fff; border-style: dashed; border-color: #86efac; }
-  .yearcell.future .yr { color: #059669; }
-  .yearcell.future .mark { background: #ecfdf5; color: #047857; border: 1px dashed #6ee7b7; }
-  .yearcell.goal2028 { background: #ecfdf5; border-style: solid; border-color: #059669; box-shadow: inset 0 0 0 1px #059669; }
-  .yearcell.goal2028 .yr { color: #047857; font-weight: 700; }
-  .yearcell .goalcap { display: block; margin-top: 3px; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #059669; }
   .striplegend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.65rem; color: #64748b; margin: 2px 0; }
   .striplegend span { display: inline-flex; align-items: center; gap: 4px; }
   .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
   .dot.ij { background: #dc2626; }
   .dot.clear { background: #ecfdf5; border: 1px solid #a7f3d0; }
-  .dot.goal { background: #ecfdf5; border: 1px dashed #059669; }
 </style>
 </head>
 <body>
-<h1>Mission Hospital (Asheville, NC) - Road to Recovery Dashboard</h1>
-<div class="sub">CCN 340002 · Last refreshed <span id="lastRefresh"></span> · Care-integrity signals · CMS Care Compare + HCRIS</div>
-<div class="err" id="loadErr">Charts could not load. Data is preserved — try reloading.</div>
+<h1 id="pageTitle">Hospital Health Dashboard</h1>
+<div class="sub">CCN <span id="ccnLabel">—</span> · Last refreshed <span id="lastRefresh"></span> · CMS Care Compare · optional HCRIS overlays</div>
+<div class="err" id="loadErr"></div>
 
-<div class="banner"><strong>Current status:</strong> Not under Immediate Jeopardy — 4th IJ (Jan 2026) removed Mar 4, 2026 after Enhanced Plan of Correction. CMS overall quality rating: <strong id="bannerOverall">—</strong>. Latest staff-to-bed: <strong id="bannerStaff">—</strong>. HCAHPS: <strong id="bannerHcahps">—</strong>.</div>
+<div class="toolbar">
+  <div class="field searchwrap">
+    <label for="hospitalSearch">Hospital</label>
+    <input id="hospitalSearch" type="search" placeholder="Search name, city, or enter CCN" autocomplete="off" />
+    <div id="suggest" class="suggest" style="display:none"></div>
+  </div>
+  <div class="field">
+    <label for="ccnInput">CCN</label>
+    <input id="ccnInput" type="text" maxlength="6" placeholder="340002" />
+  </div>
+  <div class="field">
+    <label for="trendYears">Trend window</label>
+    <select id="trendYears">
+      <option value="3">3 years</option>
+      <option value="5" selected>5 years</option>
+      <option value="7">7 years</option>
+      <option value="10">10 years</option>
+    </select>
+  </div>
+  <button class="btn primary" id="loadBtn" type="button">Load</button>
+</div>
+
+<div class="banner" id="banner">Select a hospital to load CMS quality and safety signals.</div>
 
 <div class="grid">
-
-<!-- Row 1: enforcement, experience, capacity -->
 <div class="grid-row">
-<div class="card">
-  <h2>Immediate Jeopardy by year</h2>
-  <div class="meta">CMS/NCDHHS Form 2567</div>
-  <span class="goal">Goal: 0 by 2028</span>
-  <div class="striplegend">
-    <span><i class="dot ij"></i> IJ</span>
-    <span><i class="dot clear"></i> Clear</span>
-    <span><i class="dot goal"></i> Goal</span>
+  <div class="card hidden" id="cardIj">
+    <h2>Immediate Jeopardy by year</h2>
+    <div class="meta">CMS/NCDHHS Form 2567 · curated overlay</div>
+    <span class="trend" id="trendIj">Trend: —</span>
+    <div class="striplegend">
+      <span><i class="dot ij"></i> IJ</span>
+      <span><i class="dot clear"></i> Clear</span>
+    </div>
+    <div class="yearstrip" id="ijStrip"></div>
+    <div class="note" id="noteIj"></div>
   </div>
-  <div class="yearstrip" id="ijStrip"></div>
-  <div class="note">Four IJs since 2019 HCA sale; cleared Mar 4, 2026.</div>
+
+  <div class="card" id="cardStars">
+    <h2>HCAHPS patient-survey stars</h2>
+    <div class="meta">CMS HCAHPS summary star rating</div>
+    <span class="trend" id="trendStars">Trend: —</span>
+    <div class="chartbox"><canvas id="starChart"></canvas></div>
+    <div class="note" id="noteStars"></div>
+  </div>
+
+  <div class="card" id="cardOverall">
+    <h2>CMS overall quality stars</h2>
+    <div class="meta">Care Compare overall hospital rating</div>
+    <span class="trend" id="trendOverall">Trend: —</span>
+    <div class="chartbox"><canvas id="overallStarChart"></canvas></div>
+    <div class="note" id="noteOverall"></div>
+  </div>
+
+  <div class="card hidden" id="cardStaff">
+    <h2>Staff-to-bed ratio</h2>
+    <div class="meta">CMS HCRIS S-3 FTEs ÷ beds · FY ends Sept</div>
+    <span class="trend" id="trendStaff">Trend: —</span>
+    <div class="chartbox"><canvas id="staffChart"></canvas></div>
+    <div class="note" id="noteStaff"></div>
+  </div>
+
+  <div class="card hidden" id="cardTravelers">
+    <h2>Traveler / contract share</h2>
+    <div class="meta">News/union estimates · not audited S-3</div>
+    <span class="trend" id="trendTravelers">Trend: —</span>
+    <div class="chartbox"><canvas id="travelerChart"></canvas></div>
+    <div class="note" id="noteTravelers"></div>
+  </div>
 </div>
 
-<div class="card">
-  <h2>HCAHPS patient-survey stars</h2>
-  <div class="meta">CMS HCAHPS · surveys Jul 2024–Jun 2025 latest</div>
-  <span class="goal">Goal: 4★ by 2028</span>
-  <div class="chartbox"><canvas id="starChart"></canvas></div>
-  <div class="note">Pre-sale 4★ → 1★ by 2022 → 2★ latest. Cleanliness still 1★.</div>
-</div>
-
-<div class="card">
-  <h2>CMS overall quality stars</h2>
-  <div class="meta">Care Compare overall hospital rating</div>
-  <span class="goal">Goal: 4★ by 2028</span>
-  <div class="chartbox"><canvas id="overallStarChart"></canvas></div>
-  <div class="note">Apr 2026 snapshot: 3★. Safety 3 better / 0 worse; readmit 4 better / 1 worse.</div>
-</div>
-
-<div class="card">
-  <h2>Staff-to-bed ratio</h2>
-  <div class="meta">CMS HCRIS S-3 FTEs ÷ beds · FY ends Sept</div>
-  <span class="goal">Goal: 9 by 2028</span>
-  <div class="chartbox"><canvas id="staffChart"></canvas></div>
-  <div class="note">FY2024: 4.8 — flat vs 4.7 in 2023. Pre-sale CMS method: 8.6.</div>
-</div>
-
-<div class="card">
-  <h2>Traveler / contract share</h2>
-  <div class="meta">Union estimate (news); Worksheet S-3 audit pending</div>
-  <span class="goal">Goal: under 10% by 2028</span>
-  <div class="chartbox"><canvas id="travelerChart"></canvas></div>
-  <div class="note">~40% in 2024 (union). Not yet replaced with audited cost-report split.</div>
-</div>
-</div>
-
-<!-- Row 2: safety outcomes & experience distribution -->
 <div class="grid-row">
-<div class="card">
-  <h2>Hospital-acquired infections (SIR)</h2>
-  <div class="meta">CMS HAI · Jul 2024–Jun 2025 · SIR &lt;1 better than expected</div>
-  <span class="goal">Goal: all SIR &lt; 1.0 by 2028</span>
-  <div class="chartbox"><canvas id="haiChart"></canvas></div>
-  <div class="note">SSI–hysterectomy SIR 2.29 (worse than national). CLABSI/CAUTI/C.diff better.</div>
-</div>
+  <div class="card" id="cardHai">
+    <h2>Hospital-acquired infections (SIR)</h2>
+    <div class="meta">CMS HAI · SIR &lt;1 better than expected</div>
+    <span class="trend" id="trendHai">Trend: —</span>
+    <div class="chartbox"><canvas id="haiChart"></canvas></div>
+    <div class="note" id="noteHai"></div>
+  </div>
 
-<div class="card">
-  <h2>30-day mortality rates</h2>
-  <div class="meta">CMS Complications &amp; Deaths · Mission vs national %</div>
-  <span class="goal">Goal: no “worse than national” by 2028</span>
-  <table class="minitable">
-    <thead><tr><th></th><th>Mission</th><th>National</th><th>vs</th></tr></thead>
-    <tbody id="mortTable"></tbody>
-  </table>
-  <div class="chartbox tall"><canvas id="mortChart"></canvas></div>
-  <div class="note">Source: CMS ynj2-r877 / qqw3-t4ie. All currently no different than national.</div>
-</div>
+  <div class="card" id="cardMort">
+    <h2>30-day mortality rates</h2>
+    <div class="meta">CMS Complications &amp; Deaths · hospital vs national %</div>
+    <span class="trend" id="trendMort">Trend: —</span>
+    <table class="minitable"><thead><tr><th></th><th>Hospital</th><th>National</th><th>vs</th></tr></thead><tbody id="mortTable"></tbody></table>
+    <div class="chartbox tall"><canvas id="mortChart"></canvas></div>
+    <div class="note" id="noteMort"></div>
+  </div>
 
-<div class="card">
-  <h2>Complications vs national</h2>
-  <div class="meta">CMS Complications &amp; Deaths · key safety measures</div>
-  <span class="goal">Goal: no “worse than national” by 2028</span>
-  <table class="minitable">
-    <thead><tr><th></th><th>Mission</th><th>National</th><th>vs</th></tr></thead>
-    <tbody id="compTable"></tbody>
-  </table>
-  <div class="chartbox tall"><canvas id="compChart"></canvas></div>
-  <div class="note">Chart shows Mission as % of national (100 = national; lower better).</div>
-</div>
+  <div class="card" id="cardComp">
+    <h2>Complications vs national</h2>
+    <div class="meta">CMS Complications &amp; Deaths · key safety measures</div>
+    <span class="trend" id="trendComp">Trend: —</span>
+    <table class="minitable"><thead><tr><th></th><th>Hospital</th><th>National</th><th>vs</th></tr></thead><tbody id="compTable"></tbody></table>
+    <div class="chartbox tall"><canvas id="compChart"></canvas></div>
+    <div class="note" id="noteComp">Bars show hospital vs national as % of national (national = 100; lower is better).</div>
+  </div>
 
-<div class="card">
-  <h2>Readmissions</h2>
-  <div class="meta">CMS Unplanned Visits · Mission vs national %</div>
-  <span class="goal">Goal: hold/improve vs national by 2028</span>
-  <div class="chartbox tall"><canvas id="readmChart"></canvas></div>
-  <div class="note">Hospital-wide 13.8% vs national 15.0% (better). AMI also better than national.</div>
-</div>
+  <div class="card" id="cardReadm">
+    <h2>Readmissions</h2>
+    <div class="meta">CMS Unplanned Visits · hospital vs national %</div>
+    <span class="trend" id="trendReadm">Trend: —</span>
+    <div class="chartbox tall"><canvas id="readmChart"></canvas></div>
+    <div class="note" id="noteReadm"></div>
+  </div>
 
-<div class="card">
-  <h2>Good vs bad experiences</h2>
-  <div class="meta">HCAHPS rated 9–10 vs ≤6</div>
-  <span class="goal">Goal: ≥80% / ≤10% by 2028</span>
-  <div class="chartbox"><canvas id="goodBadChart"></canvas></div>
-  <div class="note">Latest: 58% high / 16% low.</div>
+  <div class="card" id="cardRating">
+    <h2>Patient rating mix</h2>
+    <div class="meta">HCAHPS rated 9–10 vs ≤6 · hospital vs national</div>
+    <span class="trend" id="trendRating">Trend: —</span>
+    <div class="statrow">
+      <div><div class="stat" id="ratioHospital">—</div><div class="statlbl">Hospital good:bad ratio</div></div>
+      <div><div class="stat" id="ratioNational">—</div><div class="statlbl">National good:bad ratio</div></div>
+    </div>
+    <div class="chartbox"><canvas id="ratingChart"></canvas></div>
+    <div class="note" id="noteRating">Ratio = (% rated 9–10) ÷ (% rated ≤6). Higher means a stronger share of top-box vs low ratings. CMS archives keep star/linear history, not a long 9–10 / ≤6 series — trend uses summary stars when history is available.</div>
+  </div>
 </div>
-</div>
-
 </div>
 
 <footer>
-  Sources: <a href="https://data.cms.gov/provider-data/">CMS Provider Data Catalog</a> (HCAHPS, HAI, Complications/Deaths, Unplanned Visits, Hospital General Information) ·
-  <a href="https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports">Medicare cost reports (HCRIS)</a> ·
-  <a href="https://avlwatchdog.org/">Asheville Watchdog</a> ·
-  <a href="https://www.northcarolinahealthnews.org/">NC Health News</a>.
-  Staff-to-bed from Form 2552-10. Traveler % remains a news/union estimate. Overall quality stars currently a single CMS snapshot.
-  Dashboard trimmed to care-integrity signals (IJ, stars, staffing, HAIs, mortality, complications, readmissions, experience).
+  Unlisted Parigrado page · Sources: <a href="https://data.cms.gov/provider-data/">CMS Provider Data Catalog</a>,
+  Medicare cost reports (HCRIS) where overlaid ·
+  Traveler % is news/union estimate only when shown ·
+  Not linked from main navigation.
 </footer>
 
 <script>
-window.addEventListener("load", async function () {
-  let DATA;
+const DEFAULT_CCN = "340002";
+const charts = {};
+let overlays = { hospitals: {}, trendYearsDefault: 5 };
+let trendYears = 5;
+
+const $ = (id) => document.getElementById(id);
+const showErr = (msg) => { const el = $("loadErr"); el.style.display = msg ? "block" : "none"; el.textContent = msg || ""; };
+
+function setTrendEl(id, direction, higherIsBetter) {
+  const el = $(id);
+  if (!el) return;
+  let label = "Trend: insufficient history";
+  let cls = "trend flat";
+  if (direction === "increasing") {
+    label = `Trend (${trendYears}y): increasing`;
+    cls = "trend " + (higherIsBetter ? "up" : "down");
+  } else if (direction === "decreasing") {
+    label = `Trend (${trendYears}y): decreasing`;
+    cls = "trend " + (higherIsBetter ? "down" : "up");
+  } else if (direction === "stable") {
+    label = `Trend (${trendYears}y): staying the same`;
+    cls = "trend flat";
+  }
+  el.className = cls;
+  el.textContent = label;
+}
+
+/** Linear slope over last N non-null points; stable if small relative change. */
+function seriesTrend(values, higherIsBetter = true) {
+  const pts = values.map((v, i) => [i, v]).filter(([, v]) => v != null && !Number.isNaN(Number(v)));
+  if (pts.length < 2) return "insufficient";
+  const slice = pts.slice(-Math.max(2, Math.min(trendYears, pts.length)));
+  if (slice.length < 2) return "insufficient";
+  const xs = slice.map((_, i) => i);
+  const ys = slice.map(([, v]) => Number(v));
+  const n = xs.length;
+  const xMean = xs.reduce((a, b) => a + b, 0) / n;
+  const yMean = ys.reduce((a, b) => a + b, 0) / n;
+  let num = 0, den = 0;
+  for (let i = 0; i < n; i++) { num += (xs[i] - xMean) * (ys[i] - yMean); den += (xs[i] - xMean) ** 2; }
+  const slope = den ? num / den : 0;
+  const first = ys[0], last = ys[ys.length - 1];
+  const base = Math.max(Math.abs(first), Math.abs(last), 1e-6);
+  const rel = (last - first) / base;
+  if (Math.abs(rel) < 0.05 && Math.abs(slope) < base * 0.02) return "stable";
+  return slope > 0 ? "increasing" : "decreasing";
+}
+
+function destroyCharts() {
+  Object.keys(charts).forEach((k) => { try { charts[k].destroy(); } catch (_) {} delete charts[k]; });
+}
+
+function mk(id, cfg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  try { charts[id] = new Chart(el, cfg); } catch (e) { console.error(id, e); }
+}
+
+const common = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 }, filter: (item) => !!item.text } } }
+};
+
+async function cmsQuery(dataset, body) {
+  const res = await fetch(`https://data.cms.gov/provider-data/api/1/datastore/query/${dataset}/0`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${dataset} ${res.status}`);
+  return res.json();
+}
+
+async function searchHospitals(q) {
   try {
-    const res = await fetch("./charts.json", { cache: "no-store" });
-    if (!res.ok) throw new Error("charts.json " + res.status);
-    DATA = await res.json();
-  } catch (e) {
-    console.error(e);
-    document.getElementById("loadErr").style.display = "block";
-    return;
+    const res = await fetch(`/api/hospitals/search?q=${encodeURIComponent(q)}&limit=12`);
+    if (!res.ok) throw new Error("search failed");
+    const data = await res.json();
+    return data.hospitals || [];
+  } catch {
+    // Fallback: treat numeric query as CCN
+    if (/^\d{6}$/.test(q.trim())) {
+      const h = await loadHospitalMeta(q.trim());
+      return h ? [h] : [];
+    }
+    return [];
+  }
+}
+
+async function loadHospitalMeta(ccn) {
+  try {
+    const res = await fetch(`/api/hospitals/${ccn}`);
+    if (res.ok) {
+      const h = await res.json();
+      return {
+        facilityId: h.facilityId || ccn,
+        name: h.name,
+        city: h.city,
+        state: h.state,
+        overallRating: h.overallRating,
+      };
+    }
+  } catch (_) {}
+  const gen = await cmsQuery("xubh-q36u", {
+    conditions: [{ property: "facility_id", operator: "=", value: ccn }],
+    limit: 1,
+  });
+  const r = (gen.results || [])[0];
+  if (!r) return null;
+  return {
+    facilityId: ccn,
+    name: r.facility_name || r.hospital_name || `Hospital ${ccn}`,
+    city: r.citytown || r.city || "",
+    state: r.state || "",
+    overallRating: Number(r.hospital_overall_rating) || null,
+  };
+}
+
+async function loadTrends(ccn) {
+  try {
+    const res = await fetch(`/api/hospitals/${ccn}/trends`);
+    if (!res.ok) return { points: [] };
+    return res.json();
+  } catch {
+    return { points: [] };
+  }
+}
+
+function vsClass(text) {
+  const t = (text || "").toLowerCase();
+  if (t.includes("better")) return { label: "Better", cls: "better" };
+  if (t.includes("worse")) return { label: "Worse", cls: "worse" };
+  return { label: "Same", cls: "same" };
+}
+
+async function loadDashboard(ccn) {
+  showErr("");
+  destroyCharts();
+  $("ccnLabel").textContent = ccn;
+  $("ccnInput").value = ccn;
+  const url = new URL(location.href);
+  url.searchParams.set("ccn", ccn);
+  history.replaceState(null, "", url);
+
+  const overlay = overlays.hospitals[ccn] || null;
+  const meta = await loadHospitalMeta(ccn);
+  if (!meta) { showErr("Hospital not found for CCN " + ccn); return; }
+
+  $("pageTitle").textContent = `${meta.name}${meta.city ? " (" + meta.city + (meta.state ? ", " + meta.state : "") + ")" : ""} — Hospital Health Dashboard`;
+  $("hospitalSearch").value = meta.name;
+
+  const facility = {
+    conditions: [{ property: "facility_id", operator: "=", value: ccn }],
+    limit: 100,
+  };
+
+  const [hcahps, gen, hai, mortMis, mortNat, readMis, readNat, natHcahps, trends] = await Promise.all([
+    cmsQuery("dgck-syfz", facility),
+    cmsQuery("xubh-q36u", { conditions: facility.conditions, limit: 5 }),
+    cmsQuery("77hc-ibv8", facility),
+    cmsQuery("ynj2-r877", facility),
+    cmsQuery("qqw3-t4ie", { limit: 100 }),
+    cmsQuery("632h-zaca", facility),
+    cmsQuery("cvcs-xecj", { limit: 100 }),
+    cmsQuery("99ue-w85f", { limit: 100 }),
+    loadTrends(ccn),
+  ]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  $("lastRefresh").textContent = today;
+
+  const hRows = hcahps.results || [];
+  const hFind = (id) => hRows.find((r) => r.hcahps_measure_id === id);
+  const starNow = Number(hFind("H_STAR_RATING")?.patient_survey_star_rating);
+  const high = Number(hFind("H_HSP_RATING_9_10")?.hcahps_answer_percent);
+  const low = Number(hFind("H_HSP_RATING_0_6")?.hcahps_answer_percent);
+  const overall = Number((gen.results || [])[0]?.hospital_overall_rating) || meta.overallRating;
+
+  const natRows = natHcahps.results || [];
+  const natHigh = Number(natRows.find((r) => r.hcahps_measure_id === "H_HSP_RATING_9_10")?.hcahps_answer_percent);
+  const natLow = Number(natRows.find((r) => r.hcahps_measure_id === "H_HSP_RATING_0_6")?.hcahps_answer_percent);
+
+  // Star history from Parigrado archives when available
+  const points = (trends.points || []).slice().sort((a, b) => a.year - b.year);
+  const starLabels = points.map((p) => String(p.year));
+  const starVals = points.map((p) => {
+    const v = p.scores?.H_STAR_RATING;
+    return v != null ? Number(v) : null;
+  });
+  if (!starLabels.length && Number.isFinite(starNow)) {
+    starLabels.push(String(new Date().getFullYear()));
+    starVals.push(starNow);
+  } else if (starLabels.length && Number.isFinite(starNow)) {
+    starVals[starVals.length - 1] = starNow;
   }
 
-  document.getElementById("lastRefresh").textContent = DATA.lastRefresh;
-  const lastStar = [...DATA.starTrend.mission].reverse().find((v) => v != null);
-  const lastStaff = [...DATA.staffRatio.ratio].reverse().find((v) => v != null);
-  const ov = DATA.overallStars.stars[0];
-  document.getElementById("bannerOverall").textContent = ov != null ? ov + "★" : "—";
-  document.getElementById("bannerStaff").textContent = lastStaff != null ? lastStaff + " (FY" + DATA.staffRatio.labels[DATA.staffRatio.ratio.lastIndexOf(lastStaff)] + ")" : "—";
-  document.getElementById("bannerHcahps").textContent = lastStar != null ? lastStar + "★" : "—";
+  const bannerBits = [];
+  if (overlay?.bannerNote) bannerBits.push(overlay.bannerNote);
+  bannerBits.push(`Overall CMS rating: ${Number.isFinite(overall) ? overall + "★" : "—"}.`);
+  bannerBits.push(`HCAHPS: ${Number.isFinite(starNow) ? starNow + "★" : "—"}.`);
+  if (overlay?.staffRatio) {
+    const ratios = overlay.staffRatio.ratio;
+    const last = [...ratios].reverse().find((v) => v != null);
+    if (last != null) bannerBits.push(`Latest staff-to-bed: ${last}.`);
+  }
+  $("banner").textContent = bannerBits.join(" ");
 
-  (function renderIjStrip() {
-    const strip = document.getElementById("ijStrip");
-    const byYear = Object.fromEntries(DATA.ij.years.map((y, i) => [y, DATA.ij.counts[i]]));
-    const start = Number(DATA.ij.years[0]);
-    const end = Number(DATA.ij.goalYear || 2028);
-    for (let y = start; y <= end; y++) {
-      const key = String(y);
-      const known = Object.prototype.hasOwnProperty.call(byYear, key);
-      const count = known ? byYear[key] : null;
-      let cls = "yearcell";
-      let mark = "0";
-      if (known && count > 0) { cls += " ij"; mark = String(count); }
-      else if (known) { cls += " clear"; }
-      else { cls += " future"; }
-      const isGoal = key === String(DATA.ij.goalYear);
-      if (isGoal) cls += " goal2028";
+  // --- IJ overlay ---
+  const cardIj = $("cardIj");
+  if (overlay?.ij) {
+    cardIj.classList.remove("hidden");
+    const strip = $("ijStrip");
+    strip.innerHTML = "";
+    overlay.ij.years.forEach((y, i) => {
+      const count = overlay.ij.counts[i] || 0;
       const cell = document.createElement("div");
-      cell.className = cls;
-      cell.innerHTML = `<span class="yr">${key}</span><span class="mark">${mark}</span>${isGoal ? '<span class="goalcap">Goal</span>' : ''}`;
+      cell.className = "yearcell " + (count > 0 ? "ij" : "clear");
+      cell.innerHTML = `<span class="yr">${y}</span><span class="mark">${count}</span>`;
       strip.appendChild(cell);
-    }
-  })();
-
-  (function fillTables() {
-    const mortBody = document.getElementById("mortTable");
-    DATA.mortality.labels.forEach((label, i) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${label}</td><td>${DATA.mortality.mission[i]}%</td><td>${DATA.mortality.national[i]}%</td><td class="same">Same</td>`;
-      mortBody.appendChild(tr);
     });
-    const raw = DATA.complications.raw || null;
-    const compBody = document.getElementById("compTable");
-    DATA.complications.labels.forEach((label, i) => {
-      const st = DATA.complications.status[i];
-      const cls = st === "Better" ? "better" : st === "Worse" ? "warn" : "same";
-      let m = "—", n = "—";
-      if (raw && raw[i]) { m = raw[i].mission; n = raw[i].national; }
-      else {
-        // fallback display from pctOfNational only
-        m = DATA.complications.pctOfNational[i] + "% of natl";
-        n = "100";
-      }
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${label}</td><td>${m}</td><td>${n}</td><td class="${cls}">${st}</td>`;
-      compBody.appendChild(tr);
-    });
-  })();
+    $("noteIj").textContent = overlay.ij.note || "";
+    setTrendEl("trendIj", seriesTrend(overlay.ij.counts, false), false);
+  } else {
+    cardIj.classList.add("hidden");
+  }
 
-  if (typeof Chart === "undefined") { document.getElementById("loadErr").style.display = "block"; return; }
+  // --- Stars ---
+  setTrendEl("trendStars", seriesTrend(starVals, true), true);
+  $("noteStars").textContent = Number.isFinite(starNow)
+    ? `Latest summary star rating: ${starNow}★.`
+    : "No HCAHPS summary star available.";
+  if (typeof Chart !== "undefined") {
+    mk("starChart", { type: "line", data: { labels: starLabels, datasets: [
+      { label: "HCAHPS stars", data: starVals, borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 3, tension: 0.25, spanGaps: true }
+    ]}, options: { ...common, scales: { y: { min: 1, max: 5, ticks: { stepSize: 1 } } } } });
+  }
 
+  // --- Overall ---
+  setTrendEl("trendOverall", "insufficient", true);
+  $("noteOverall").textContent = Number.isFinite(overall)
+    ? `Current Care Compare overall rating: ${overall}★ (snapshot; CMS does not publish a long public overall-star time series here).`
+    : "Overall rating unavailable.";
+  mk("overallStarChart", { type: "bar", data: {
+    labels: ["Current"],
+    datasets: [{ label: "Overall CMS stars", data: [overall || null], backgroundColor: "#2563eb", borderRadius: 3 }]
+  }, options: { ...common, scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } } } } });
+
+  // --- Staff overlay ---
+  const cardStaff = $("cardStaff");
+  if (overlay?.staffRatio) {
+    cardStaff.classList.remove("hidden");
+    $("noteStaff").textContent = overlay.staffRatio.note || "";
+    setTrendEl("trendStaff", seriesTrend(overlay.staffRatio.ratio, true), true);
+    mk("staffChart", { type: "line", data: {
+      labels: overlay.staffRatio.labels,
+      datasets: [{ label: "Staff per bed", data: overlay.staffRatio.ratio, borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true }]
+    }, options: { ...common, scales: { y: { min: 0, suggestedMax: 10 } } } });
+  } else cardStaff.classList.add("hidden");
+
+  // --- Travelers overlay ---
+  const cardTrav = $("cardTravelers");
+  if (overlay?.travelers) {
+    cardTrav.classList.remove("hidden");
+    $("noteTravelers").textContent = overlay.travelers.note || "";
+    setTrendEl("trendTravelers", seriesTrend(overlay.travelers.pct, false), false);
+    mk("travelerChart", { type: "line", data: {
+      labels: overlay.travelers.labels,
+      datasets: [{ label: "% travelers", data: overlay.travelers.pct, borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true }]
+    }, options: { ...common, scales: { y: { min: 0, max: 50 } } } });
+  } else cardTrav.classList.add("hidden");
+
+  // --- HAI ---
+  const haiIds = [["HAI_1_SIR","CLABSI"],["HAI_2_SIR","CAUTI"],["HAI_3_SIR","SSI colon"],["HAI_4_SIR","SSI hyst"],["HAI_5_SIR","MRSA"],["HAI_6_SIR","C. diff"]];
+  const haiRows = hai.results || [];
+  const haiLabels = [], haiSir = [], haiColors = [];
+  let worse = [];
+  for (const [mid, label] of haiIds) {
+    const r = haiRows.find((x) => x.measure_id === mid);
+    const v = r ? Number(r.score) : NaN;
+    haiLabels.push(label);
+    haiSir.push(Number.isFinite(v) ? v : null);
+    const cmp = (r?.compared_to_national || "").toLowerCase();
+    haiColors.push(cmp.includes("worse") ? "#dc2626" : (Number.isFinite(v) && v < 1 ? "#059669" : "#94a3b8"));
+    if (cmp.includes("worse")) worse.push(label);
+  }
+  // HAI trend from archives (mean SIR of available measures)
+  const haiTrendVals = points.map((p) => {
+    const s = p.scores || {};
+    const vals = ["HAI_1_SIR","HAI_2_SIR","HAI_3_SIR","HAI_4_SIR","HAI_5_SIR","HAI_6_SIR"].map((k) => s[k]).filter((v) => v != null).map(Number);
+    if (!vals.length) return null;
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  });
+  setTrendEl("trendHai", seriesTrend(haiTrendVals, false), false);
+  $("noteHai").textContent = worse.length ? `Worse than national: ${worse.join(", ")}.` : "No HAI measure currently worse than national.";
+  mk("haiChart", { type: "bar", data: { labels: haiLabels, datasets: [
+    { label: "SIR", data: haiSir, backgroundColor: haiColors, borderRadius: 3 },
+    { label: "Benchmark (1.0)", data: Array(haiLabels.length).fill(1), type: "line", borderColor: "#059669", borderDash: [5,4], pointRadius: 0, order: 0 }
+  ]}, options: { ...common, scales: { y: { min: 0, suggestedMax: 2.5 } } } });
+
+  // --- Mortality ---
+  const mortIds = [["MORT_30_AMI","AMI"],["MORT_30_CABG","CABG"],["MORT_30_COPD","COPD"],["MORT_30_HF","HF"],["MORT_30_PN","Pneumonia"],["MORT_30_STK","Stroke"]];
+  const mortMisRows = mortMis.results || [];
+  const mortNatBy = Object.fromEntries((mortNat.results || []).map((r) => [r.measure_id, r]));
+  const mLabels = [], mHosp = [], mNat = [];
+  const mortBody = $("mortTable"); mortBody.innerHTML = "";
+  for (const [mid, label] of mortIds) {
+    const r = mortMisRows.find((x) => x.measure_id === mid);
+    const n = mortNatBy[mid];
+    const mv = Number(r?.score), nv = Number(n?.national_rate);
+    if (!Number.isFinite(mv) || !Number.isFinite(nv)) continue;
+    mLabels.push(label); mHosp.push(mv); mNat.push(nv);
+    const vs = vsClass(r?.compared_to_national);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${label}</td><td>${mv}%</td><td>${nv}%</td><td class="${vs.cls}">${vs.label}</td>`;
+    mortBody.appendChild(tr);
+  }
+  setTrendEl("trendMort", "insufficient", false);
+  $("noteMort").textContent = "Compared to CMS national rates. Trend history for condition mortality is not in the local archive set.";
+  mk("mortChart", { type: "bar", data: { labels: mLabels, datasets: [
+    { label: "Hospital", data: mHosp, backgroundColor: "#2563eb", borderRadius: 3 },
+    { label: "National", data: mNat, backgroundColor: "#94a3b8", borderRadius: 3 }
+  ]}, options: { ...common, indexAxis: "y", scales: { x: { beginAtZero: true } } } });
+
+  // --- Complications: hospital % of national + national 100 bars ---
+  const compSpec = [["PSI_90","PSI-90"],["PSI_03","Pressure ulcer"],["PSI_12","PE/DVT"],["COMP_HIP_KNEE","Hip/knee comp"],["Hybrid_HWM","Hosp-wide mort"]];
+  const cLabels = [], cHospPct = [], cNatPct = [], cStatus = [];
+  const compBody = $("compTable"); compBody.innerHTML = "";
+  for (const [mid, label] of compSpec) {
+    const r = mortMisRows.find((x) => x.measure_id === mid);
+    const n = mortNatBy[mid];
+    const mv = Number(r?.score), nv = Number(n?.national_rate);
+    if (!Number.isFinite(mv) || !Number.isFinite(nv) || nv === 0) continue;
+    const pct = Math.round((mv / nv) * 100);
+    const vs = vsClass(r?.compared_to_national);
+    cLabels.push(label); cHospPct.push(pct); cNatPct.push(100); cStatus.push(vs.label);
+    const tr = document.createElement("tr");
+    const pctLike = mid === "Hybrid_HWM";
+    tr.innerHTML = `<td>${label}</td><td>${pctLike ? mv + "%" : mv}</td><td>${pctLike ? nv + "%" : nv}</td><td class="${vs.cls}">${vs.label}</td>`;
+    compBody.appendChild(tr);
+  }
+  setTrendEl("trendComp", "insufficient", false);
+  mk("compChart", { type: "bar", data: { labels: cLabels, datasets: [
+    { label: "Hospital (% of national)", data: cHospPct, backgroundColor: "#2563eb", borderRadius: 3 },
+    { label: "National (=100)", data: cNatPct, backgroundColor: "#94a3b8", borderRadius: 3 }
+  ]}, options: { ...common, indexAxis: "y", scales: { x: { min: 0, suggestedMax: 120 } } } });
+
+  // --- Readmissions ---
+  const readmIds = [["Hybrid_HWR","Hospital-wide"],["READM_30_AMI","AMI"],["READM_30_HF","HF"],["READM_30_PN","Pneumonia"],["READM_30_COPD","COPD"],["READM_30_CABG","CABG"],["READM_30_HIP_KNEE","Hip/knee"]];
+  const readMisRows = readMis.results || [];
+  const readNatBy = Object.fromEntries((readNat.results || []).map((r) => [r.measure_id, r]));
+  const rLabels = [], rHosp = [], rNat = [];
+  for (const [mid, label] of readmIds) {
+    const r = readMisRows.find((x) => x.measure_id === mid);
+    const n = readNatBy[mid];
+    const mv = Number(r?.score), nv = Number(n?.national_rate);
+    if (!Number.isFinite(mv) || !Number.isFinite(nv)) continue;
+    rLabels.push(label); rHosp.push(mv); rNat.push(nv);
+  }
+  setTrendEl("trendReadm", "insufficient", false);
+  $("noteReadm").textContent = rLabels.length ? `Hospital-wide ${rHosp[0]}% vs national ${rNat[0]}%.` : "No readmission rates available.";
+  mk("readmChart", { type: "bar", data: { labels: rLabels, datasets: [
+    { label: "Hospital", data: rHosp, backgroundColor: "#2563eb", borderRadius: 3 },
+    { label: "National", data: rNat, backgroundColor: "#94a3b8", borderRadius: 3 }
+  ]}, options: { ...common, indexAxis: "y", scales: { x: { beginAtZero: true } } } });
+
+  // --- Patient rating mix (ratio) ---
+  const hospRatio = (Number.isFinite(high) && Number.isFinite(low) && low > 0) ? (high / low) : null;
+  const natRatio = (Number.isFinite(natHigh) && Number.isFinite(natLow) && natLow > 0) ? (natHigh / natLow) : null;
+  $("ratioHospital").textContent = hospRatio != null ? `${hospRatio.toFixed(1)} : 1` : "—";
+  $("ratioNational").textContent = natRatio != null ? `${natRatio.toFixed(1)} : 1` : "—";
+  setTrendEl("trendRating", seriesTrend(starVals, true), true);
+  $("noteRating").textContent =
+    `Hospital ${Number.isFinite(high) ? high : "—"}% rated 9–10 / ${Number.isFinite(low) ? low : "—"}% rated ≤6` +
+    (Number.isFinite(natHigh) ? ` · National ${natHigh}% / ${natLow}%.` : ".") +
+    " CMS public archives retain summary stars and linear scores more reliably than the 9–10 / ≤6 split, so the trend badge uses HCAHPS stars.";
+  mk("ratingChart", { type: "bar", data: {
+    labels: ["Rated 9–10 %", "Rated ≤6 %"],
+    datasets: [
+      { label: "Hospital", data: [high, low], backgroundColor: "#2563eb", borderRadius: 3 },
+      { label: "National", data: [natHigh, natLow], backgroundColor: "#94a3b8", borderRadius: 3 }
+    ]
+  }, options: { ...common, scales: { y: { min: 0, max: 100 } } } });
+
+  if (typeof Chart === "undefined") showErr("Chart library failed to load.");
+}
+
+function wireUi() {
+  const suggest = $("suggest");
+  let timer;
+  $("hospitalSearch").addEventListener("input", () => {
+    clearTimeout(timer);
+    const q = $("hospitalSearch").value.trim();
+    if (q.length < 2) { suggest.style.display = "none"; return; }
+    timer = setTimeout(async () => {
+      const hospitals = await searchHospitals(q);
+      if (!hospitals.length) { suggest.style.display = "none"; return; }
+      suggest.innerHTML = hospitals.map((h) =>
+        `<button type="button" data-ccn="${h.facilityId}">${h.name} · ${h.city}, ${h.state} (${h.facilityId})</button>`
+      ).join("");
+      suggest.style.display = "block";
+    }, 220);
+  });
+  suggest.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-ccn]");
+    if (!btn) return;
+    suggest.style.display = "none";
+    loadDashboard(btn.dataset.ccn);
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".searchwrap")) suggest.style.display = "none";
+  });
+  $("loadBtn").addEventListener("click", () => {
+    const ccn = ($("ccnInput").value || $("hospitalSearch").value || "").trim();
+    const id = /^\d{6}$/.test(ccn) ? ccn : DEFAULT_CCN;
+    loadDashboard(id);
+  });
+  $("trendYears").addEventListener("change", () => {
+    trendYears = Number($("trendYears").value) || 5;
+    const ccn = $("ccnInput").value.trim() || DEFAULT_CCN;
+    loadDashboard(ccn);
+  });
+  $("ccnInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("loadBtn").click();
+  });
+}
+
+window.addEventListener("load", async () => {
   Chart.defaults.font.size = 10;
   Chart.defaults.color = "#475569";
-  const common = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 }, filter: (item) => !!item.text } } }
-  };
-  const pad = (arr, n) => arr.concat(Array(Math.max(0, n - arr.length)).fill(null));
-  const lastActual = (arr) => {
-    for (let i = arr.length - 1; i >= 0; i--) if (arr[i] != null) return { idx: i, val: arr[i] };
-    return null;
-  };
-  const goalPoint = (label, value, n) => {
-    const data = Array(n).fill(null); data[n - 1] = value;
-    return { label, data, borderColor: "#059669", backgroundColor: "#059669", pointRadius: 6, pointStyle: "triangle", showLine: false, spanGaps: true };
-  };
-  const goalPath = (lastIdx, lastVal, goalIdx, goalVal, n, label) => {
-    const data = Array(n).fill(null); data[lastIdx] = lastVal; data[goalIdx] = goalVal;
-    return { label: label == null ? "Path to 2028 goal" : label, data, borderColor: "#059669", borderDash: [4,4], borderWidth: 1.5, pointRadius: 0, pointStyle: "line", fill: false, spanGaps: true };
-  };
-  const mk = (id, cfg) => { try { new Chart(document.getElementById(id), cfg); } catch (e) { console.error(id, e); } };
-
-  const starLabels = DATA.starTrend.labels.concat(["2026","2027","2028"]);
-  const starLast = lastActual(DATA.starTrend.mission);
-  mk("starChart", { type: "line", data: { labels: starLabels, datasets: [
-    { label: "HCAHPS stars", data: pad(DATA.starTrend.mission, starLabels.length), borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 3, tension: 0.25, spanGaps: true },
-    ...(starLast ? [goalPath(starLast.idx, starLast.val, starLabels.length - 1, 4, starLabels.length)] : []),
-    goalPoint("Goal 4★", 4, starLabels.length)
-  ]}, options: { ...common, scales: { y: { min: 1, max: 5, ticks: { stepSize: 1 } } } } });
-
-  const ovLabels = ["2026","2027","2028"];
-  const ovStar = DATA.overallStars.stars[0] ?? 3;
-  mk("overallStarChart", { type: "line", data: { labels: ovLabels, datasets: [
-    { label: "Overall CMS stars", data: [ovStar, null, null], borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 5, spanGaps: true },
-    goalPath(0, ovStar, 2, 4, 3),
-    goalPoint("Goal 4★", 4, 3)
-  ]}, options: { ...common, scales: { y: { min: 2, max: 5, ticks: { stepSize: 1 } } } } });
-
-  const staffLabels = DATA.staffRatio.labels.concat(["2025","2026","2027","2028"]);
-  const staffLast = lastActual(DATA.staffRatio.ratio);
-  mk("staffChart", { type: "line", data: { labels: staffLabels, datasets: [
-    { label: "Staff per bed", data: pad(DATA.staffRatio.ratio, staffLabels.length), borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true },
-    ...(staffLast ? [goalPath(staffLast.idx, staffLast.val, staffLabels.length - 1, 9, staffLabels.length)] : []),
-    goalPoint("Goal 9", 9, staffLabels.length)
-  ]}, options: { ...common, scales: { y: { min: 4, max: 10, ticks: { stepSize: 1 } } } } });
-
-  const travLabels = DATA.travelers.labels.concat(["2025","2026","2027","2028"]);
-  const travLast = lastActual(DATA.travelers.pct);
-  mk("travelerChart", { type: "line", data: { labels: travLabels, datasets: [
-    { label: "% travelers", data: pad(DATA.travelers.pct, travLabels.length), borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true },
-    ...(travLast ? [goalPath(travLast.idx, travLast.val, travLabels.length - 1, 10, travLabels.length)] : []),
-    goalPoint("Goal <10%", 10, travLabels.length)
-  ]}, options: { ...common, scales: { y: { min: 0, max: 45 } } } });
-
-  mk("haiChart", { type: "bar", data: { labels: DATA.hai.labels, datasets: [
-    { label: "SIR", data: DATA.hai.sir, backgroundColor: DATA.hai.colors, borderRadius: 3 },
-    { label: "Benchmark (1.0)", data: Array(DATA.hai.labels.length).fill(1), type: "line", borderColor: "#059669", borderDash: [5,4], pointRadius: 0, order: 0 }
-  ]}, options: { ...common, scales: { y: { min: 0, max: 2.5 } } } });
-
-  mk("mortChart", { type: "bar", data: { labels: DATA.mortality.labels, datasets: [
-    { label: "Mission", data: DATA.mortality.mission, backgroundColor: "#2563eb", borderRadius: 3 },
-    { label: "National", data: DATA.mortality.national, backgroundColor: "#94a3b8", borderRadius: 3 }
-  ]}, options: { ...common, indexAxis: "y", scales: { x: { min: 0, max: 18 } } } });
-
-  const compColors = DATA.complications.status.map(s => s === "Better" ? "#059669" : s === "Worse" ? "#dc2626" : "#64748b");
-  mk("compChart", { type: "bar", data: { labels: DATA.complications.labels, datasets: [
-    { label: "Mission as % of national (100=natl)", data: DATA.complications.pctOfNational, backgroundColor: compColors, borderRadius: 3 }
-  ]}, options: { ...common, indexAxis: "y", scales: { x: { min: 0, max: 110, title: { display: true, text: "% of national — 100 = national (lower better)", font: { size: 9 } } } } } });
-
-  mk("readmChart", { type: "bar", data: { labels: DATA.readmit.labels, datasets: [
-    { label: "Mission", data: DATA.readmit.mission, backgroundColor: "#2563eb", borderRadius: 3 },
-    { label: "National", data: DATA.readmit.national, backgroundColor: "#94a3b8", borderRadius: 3 }
-  ]}, options: { ...common, indexAxis: "y", scales: { x: { min: 0, max: 22 } } } });
-
-  const gbLabels = DATA.goodBad.labels.concat(["2026","2027","2028"]);
-  const gbH = lastActual(DATA.goodBad.high), gbL = lastActual(DATA.goodBad.low);
-  mk("goodBadChart", { type: "line", data: { labels: gbLabels, datasets: [
-    { label: "Rated 9–10", data: pad(DATA.goodBad.high, gbLabels.length), borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 4, spanGaps: true },
-    { label: "Rated ≤6", data: pad(DATA.goodBad.low, gbLabels.length), borderColor: "#dc2626", backgroundColor: "#dc2626", pointRadius: 4, spanGaps: true },
-    ...(gbH ? [goalPath(gbH.idx, gbH.val, gbLabels.length - 1, 80, gbLabels.length)] : []),
-    ...(gbL ? [goalPath(gbL.idx, gbL.val, gbLabels.length - 1, 10, gbLabels.length, "")] : []),
-    goalPoint("Goal 80%", 80, gbLabels.length),
-    goalPoint("Goal 10%", 10, gbLabels.length)
-  ]}, options: { ...common, scales: { y: { min: 0, max: 90 } } } });
+  try {
+    overlays = await (await fetch("./overlays.json", { cache: "no-store" })).json();
+  } catch (_) {}
+  trendYears = Number(overlays.trendYearsDefault) || 5;
+  $("trendYears").value = String(trendYears);
+  wireUi();
+  const params = new URLSearchParams(location.search);
+  const ccn = params.get("ccn") || DEFAULT_CCN;
+  $("ccnInput").value = ccn;
+  try {
+    await loadDashboard(ccn);
+  } catch (e) {
+    console.error(e);
+    showErr("Could not load hospital data. " + (e.message || e));
+  }
 });
 </script>
 </body>

@@ -1,0 +1,26 @@
+{
+  "trendYearsDefault": 5,
+  "hospitals": {
+    "340002": {
+      "name": "Mission Hospital",
+      "city": "Asheville",
+      "state": "NC",
+      "bannerNote": "Not under Immediate Jeopardy as of Mar 4, 2026 (4th IJ removed after Enhanced Plan of Correction).",
+      "ij": {
+        "years": ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"],
+        "counts": [0, 0, 1, 0, 0, 1, 1, 1],
+        "note": "Four IJs since 2019 HCA sale; cleared Mar 4, 2026. Sourced from CMS/NCDHHS Form 2567 reporting."
+      },
+      "staffRatio": {
+        "labels": ["2018", "2019", "2020", "2021", "2022", "2023", "2024"],
+        "ratio": [8.6, null, null, 5.1, 4.6, 4.7, 4.8],
+        "note": "CMS HCRIS S-3 FTEs ÷ beds. FY2019–FY2020 not yet loaded from cost reports (gap shown). FY2025 pending CMS processing."
+      },
+      "travelers": {
+        "labels": ["2022", "2023", "2024"],
+        "pct": [null, null, 40],
+        "note": "Union/news estimates only — not audited Worksheet S-3. 2022–2023 share not published as a single %; 2024 ~40% union estimate."
+      }
+    }
+  }
+}
