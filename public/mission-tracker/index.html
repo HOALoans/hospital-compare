@@ -408,6 +408,17 @@ function labelYear(label) {
   return m ? Number(m[0]) : NaN;
 }
 
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** Format axis labels like "2023-09" → "Sep 2023"; leave other labels unchanged. */
+function formatMonthAxisLabel(label) {
+  const m = String(label ?? "").match(/^(\d{4})-(\d{2})$/);
+  if (!m) return String(label ?? "");
+  const month = Number(m[2]);
+  if (month < 1 || month > 12) return String(label);
+  return `${MONTH_SHORT[month - 1]} ${m[1]}`;
+}
+
 /**
  * Keep points inside the selected trend window (by calendar year on labels).
  * Returns available span messaging when history is shorter than the window.
@@ -980,8 +991,10 @@ function renderDashboard(cache) {
         y1Top = Math.max(20, Math.ceil((pMax + 4) / 5) * 5);
         y1Step = y1Top <= 30 ? 5 : 10;
       }
-      mk("travelerChart", { type: "line", data: { labels: tLabels, datasets }, options: {
+      const tAxisLabels = tLabels.map(formatMonthAxisLabel);
+      mk("travelerChart", { type: "line", data: { labels: tAxisLabels, datasets }, options: {
         ...common,
+        layout: { padding: { bottom: 2 } },
         plugins: {
           legend: {
             display: hasPct,
@@ -994,6 +1007,15 @@ function renderDashboard(cache) {
           },
         },
         scales: {
+          x: {
+            ticks: {
+              autoSkip: false,
+              maxRotation: 40,
+              minRotation: 0,
+              font: { size: 10 },
+              padding: 4,
+            },
+          },
           y: {
             min: yBottom,
             max: yTop,
