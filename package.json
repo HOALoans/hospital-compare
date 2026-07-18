@@ -12,7 +12,8 @@
     "dev:server": "tsx watch server/index.ts",
     "build": "vite build && tsc -p tsconfig.server.json",
     "start": "node dist/server/index.js",
-    "ingest:archives": "tsx scripts/ingestArchives.ts"
+    "ingest:archives": "tsx scripts/ingestArchives.ts",
+    "refresh:mission-tracker": "node public/mission-tracker/refresh.mjs"
   },
   "dependencies": {
     "express": "^4.18.3",

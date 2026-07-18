@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Hospital — Road to Recovery (unlisted)</title>
+<script src="vendor/chart.umd.js?v=20260718c"></script>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f6f7f9; color: #1a202c; padding: 20px; }
+  h1 { font-size: 1.35rem; margin-bottom: 2px; }
+  .sub { color: #64748b; font-size: 0.82rem; margin-bottom: 16px; }
+  .grid { display: flex; flex-direction: column; gap: 14px; max-width: 1800px; margin: 0 auto; }
+  .grid-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 1400px) { .grid-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 900px) { .grid-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .grid-row { grid-template-columns: 1fr; } }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+  .card h2 { font-size: 0.88rem; margin-bottom: 2px; line-height: 1.25; }
+  .card .meta { font-size: 0.68rem; color: #94a3b8; margin-bottom: 6px; }
+  .goal { display: inline-block; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 999px; font-size: 0.65rem; padding: 1px 8px; margin-bottom: 6px; }
+  .chartbox { position: relative; height: 200px; }
+  .chartbox.tall { height: 260px; }
+  .minitable { width: 100%; border-collapse: collapse; font-size: 0.68rem; margin-top: 4px; }
+  .minitable th, .minitable td { text-align: right; padding: 2px 4px; border-bottom: 1px solid #f1f5f9; }
+  .minitable th:first-child, .minitable td:first-child { text-align: left; }
+  .minitable th { color: #64748b; font-weight: 600; }
+  .minitable .better { color: #047857; }
+  .minitable .same { color: #64748b; }
+  .note { font-size: 0.7rem; color: #64748b; line-height: 1.4; margin-top: 6px; }
+  .banner { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 14px; font-size: 0.8rem; margin-bottom: 14px; max-width: 1800px; margin-left: auto; margin-right: auto; }
+  .err { color: #b91c1c; font-size: 0.8rem; padding: 8px 0; display: none; }
+  footer { font-size: 0.7rem; color: #94a3b8; margin-top: 18px; line-height: 1.6; max-width: 1800px; margin-left: auto; margin-right: auto; }
+  footer a { color: #64748b; }
+  .yearstrip { display: flex; gap: 5px; flex-wrap: wrap; margin: 8px 0 4px; }
+  .yearcell { flex: 1 1 44px; min-width: 44px; max-width: 64px; border-radius: 8px; border: 1px solid #e2e8f0; padding: 8px 3px 6px; text-align: center; background: #f8fafc; }
+  .yearcell .yr { display: block; font-size: 0.65rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+  .yearcell .mark { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: 0.65rem; font-weight: 700; }
+  .yearcell.clear .mark { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .yearcell.ij { background: #fef2f2; border-color: #fecaca; }
+  .yearcell.ij .mark { background: #dc2626; color: #fff; }
+  .yearcell.future { background: #fff; border-style: dashed; border-color: #86efac; }
+  .yearcell.future .yr { color: #059669; }
+  .yearcell.future .mark { background: #ecfdf5; color: #047857; border: 1px dashed #6ee7b7; }
+  .yearcell.goal2028 { background: #ecfdf5; border-style: solid; border-color: #059669; box-shadow: inset 0 0 0 1px #059669; }
+  .yearcell.goal2028 .yr { color: #047857; font-weight: 700; }
+  .yearcell .goalcap { display: block; margin-top: 3px; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #059669; }
+  .striplegend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.65rem; color: #64748b; margin: 2px 0; }
+  .striplegend span { display: inline-flex; align-items: center; gap: 4px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .dot.ij { background: #dc2626; }
+  .dot.clear { background: #ecfdf5; border: 1px solid #a7f3d0; }
+  .dot.goal { background: #ecfdf5; border: 1px dashed #059669; }
+</style>
+</head>
+<body>
+<h1>Mission Hospital (Asheville, NC) - Road to Recovery Dashboard</h1>
+<div class="sub">CCN 340002 · Last refreshed <span id="lastRefresh"></span> · Care-integrity signals · CMS Care Compare + HCRIS</div>
+<div class="err" id="loadErr">Charts could not load. Data is preserved — try reloading.</div>
+
+<div class="banner"><strong>Current status:</strong> Not under Immediate Jeopardy — 4th IJ (Jan 2026) removed Mar 4, 2026 after Enhanced Plan of Correction. CMS overall quality rating: <strong id="bannerOverall">—</strong>. Latest staff-to-bed: <strong id="bannerStaff">—</strong>. HCAHPS: <strong id="bannerHcahps">—</strong>.</div>
+
+<div class="grid">
+
+<!-- Row 1: enforcement, experience, capacity -->
+<div class="grid-row">
+<div class="card">
+  <h2>Immediate Jeopardy by year</h2>
+  <div class="meta">CMS/NCDHHS Form 2567</div>
+  <span class="goal">Goal: 0 by 2028</span>
+  <div class="striplegend">
+    <span><i class="dot ij"></i> IJ</span>
+    <span><i class="dot clear"></i> Clear</span>
+    <span><i class="dot goal"></i> Goal</span>
+  </div>
+  <div class="yearstrip" id="ijStrip"></div>
+  <div class="note">Four IJs since 2019 HCA sale; cleared Mar 4, 2026.</div>
+</div>
+
+<div class="card">
+  <h2>HCAHPS patient-survey stars</h2>
+  <div class="meta">CMS HCAHPS · surveys Jul 2024–Jun 2025 latest</div>
+  <span class="goal">Goal: 4★ by 2028</span>
+  <div class="chartbox"><canvas id="starChart"></canvas></div>
+  <div class="note">Pre-sale 4★ → 1★ by 2022 → 2★ latest. Cleanliness still 1★.</div>
+</div>
+
+<div class="card">
+  <h2>CMS overall quality stars</h2>
+  <div class="meta">Care Compare overall hospital rating</div>
+  <span class="goal">Goal: 4★ by 2028</span>
+  <div class="chartbox"><canvas id="overallStarChart"></canvas></div>
+  <div class="note">Apr 2026 snapshot: 3★. Safety 3 better / 0 worse; readmit 4 better / 1 worse.</div>
+</div>
+
+<div class="card">
+  <h2>Staff-to-bed ratio</h2>
+  <div class="meta">CMS HCRIS S-3 FTEs ÷ beds · FY ends Sept</div>
+  <span class="goal">Goal: 9 by 2028</span>
+  <div class="chartbox"><canvas id="staffChart"></canvas></div>
+  <div class="note">FY2024: 4.8 — flat vs 4.7 in 2023. Pre-sale CMS method: 8.6.</div>
+</div>
+
+<div class="card">
+  <h2>Traveler / contract share</h2>
+  <div class="meta">Union estimate (news); Worksheet S-3 audit pending</div>
+  <span class="goal">Goal: under 10% by 2028</span>
+  <div class="chartbox"><canvas id="travelerChart"></canvas></div>
+  <div class="note">~40% in 2024 (union). Not yet replaced with audited cost-report split.</div>
+</div>
+</div>
+
+<!-- Row 2: safety outcomes & experience distribution -->
+<div class="grid-row">
+<div class="card">
+  <h2>Hospital-acquired infections (SIR)</h2>
+  <div class="meta">CMS HAI · Jul 2024–Jun 2025 · SIR &lt;1 better than expected</div>
+  <span class="goal">Goal: all SIR &lt; 1.0 by 2028</span>
+  <div class="chartbox"><canvas id="haiChart"></canvas></div>
+  <div class="note">SSI–hysterectomy SIR 2.29 (worse than national). CLABSI/CAUTI/C.diff better.</div>
+</div>
+
+<div class="card">
+  <h2>30-day mortality rates</h2>
+  <div class="meta">CMS Complications &amp; Deaths · Mission vs national %</div>
+  <span class="goal">Goal: no “worse than national” by 2028</span>
+  <table class="minitable">
+    <thead><tr><th></th><th>Mission</th><th>National</th><th>vs</th></tr></thead>
+    <tbody id="mortTable"></tbody>
+  </table>
+  <div class="chartbox tall"><canvas id="mortChart"></canvas></div>
+  <div class="note">Source: CMS ynj2-r877 / qqw3-t4ie. All currently no different than national.</div>
+</div>
+
+<div class="card">
+  <h2>Complications vs national</h2>
+  <div class="meta">CMS Complications &amp; Deaths · key safety measures</div>
+  <span class="goal">Goal: no “worse than national” by 2028</span>
+  <table class="minitable">
+    <thead><tr><th></th><th>Mission</th><th>National</th><th>vs</th></tr></thead>
+    <tbody id="compTable"></tbody>
+  </table>
+  <div class="chartbox tall"><canvas id="compChart"></canvas></div>
+  <div class="note">Chart shows Mission as % of national (100 = national; lower better).</div>
+</div>
+
+<div class="card">
+  <h2>Readmissions</h2>
+  <div class="meta">CMS Unplanned Visits · Mission vs national %</div>
+  <span class="goal">Goal: hold/improve vs national by 2028</span>
+  <div class="chartbox tall"><canvas id="readmChart"></canvas></div>
+  <div class="note">Hospital-wide 13.8% vs national 15.0% (better). AMI also better than national.</div>
+</div>
+
+<div class="card">
+  <h2>Good vs bad experiences</h2>
+  <div class="meta">HCAHPS rated 9–10 vs ≤6</div>
+  <span class="goal">Goal: ≥80% / ≤10% by 2028</span>
+  <div class="chartbox"><canvas id="goodBadChart"></canvas></div>
+  <div class="note">Latest: 58% high / 16% low.</div>
+</div>
+</div>
+
+</div>
+
+<footer>
+  Sources: <a href="https://data.cms.gov/provider-data/">CMS Provider Data Catalog</a> (HCAHPS, HAI, Complications/Deaths, Unplanned Visits, Hospital General Information) ·
+  <a href="https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports">Medicare cost reports (HCRIS)</a> ·
+  <a href="https://avlwatchdog.org/">Asheville Watchdog</a> ·
+  <a href="https://www.northcarolinahealthnews.org/">NC Health News</a>.
+  Staff-to-bed from Form 2552-10. Traveler % remains a news/union estimate. Overall quality stars currently a single CMS snapshot.
+  Dashboard trimmed to care-integrity signals (IJ, stars, staffing, HAIs, mortality, complications, readmissions, experience).
+</footer>
+
+<script>
+window.addEventListener("load", async function () {
+  let DATA;
+  try {
+    const res = await fetch("./charts.json", { cache: "no-store" });
+    if (!res.ok) throw new Error("charts.json " + res.status);
+    DATA = await res.json();
+  } catch (e) {
+    console.error(e);
+    document.getElementById("loadErr").style.display = "block";
+    return;
+  }
+
+  document.getElementById("lastRefresh").textContent = DATA.lastRefresh;
+  const lastStar = [...DATA.starTrend.mission].reverse().find((v) => v != null);
+  const lastStaff = [...DATA.staffRatio.ratio].reverse().find((v) => v != null);
+  const ov = DATA.overallStars.stars[0];
+  document.getElementById("bannerOverall").textContent = ov != null ? ov + "★" : "—";
+  document.getElementById("bannerStaff").textContent = lastStaff != null ? lastStaff + " (FY" + DATA.staffRatio.labels[DATA.staffRatio.ratio.lastIndexOf(lastStaff)] + ")" : "—";
+  document.getElementById("bannerHcahps").textContent = lastStar != null ? lastStar + "★" : "—";
+
+  (function renderIjStrip() {
+    const strip = document.getElementById("ijStrip");
+    const byYear = Object.fromEntries(DATA.ij.years.map((y, i) => [y, DATA.ij.counts[i]]));
+    const start = Number(DATA.ij.years[0]);
+    const end = Number(DATA.ij.goalYear || 2028);
+    for (let y = start; y <= end; y++) {
+      const key = String(y);
+      const known = Object.prototype.hasOwnProperty.call(byYear, key);
+      const count = known ? byYear[key] : null;
+      let cls = "yearcell";
+      let mark = "0";
+      if (known && count > 0) { cls += " ij"; mark = String(count); }
+      else if (known) { cls += " clear"; }
+      else { cls += " future"; }
+      const isGoal = key === String(DATA.ij.goalYear);
+      if (isGoal) cls += " goal2028";
+      const cell = document.createElement("div");
+      cell.className = cls;
+      cell.innerHTML = `<span class="yr">${key}</span><span class="mark">${mark}</span>${isGoal ? '<span class="goalcap">Goal</span>' : ''}`;
+      strip.appendChild(cell);
+    }
+  })();
+
+  (function fillTables() {
+    const mortBody = document.getElementById("mortTable");
+    DATA.mortality.labels.forEach((label, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${label}</td><td>${DATA.mortality.mission[i]}%</td><td>${DATA.mortality.national[i]}%</td><td class="same">Same</td>`;
+      mortBody.appendChild(tr);
+    });
+    const raw = DATA.complications.raw || null;
+    const compBody = document.getElementById("compTable");
+    DATA.complications.labels.forEach((label, i) => {
+      const st = DATA.complications.status[i];
+      const cls = st === "Better" ? "better" : st === "Worse" ? "warn" : "same";
+      let m = "—", n = "—";
+      if (raw && raw[i]) { m = raw[i].mission; n = raw[i].national; }
+      else {
+        // fallback display from pctOfNational only
+        m = DATA.complications.pctOfNational[i] + "% of natl";
+        n = "100";
+      }
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${label}</td><td>${m}</td><td>${n}</td><td class="${cls}">${st}</td>`;
+      compBody.appendChild(tr);
+    });
+  })();
+
+  if (typeof Chart === "undefined") { document.getElementById("loadErr").style.display = "block"; return; }
+
+  Chart.defaults.font.size = 10;
+  Chart.defaults.color = "#475569";
+  const common = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 }, filter: (item) => !!item.text } } }
+  };
+  const pad = (arr, n) => arr.concat(Array(Math.max(0, n - arr.length)).fill(null));
+  const lastActual = (arr) => {
+    for (let i = arr.length - 1; i >= 0; i--) if (arr[i] != null) return { idx: i, val: arr[i] };
+    return null;
+  };
+  const goalPoint = (label, value, n) => {
+    const data = Array(n).fill(null); data[n - 1] = value;
+    return { label, data, borderColor: "#059669", backgroundColor: "#059669", pointRadius: 6, pointStyle: "triangle", showLine: false, spanGaps: true };
+  };
+  const goalPath = (lastIdx, lastVal, goalIdx, goalVal, n, label) => {
+    const data = Array(n).fill(null); data[lastIdx] = lastVal; data[goalIdx] = goalVal;
+    return { label: label == null ? "Path to 2028 goal" : label, data, borderColor: "#059669", borderDash: [4,4], borderWidth: 1.5, pointRadius: 0, pointStyle: "line", fill: false, spanGaps: true };
+  };
+  const mk = (id, cfg) => { try { new Chart(document.getElementById(id), cfg); } catch (e) { console.error(id, e); } };
+
+  const starLabels = DATA.starTrend.labels.concat(["2026","2027","2028"]);
+  const starLast = lastActual(DATA.starTrend.mission);
+  mk("starChart", { type: "line", data: { labels: starLabels, datasets: [
+    { label: "HCAHPS stars", data: pad(DATA.starTrend.mission, starLabels.length), borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 3, tension: 0.25, spanGaps: true },
+    ...(starLast ? [goalPath(starLast.idx, starLast.val, starLabels.length - 1, 4, starLabels.length)] : []),
+    goalPoint("Goal 4★", 4, starLabels.length)
+  ]}, options: { ...common, scales: { y: { min: 1, max: 5, ticks: { stepSize: 1 } } } } });
+
+  const ovLabels = ["2026","2027","2028"];
+  const ovStar = DATA.overallStars.stars[0] ?? 3;
+  mk("overallStarChart", { type: "line", data: { labels: ovLabels, datasets: [
+    { label: "Overall CMS stars", data: [ovStar, null, null], borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 5, spanGaps: true },
+    goalPath(0, ovStar, 2, 4, 3),
+    goalPoint("Goal 4★", 4, 3)
+  ]}, options: { ...common, scales: { y: { min: 2, max: 5, ticks: { stepSize: 1 } } } } });
+
+  const staffLabels = DATA.staffRatio.labels.concat(["2025","2026","2027","2028"]);
+  const staffLast = lastActual(DATA.staffRatio.ratio);
+  mk("staffChart", { type: "line", data: { labels: staffLabels, datasets: [
+    { label: "Staff per bed", data: pad(DATA.staffRatio.ratio, staffLabels.length), borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true },
+    ...(staffLast ? [goalPath(staffLast.idx, staffLast.val, staffLabels.length - 1, 9, staffLabels.length)] : []),
+    goalPoint("Goal 9", 9, staffLabels.length)
+  ]}, options: { ...common, scales: { y: { min: 4, max: 10, ticks: { stepSize: 1 } } } } });
+
+  const travLabels = DATA.travelers.labels.concat(["2025","2026","2027","2028"]);
+  const travLast = lastActual(DATA.travelers.pct);
+  mk("travelerChart", { type: "line", data: { labels: travLabels, datasets: [
+    { label: "% travelers", data: pad(DATA.travelers.pct, travLabels.length), borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true },
+    ...(travLast ? [goalPath(travLast.idx, travLast.val, travLabels.length - 1, 10, travLabels.length)] : []),
+    goalPoint("Goal <10%", 10, travLabels.length)
+  ]}, options: { ...common, scales: { y: { min: 0, max: 45 } } } });
+
+  mk("haiChart", { type: "bar", data: { labels: DATA.hai.labels, datasets: [
+    { label: "SIR", data: DATA.hai.sir, backgroundColor: DATA.hai.colors, borderRadius: 3 },
+    { label: "Benchmark (1.0)", data: Array(DATA.hai.labels.length).fill(1), type: "line", borderColor: "#059669", borderDash: [5,4], pointRadius: 0, order: 0 }
+  ]}, options: { ...common, scales: { y: { min: 0, max: 2.5 } } } });
+
+  mk("mortChart", { type: "bar", data: { labels: DATA.mortality.labels, datasets: [
+    { label: "Mission", data: DATA.mortality.mission, backgroundColor: "#2563eb", borderRadius: 3 },
+    { label: "National", data: DATA.mortality.national, backgroundColor: "#94a3b8", borderRadius: 3 }
+  ]}, options: { ...common, indexAxis: "y", scales: { x: { min: 0, max: 18 } } } });
+
+  const compColors = DATA.complications.status.map(s => s === "Better" ? "#059669" : s === "Worse" ? "#dc2626" : "#64748b");
+  mk("compChart", { type: "bar", data: { labels: DATA.complications.labels, datasets: [
+    { label: "Mission as % of national (100=natl)", data: DATA.complications.pctOfNational, backgroundColor: compColors, borderRadius: 3 }
+  ]}, options: { ...common, indexAxis: "y", scales: { x: { min: 0, max: 110, title: { display: true, text: "% of national — 100 = national (lower better)", font: { size: 9 } } } } } });
+
+  mk("readmChart", { type: "bar", data: { labels: DATA.readmit.labels, datasets: [
+    { label: "Mission", data: DATA.readmit.mission, backgroundColor: "#2563eb", borderRadius: 3 },
+    { label: "National", data: DATA.readmit.national, backgroundColor: "#94a3b8", borderRadius: 3 }
+  ]}, options: { ...common, indexAxis: "y", scales: { x: { min: 0, max: 22 } } } });
+
+  const gbLabels = DATA.goodBad.labels.concat(["2026","2027","2028"]);
+  const gbH = lastActual(DATA.goodBad.high), gbL = lastActual(DATA.goodBad.low);
+  mk("goodBadChart", { type: "line", data: { labels: gbLabels, datasets: [
+    { label: "Rated 9–10", data: pad(DATA.goodBad.high, gbLabels.length), borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 4, spanGaps: true },
+    { label: "Rated ≤6", data: pad(DATA.goodBad.low, gbLabels.length), borderColor: "#dc2626", backgroundColor: "#dc2626", pointRadius: 4, spanGaps: true },
+    ...(gbH ? [goalPath(gbH.idx, gbH.val, gbLabels.length - 1, 80, gbLabels.length)] : []),
+    ...(gbL ? [goalPath(gbL.idx, gbL.val, gbLabels.length - 1, 10, gbLabels.length, "")] : []),
+    goalPoint("Goal 80%", 80, gbLabels.length),
+    goalPoint("Goal 10%", 10, gbLabels.length)
+  ]}, options: { ...common, scales: { y: { min: 0, max: 90 } } } });
+});
+</script>
+</body>
+</html>

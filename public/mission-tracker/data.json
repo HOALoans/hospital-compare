@@ -1,0 +1,415 @@
+{
+  "hospital": {
+    "name": "Mission Hospital",
+    "city": "Asheville, NC",
+    "ccn": "340002",
+    "owner": "HCA Healthcare (since Feb 2019)"
+  },
+  "lastRefresh": "2026-07-18",
+  "immediateJeopardy": {
+    "source": "CMS/NCDHHS inspection reports (Form 2567)",
+    "goal": "0 designations by 2028, sustained",
+    "byYear": {
+      "2019": 0,
+      "2020": 0,
+      "2021": 1,
+      "2022": 0,
+      "2023": 0,
+      "2024": 1,
+      "2025": 1,
+      "2026": 1
+    },
+    "events": [
+      {
+        "date": "2021",
+        "note": "IJ #1 — patient found dying on floor, IV disconnected"
+      },
+      {
+        "date": "2023-12 to 2024-02",
+        "note": "IJ #2 + EMTALA violation — 18 patients harmed 2022-23, 4 deaths (ED and oncology); 384-page CMS report Feb 15, 2024"
+      },
+      {
+        "date": "2025-10",
+        "note": "IJ #3 — preventable death, unsafe transport, misidentification, infection control"
+      },
+      {
+        "date": "2026-01",
+        "note": "IJ #4 — repeat findings; removed 2026-03-04 after Enhanced Plan of Correction approved 2026-01-29"
+      }
+    ],
+    "currentStatus": "Not under IJ as of 2026-03-04"
+  },
+  "hcahps": {
+    "source": "CMS Provider Data Catalog, dataset dgck-syfz; updates quarterly",
+    "apiUrl": "https://data.cms.gov/provider-data/api/1/datastore/query/dgck-syfz/0?conditions[0][property]=facility_id&conditions[0][value]=340002&limit=100",
+    "surveyPeriod": "2024-07-01 to 2025-06-30",
+    "summaryStarByYear": {
+      "2018": 4,
+      "2019": 2,
+      "2020": 2,
+      "2021": 2,
+      "2022": 1,
+      "2023": 1,
+      "2024": 1,
+      "2025": 2,
+      "note": "2018-2024 compiled from Asheville Watchdog / Wake Forest analyses of CMS archives; 2025 from current CMS API"
+    },
+    "goal": "4 stars by 2028 (pre-sale level); 3 stars interim (national par)",
+    "componentStars": {
+      "nurseCommunication": 2,
+      "doctorCommunication": 2,
+      "medicinesCommunication": 2,
+      "dischargeInfo": 2,
+      "cleanliness": 1,
+      "quietness": 3,
+      "overallRating": 2,
+      "recommend": 2,
+      "summary": 2
+    },
+    "measuresVsNational": {
+      "note": "national values approximate",
+      "nursesAlwaysCommunicated": {
+        "mission": 72,
+        "national": 79
+      },
+      "doctorsAlwaysCommunicated": {
+        "mission": 73,
+        "national": 80
+      },
+      "roomAlwaysClean": {
+        "mission": 51,
+        "national": 72
+      },
+      "alwaysQuietAtNight": {
+        "mission": 52,
+        "national": 62
+      },
+      "rated9or10": {
+        "mission": 58,
+        "national": 71
+      },
+      "definitelyRecommend": {
+        "mission": 53,
+        "national": 69
+      }
+    },
+    "goodVsBadProxy": {
+      "rated9or10": 58,
+      "rated6orLower": 16,
+      "goal": "high >= 80 by 2028, low <= 10 by 2028"
+    }
+  },
+  "staffing": {
+    "staffToBedRatio": {
+      "source": "CMS HCRIS Hospital Form 2552-10 (HOSP10FY####.zip); Worksheet S-3 Part I line 14: employees on payroll FTEs (col 10) ÷ beds (col 2); FY ends 9/30; provider 340002",
+      "method": "fte14 / beds14",
+      "byYear": {
+        "2018": {
+          "ratio": 8.6,
+          "fte": 6051.96,
+          "beds": 701,
+          "fyEnd": "2018-09-30"
+        },
+        "2021": {
+          "ratio": 5.1,
+          "fte": 3706.36,
+          "beds": 733,
+          "fyEnd": "2021-09-30"
+        },
+        "2022": {
+          "ratio": 4.6,
+          "fte": 3392.69,
+          "beds": 733,
+          "fyEnd": "2022-09-30"
+        },
+        "2023": {
+          "ratio": 4.7,
+          "fte": 3371.29,
+          "beds": 717,
+          "fyEnd": "2023-09-30",
+          "note": "Matches published litigation/Watchdog 4.7"
+        },
+        "2024": {
+          "ratio": 4.8,
+          "fte": 3419.57,
+          "beds": 717,
+          "fyEnd": "2024-09-30"
+        }
+      },
+      "goal": "9 by 2028 (pre-sale level)",
+      "note": "FY2025 report pending CMS processing (hcris.io). Pre-sale CMS recomputation is 8.6; some published analyses cited ~9.1 for 2018 using a related methodology."
+    },
+    "travelers": {
+      "source": "News-reported estimates; audited data from Medicare cost report Worksheet S-3 (contract labor hours vs employed), ~1yr lag",
+      "estimates": [
+        {
+          "period": "2024",
+          "pct": 40,
+          "basis": "union nurse statement; staff estimated ~50% in some units"
+        },
+        {
+          "period": "2022-07 to 2024-04",
+          "note": "~1,550 travelers on 2,680+ contracts"
+        },
+        {
+          "period": "2025-12",
+          "note": "Asheville Watchdog staffing lists: ~527 travel nurses + ~1,500 FT nurses; Watchdog described share as closer to a quarter — not an audited %; chart keeps 2024 ~40% union estimate pending Worksheet S-3"
+        }
+      ],
+      "context": "660+ RNs lost across HCA Asheville facilities 2022-23; ~1,500 temps hired; 182 open nursing positions listed 2024-04; HCA planned ~800 FTE cuts at purchase",
+      "goal": "Under 10% travelers by 2028"
+    },
+    "costReportDownload": "https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports/cost-reports-fiscal-year (HCRIS, Form 2552-10, Worksheet S-3 Parts II/V; filter provider 340002)"
+  },
+  "physicians": {
+    "source": "CMS Doctors & Clinicians facility affiliation dataset 27ea-46a8",
+    "apiUrl": "https://data.cms.gov/provider-data/api/1/datastore/query/27ea-46a8/0?conditions[0][property]=facility_affiliations_certification_number&conditions[0][value]=340002&limit=1&results=false&schema=false",
+    "snapshots": [
+      {
+        "date": "2026-07",
+        "affiliatedClinicians": 1621
+      }
+    ],
+    "historicalNote": "No public CMS affiliation time series before Jul 2026 baseline. Dataset 27ea-46a8 issued 2023-08; prior archived counts not compiled here. Watchdog Find-a-Doctor removals (~223, 2019–2022) are not comparable to CMS affiliation totals.",
+    "goal": "Maintain ≥ 1,621 affiliated clinicians by 2028"
+  },
+  "residency": {
+    "source": "NRMP Main Match Program Results (Mountain AHEC-NC Asheville, institution 3023); all program tracks aggregated; main Match only (pre-SOAP)",
+    "sourceUrl": "https://www.nrmp.org/wp-content/uploads/2026/03/Main_Match_Program_Results_2022-2026.pdf",
+    "byYear": {
+      "2022": {
+        "quota": 67,
+        "filled": 54,
+        "fillPct": 81
+      },
+      "2023": {
+        "quota": 68,
+        "filled": 65,
+        "fillPct": 96
+      },
+      "2024": {
+        "quota": 71,
+        "filled": 62,
+        "fillPct": 87
+      },
+      "2025": {
+        "quota": 73,
+        "filled": 71,
+        "fillPct": 97
+      },
+      "2026": {
+        "quota": 73,
+        "filled": 59,
+        "fillPct": 81,
+        "note": "IM filled 10/18; FM Hendersonville 3/6; Psychiatry 4/6"
+      }
+    },
+    "goal": "100% main-Match fill by 2028",
+    "nextDataPoint": "March 2027"
+  },
+  "overallQualityStars": {
+    "source": "CMS Hospital General Information xubh-q36u",
+    "current": 3,
+    "asOf": "2026-04 CMS release",
+    "goal": "4 stars by 2028",
+    "groupSummary": {
+      "mortality": {
+        "better": 0,
+        "noDifferent": 8,
+        "worse": 0
+      },
+      "safety": {
+        "better": 3,
+        "noDifferent": 5,
+        "worse": 0
+      },
+      "readmission": {
+        "better": 4,
+        "noDifferent": 6,
+        "worse": 1
+      }
+    }
+  },
+  "hai": {
+    "source": "CMS Healthcare Associated Infections 77hc-ibv8",
+    "period": "2024-07-01 to 2025-06-30",
+    "goal": "All SIR < 1.0 by 2028",
+    "sir": {
+      "CLABSI": {
+        "value": 0.383,
+        "vsNational": "Better"
+      },
+      "CAUTI": {
+        "value": 0.348,
+        "vsNational": "Better"
+      },
+      "SSI_colon": {
+        "value": 1.194,
+        "vsNational": "No Different"
+      },
+      "SSI_hysterectomy": {
+        "value": 2.292,
+        "vsNational": "Worse"
+      },
+      "MRSA": {
+        "value": 0.664,
+        "vsNational": "No Different"
+      },
+      "C_diff": {
+        "value": 0.195,
+        "vsNational": "Better"
+      }
+    }
+  },
+  "ed": {
+    "source": "CMS Timely and Effective Care yv7e-xc69; national isrn-hqyy",
+    "OP_18b_medianMinutes": {
+      "mission": 173,
+      "national": 161,
+      "period": "2024-07 to 2025-06"
+    },
+    "OP_22_leftWithoutBeingSeenPct": {
+      "mission": 0,
+      "national": 2,
+      "period": "2024 calendar"
+    },
+    "ED_volume": "very high",
+    "goal": "ED median ≤ national; LWBS ≤ 1% by 2028"
+  },
+  "mortality": {
+    "source": "CMS Complications and Deaths ynj2-r877",
+    "period": "mostly 2021-07 to 2024-06",
+    "goal": "No worse-than-national mortality measures by 2028",
+    "rates": {
+      "MORT_30_AMI": 10.9,
+      "MORT_30_CABG": 2.5,
+      "MORT_30_COPD": 8,
+      "MORT_30_HF": 11.5,
+      "MORT_30_PN": 15.3,
+      "MORT_30_STK": 13.5
+    },
+    "note": "All listed currently no different than national",
+    "nationalRates": {
+      "MORT_30_AMI": 12.2,
+      "MORT_30_CABG": 2.6,
+      "MORT_30_COPD": 8.8,
+      "MORT_30_HF": 11.6,
+      "MORT_30_PN": 16.2,
+      "MORT_30_STK": 13.3
+    },
+    "sourceNational": "CMS Complications and Deaths - National qqw3-t4ie"
+  },
+  "readmissions": {
+    "source": "CMS Unplanned Hospital Visits 632h-zaca; National cvcs-xecj; HRRP 9n3s-kdb3",
+    "hybridHospitalWidePct": {
+      "value": 13.8,
+      "national": 15,
+      "vsNational": "Better"
+    },
+    "rates": {
+      "AMI": {
+        "mission": 11.3,
+        "national": 13.6,
+        "vsNational": "Better"
+      },
+      "HF": {
+        "mission": 18,
+        "national": 19.7,
+        "vsNational": "No Different"
+      },
+      "PN": {
+        "mission": 14.8,
+        "national": 16,
+        "vsNational": "No Different"
+      },
+      "COPD": {
+        "mission": 18.1,
+        "national": 18.2,
+        "vsNational": "No Different"
+      },
+      "CABG": {
+        "mission": 9.6,
+        "national": 10.6,
+        "vsNational": "No Different"
+      },
+      "HIP_KNEE": {
+        "mission": 4.6,
+        "national": 4.8,
+        "vsNational": "No Different"
+      }
+    },
+    "goal": "Hold/improve vs national by 2028"
+  },
+  "safetyPsi90": {
+    "source": "CMS ynj2-r877 PSI_90",
+    "value": 0.68,
+    "vsNational": "Better",
+    "period": "2022-07 to 2024-06",
+    "goal": "Stay ≤ 0.8 (better than national) by 2028"
+  },
+  "sepsis": {
+    "source": "CMS Timely Care SEP_1",
+    "missionPct": 63,
+    "nationalPct": 64,
+    "period": "2024-07 to 2025-06",
+    "goal": "≥ 80% by 2028"
+  },
+  "operatingMargin": {
+    "source": "CMS HCRIS Worksheet G-3: line 5 ÷ line 3 (net income from patients / net patient revenue)",
+    "byYearPct": {
+      "2018": 2.3,
+      "2021": 17.4,
+      "2022": 7.4,
+      "2023": 12.5,
+      "2024": 14.2
+    },
+    "note": "Context metric — rose after HCA purchase as staffing fell; not a recovery target"
+  },
+  "mspb": {
+    "source": "CMS Medicare Spending Per Beneficiary rrqw-56er",
+    "score": 0.99,
+    "period": "2024 calendar",
+    "goal": "Stay ≤ 1.0 by 2028"
+  },
+  "fluVaccination": {
+    "source": "CMS IMM_3 healthcare worker influenza vaccination",
+    "missionPct": 59,
+    "nationalPct": 78,
+    "period": "2024-10 to 2025-03",
+    "goal": "≥ 90% by 2028"
+  },
+  "notReportable": {
+    "goodVsBadExperienceReports": "No official dataset; proxies are HCAHPS 9-10 vs <=6 ratings or review sentiment",
+    "practicePhysicianRetention": "Not publicly reported; CMS affiliation count is the proxy"
+  },
+  "complicationsVsNational": {
+    "source": "CMS ynj2-r877 + qqw3-t4ie",
+    "measures": {
+      "PSI_90": {
+        "mission": 0.68,
+        "national": 1,
+        "vs": "Better"
+      },
+      "PSI_03": {
+        "mission": 0.05,
+        "national": 0.63,
+        "vs": "Better"
+      },
+      "PSI_12": {
+        "mission": 2,
+        "national": 3.52,
+        "vs": "Better"
+      },
+      "COMP_HIP_KNEE": {
+        "mission": 3.2,
+        "national": 3.6,
+        "vs": "No Different"
+      },
+      "Hybrid_HWM": {
+        "mission": 3.7,
+        "national": 4.2,
+        "vs": "No Different"
+      }
+    }
+  }
+}

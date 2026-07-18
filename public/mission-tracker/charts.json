@@ -1,0 +1,220 @@
+{
+  "lastRefresh": "2026-07-18",
+  "ij": {
+    "years": [
+      "2019",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025",
+      "2026"
+    ],
+    "counts": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      1,
+      1
+    ],
+    "goalYear": "2028",
+    "goalCount": 0
+  },
+  "starTrend": {
+    "labels": [
+      "2018",
+      "2019",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025*"
+    ],
+    "mission": [
+      4,
+      2,
+      2,
+      2,
+      1,
+      1,
+      1,
+      2
+    ]
+  },
+  "overallStars": {
+    "labels": [
+      "2026"
+    ],
+    "stars": [
+      3
+    ]
+  },
+  "staffRatio": {
+    "labels": [
+      "2018",
+      "2021",
+      "2022",
+      "2023",
+      "2024"
+    ],
+    "ratio": [
+      8.6,
+      5.1,
+      4.6,
+      4.7,
+      4.8
+    ]
+  },
+  "goodBad": {
+    "labels": [
+      "2026-07"
+    ],
+    "high": [
+      58
+    ],
+    "low": [
+      16
+    ]
+  },
+  "travelers": {
+    "labels": [
+      "2022",
+      "2024"
+    ],
+    "pct": [
+      null,
+      40
+    ]
+  },
+  "hai": {
+    "labels": [
+      "CLABSI",
+      "CAUTI",
+      "SSI colon",
+      "SSI hyst",
+      "MRSA",
+      "C. diff"
+    ],
+    "sir": [
+      0.383,
+      0.348,
+      1.194,
+      2.292,
+      0.664,
+      0.195
+    ],
+    "colors": [
+      "#059669",
+      "#059669",
+      "#94a3b8",
+      "#dc2626",
+      "#059669",
+      "#059669"
+    ]
+  },
+  "mortality": {
+    "labels": [
+      "AMI",
+      "CABG",
+      "COPD",
+      "HF",
+      "Pneumonia",
+      "Stroke"
+    ],
+    "mission": [
+      10.9,
+      2.5,
+      8,
+      11.5,
+      15.3,
+      13.5
+    ],
+    "national": [
+      12.2,
+      2.6,
+      8.8,
+      11.6,
+      16.2,
+      13.3
+    ]
+  },
+  "complications": {
+    "labels": [
+      "PSI-90",
+      "Pressure ulcer",
+      "PE/DVT",
+      "Hip/knee comp",
+      "Hosp-wide mort"
+    ],
+    "pctOfNational": [
+      68,
+      8,
+      57,
+      89,
+      88
+    ],
+    "status": [
+      "Better",
+      "Better",
+      "Better",
+      "Same",
+      "Same"
+    ],
+    "raw": [
+      {
+        "mission": "0.68",
+        "national": "1"
+      },
+      {
+        "mission": "0.05",
+        "national": "0.63"
+      },
+      {
+        "mission": "2",
+        "national": "3.52"
+      },
+      {
+        "mission": "3.2",
+        "national": "3.6"
+      },
+      {
+        "mission": "3.7%",
+        "national": "4.2%"
+      }
+    ]
+  },
+  "readmit": {
+    "labels": [
+      "Hospital-wide",
+      "AMI",
+      "HF",
+      "Pneumonia",
+      "COPD",
+      "CABG",
+      "Hip/knee"
+    ],
+    "mission": [
+      13.8,
+      11.3,
+      18,
+      14.8,
+      18.1,
+      9.6,
+      4.6
+    ],
+    "national": [
+      15,
+      13.6,
+      19.7,
+      16,
+      18.2,
+      10.6,
+      4.8
+    ]
+  }
+}
