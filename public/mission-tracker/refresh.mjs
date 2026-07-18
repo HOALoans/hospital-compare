@@ -72,8 +72,21 @@ const gen = await q("xubh-q36u", {
 const g0 = (gen.results || [])[0];
 const overall = Number(g0?.hospital_overall_rating);
 if (Number.isFinite(overall)) {
-  charts.overallStars = { labels: [String(new Date().getFullYear())], stars: [overall] };
-  console.log(`Overall CMS stars: ${overall}`);
+  const yr = String(new Date().getFullYear());
+  const labels = charts.overallStars?.labels?.length
+    ? charts.overallStars.labels.slice()
+    : [yr];
+  const stars = charts.overallStars?.stars?.length
+    ? charts.overallStars.stars.slice()
+    : [overall];
+  const last = String(labels[labels.length - 1] || "").replace("*", "");
+  if (last === yr) stars[stars.length - 1] = overall;
+  else {
+    labels.push(yr);
+    stars.push(overall);
+  }
+  charts.overallStars = { labels, stars };
+  console.log(`Overall CMS stars: ${overall} (${labels.join(", ")})`);
 }
 
 // --- HAI SIRs ---

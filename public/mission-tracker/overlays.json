@@ -50,14 +50,16 @@
         "labels": [
           "2022",
           "2023",
-          "2024"
+          "2024",
+          "2025"
         ],
         "pct": [
-          null,
-          null,
-          40
+          50,
+          30,
+          40,
+          26
         ],
-        "note": "Union/news estimates only \u2014 not audited Worksheet S-3. No published single % for 2022\u20132023; 2024 ~40% union estimate."
+        "note": "News/union estimates of RN traveler share (not audited Worksheet S-3). 2022 ~50% staff-nurse reports (Asheville Watchdog); 2023 ~30% from Watchdog headcounts (352 travelers / filled RN positions, Sep 2023); 2024 ~40% union estimate; 2025 ~26% from Watchdog staffing lists (~527 travelers / ~2,027 nurses, Dec 2025)."
       },
       "starTrend": {
         "labels": [
@@ -81,6 +83,29 @@
           2
         ],
         "note": "2018\u20132024 compiled from CMS archive analyses (Asheville Watchdog / public CMS); 2025 from current CMS HCAHPS release."
+      },
+      "overallTrend": {
+        "labels": [
+          "2019",
+          "2020",
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "stars": [
+          5,
+          5,
+          4,
+          4,
+          4,
+          4,
+          4,
+          3
+        ],
+        "note": "CMS Care Compare Hospital overall rating from archived Hospital General Information releases (Oct/Nov each year; 2026 from May 2026 extract)."
       }
     }
   }

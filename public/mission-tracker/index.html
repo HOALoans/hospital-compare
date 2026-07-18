@@ -367,12 +367,13 @@ async function loadDashboard(ccn) {
   const meta = await loadHospitalMeta(ccn);
   if (!meta) { showErr("Hospital not found for CCN " + ccn); return; }
 
-  $("pageTitle").textContent = `${meta.name}${meta.city ? " (" + meta.city + (meta.state ? ", " + meta.state : "") + ")" : ""} — Hospital Health Dashboard`;
-  // Prefer friendly overlay name in the title when available
-  if (overlay?.name) {
-    $("pageTitle").textContent = `${overlay.name}${overlay.city ? " (" + overlay.city + (overlay.state ? ", " + overlay.state : "") + ")" : ""} — Hospital Health Dashboard`;
-  }
-
+  const displayName = overlay?.name || meta.name;
+  const displayCity = overlay?.city || meta.city || "";
+  const displayState = overlay?.state || meta.state || "";
+  $("pageTitle").textContent = `${displayName}${displayCity ? " (" + displayCity + (displayState ? ", " + displayState : "") + ")" : ""} — Hospital Health Dashboard`;
+  // Keep the selected hospital visible in the search box (Mission and others)
+  $("hospitalSearch").value = displayName;
+  if (displayState) $("stateFilter").value = displayState;
 
   const facility = {
     conditions: [{ property: "facility_id", operator: "=", value: ccn }],
@@ -474,15 +475,33 @@ async function loadDashboard(ccn) {
     { label: "HCAHPS stars", data: starVals, borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 4, pointHoverRadius: 5, tension: 0.25, spanGaps: true }
   ]}, options: lineOpts({ min: 1, max: 5, ticks: { stepSize: 1 } }) });
 
-  // --- Overall ---
-  setTrendEl("trendOverall", "insufficient", true);
+  // --- Overall CMS quality stars (curated archive series when available) ---
+  let overallLabels = [];
+  let overallVals = [];
+  if (overlay?.overallTrend?.labels?.length) {
+    overallLabels = overlay.overallTrend.labels.slice();
+    overallVals = overlay.overallTrend.stars.map((v) => (v == null ? null : Number(v)));
+    if (Number.isFinite(overall)) {
+      const yr = String(new Date().getFullYear());
+      const lastLbl = String(overallLabels[overallLabels.length - 1] || "").replace("*", "");
+      if (lastLbl === yr) overallVals[overallVals.length - 1] = overall;
+      else {
+        overallLabels.push(yr);
+        overallVals.push(overall);
+      }
+    }
+  } else if (Number.isFinite(overall)) {
+    overallLabels = [String(new Date().getFullYear())];
+    overallVals = [overall];
+  }
+  setTrendEl("trendOverall", seriesTrend(overallVals, true), true);
   $("noteOverall").textContent = Number.isFinite(overall)
-    ? `Current Care Compare overall rating: ${overall}★ (snapshot; CMS does not publish a long public overall-star time series here).`
+    ? `Latest Care Compare overall rating: ${overall}★.` + (overlay?.overallTrend?.note ? " " + overlay.overallTrend.note : "")
     : "Overall rating unavailable.";
-  mk("overallStarChart", { type: "bar", data: {
-    labels: ["Current"],
-    datasets: [{ label: "Overall CMS stars", data: [overall || null], backgroundColor: "#2563eb", borderRadius: 3 }]
-  }, options: { ...common, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } } } } });
+  mk("overallStarChart", { type: "line", data: {
+    labels: overallLabels,
+    datasets: [{ label: "Overall CMS stars", data: overallVals, borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 4, pointHoverRadius: 5, tension: 0.25, spanGaps: true }]
+  }, options: lineOpts({ min: 1, max: 5, ticks: { stepSize: 1 } }) });
 
   // --- Staff overlay ---
   const cardStaff = $("cardStaff");
@@ -508,10 +527,11 @@ async function loadDashboard(ccn) {
     cardTrav.classList.remove("hidden");
     $("noteTravelers").textContent = overlay.travelers.note || "";
     setTrendEl("trendTravelers", seriesTrend(overlay.travelers.pct, false), false);
+    const travMax = Math.max(50, ...overlay.travelers.pct.filter((v) => v != null).map(Number), 0);
     mk("travelerChart", { type: "line", data: {
       labels: overlay.travelers.labels,
       datasets: [{ label: "% travelers", data: overlay.travelers.pct, borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true }]
-    }, options: lineOpts({ min: 0, max: 50 }) });
+    }, options: lineOpts({ min: 0, max: Math.ceil(travMax / 10) * 10 }) });
   } else cardTrav.classList.add("hidden");
 
   // --- HAI ---
@@ -689,7 +709,8 @@ function wireUi() {
     if (!btn) return;
     resultsEl.style.display = "none";
     statusEl.style.display = "none";
-    $("hospitalSearch").value = "";
+    const name = btn.querySelector(".name")?.textContent?.trim();
+    if (name) $("hospitalSearch").value = name;
     loadDashboard(btn.dataset.ccn);
   });
   $("trendYears").addEventListener("change", () => {
