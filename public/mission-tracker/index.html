@@ -198,7 +198,7 @@
 <div class="page">
 <a class="toplink" href="/">← Back to Parigrado home</a>
 <h1 id="pageTitle">Hospital Health Dashboard</h1>
-<div class="sub">CCN <span id="ccnLabel">—</span> · Last refreshed <span id="lastRefresh"></span> · CMS Care Compare · optional HCRIS overlays</div>
+<div class="sub">CCN <span id="ccnLabel">—</span> · Last refreshed <span id="lastRefresh"></span> · CMS Care Compare · HCRIS staff-to-bed</div>
 <div class="err" id="loadErr"></div>
 
 <div class="toolbar">
@@ -356,7 +356,7 @@
 <footer>
   <a href="/">Parigrado home</a> · Hospital Health Dashboard ·
   Sources: <a href="https://data.cms.gov/provider-data/">CMS Provider Data Catalog</a>,
-  Medicare cost reports (HCRIS) where overlaid ·
+  Medicare cost reports (HCRIS) for staff-to-bed ·
   Travel nurse counts are from news/Watchdog staffing reports when shown.
 </footer>
 </div>
@@ -366,9 +366,25 @@ const DEFAULT_CCN = "340002";
 const US_STATES = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC"].sort();
 const charts = {};
 let overlays = { hospitals: {}, trendYearsDefault: 5 };
+/** National HCRIS staff-to-bed series keyed by CCN (from staff-ratios.json). */
+let staffRatios = { hospitals: {}, note: "", method: "", source: "" };
 let trendYears = 5;
 let dashGen = 0;
 let dashCache = null; // last successful render payload for trend-window re-renders
+
+/** Overlay curated series wins; else national extract for that CCN. */
+function resolveStaffRatio(ccn, overlay) {
+  if (overlay?.staffRatio?.labels?.length) return { ...overlay.staffRatio, fromOverlay: true };
+  const bulk = staffRatios.hospitals?.[ccn];
+  if (bulk?.labels?.length) {
+    const note = [
+      staffRatios.method || "CMS HCRIS S-3 Part I line 14: employees on payroll FTEs (col 10) ÷ beds (col 2); FY ends Sept.",
+      staffRatios.note || "",
+    ].filter(Boolean).join(" ");
+    return { labels: bulk.labels, ratio: bulk.ratio, note, fromOverlay: false };
+  }
+  return null;
+}
 
 const $ = (id) => document.getElementById(id);
 const showErr = (msg) => { const el = $("loadErr"); el.style.display = msg ? "block" : "none"; el.textContent = msg || ""; };
@@ -730,8 +746,9 @@ function renderDashboard(cache) {
   if (overlay?.bannerNote) bannerBits.push(overlay.bannerNote);
   bannerBits.push(`Overall CMS rating: ${Number.isFinite(overall) ? overall + "★" : "—"}.`);
   bannerBits.push(`HCAHPS: ${Number.isFinite(starNow) ? starNow + "★" : "—"}.`);
-  if (overlay?.staffRatio) {
-    const ratios = overlay.staffRatio.ratio;
+  const staffSeries = resolveStaffRatio(ccn, overlay);
+  if (staffSeries) {
+    const ratios = staffSeries.ratio;
     const last = [...ratios].reverse().find((v) => v != null);
     if (last != null) bannerBits.push(`Latest staff-to-bed: ${last}.`);
   }
@@ -824,20 +841,23 @@ function renderDashboard(cache) {
     $("noteOverall").textContent = appendWindowNote(NO_DATA, overallWin.windowNote);
   }
 
-  // --- Staff overlay (keep null years on the axis as gaps; do not skip labels) ---
-  if (overlay?.staffRatio) {
-    const staffWin = windowByYears(overlay.staffRatio.labels, [overlay.staffRatio.ratio]);
+  // --- Staff-to-bed: overlay override, else national HCRIS extract (keep null years as gaps) ---
+  if (staffSeries) {
+    const staffWin = windowByYears(staffSeries.labels, [staffSeries.ratio]);
     const staffLabels = staffWin.labels;
     const staffVals = staffWin.series[0].map((v) => (v == null || Number.isNaN(Number(v)) ? null : Number(v)));
     const hasStaff = staffVals.some((v) => v != null);
     if (hasStaff) {
       setCanvasEmpty("staffChart", false);
       setTrendEl("trendStaff", seriesTrend(staffVals, true), true);
-      $("noteStaff").textContent = appendWindowNote(overlay.staffRatio.note || "", staffWin.windowNote);
+      $("noteStaff").textContent = appendWindowNote(staffSeries.note || "", staffWin.windowNote);
+      // Scale y-axis to data (national ratios can exceed Mission's ~10 range)
+      const finite = staffVals.filter((v) => v != null);
+      const yMax = Math.max(10, Math.ceil(Math.max(...finite) / 2) * 2);
       mk("staffChart", { type: "line", data: {
         labels: staffLabels,
         datasets: [{ label: "Staff per bed", data: staffVals, borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true }]
-      }, options: lineOpts({ min: 0, max: 10, ticks: { stepSize: 2 } }) });
+      }, options: lineOpts({ min: 0, max: yMax, ticks: { stepSize: Math.max(1, Math.round(yMax / 5)) } }) });
     } else {
       setCanvasEmpty("staffChart", true);
       setTrendNoData("trendStaff");
@@ -846,7 +866,7 @@ function renderDashboard(cache) {
   } else {
     setCanvasEmpty("staffChart", true);
     setTrendNoData("trendStaff");
-    $("noteStaff").textContent = NO_DATA + " — staff-to-bed history is curated for selected hospitals only.";
+    $("noteStaff").textContent = NO_DATA + " — no CMS HCRIS staff-to-bed series for this hospital (FY2018–FY2024 extract).";
   }
 
   // --- Travelers overlay: headcount series + % when denominator exists ---
@@ -1335,6 +1355,9 @@ window.addEventListener("load", async () => {
   Chart.defaults.color = "#475569";
   try {
     overlays = await (await fetch("./overlays.json", { cache: "no-store" })).json();
+  } catch (_) {}
+  try {
+    staffRatios = await (await fetch("./staff-ratios.json", { cache: "no-store" })).json();
   } catch (_) {}
   trendYears = Number(overlays.trendYearsDefault) || 5;
   $("trendYears").value = String(trendYears);
