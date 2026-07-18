@@ -271,7 +271,7 @@
 
   <div class="card" id="cardTravelers">
     <h2>Travel nurse staffing</h2>
-    <div class="meta">Watchdog travel RN headcounts · national ~3.5% (HMR 2023)</div>
+    <div class="meta">Watchdog travel RN headcounts · nationwide norm ~3.5% (HMR 2023)</div>
     <span class="trend" id="trendTravelers">Trend: —</span>
     <div class="statrow" id="travelerStats" style="display:none">
       <div>
@@ -925,19 +925,50 @@ function renderDashboard(cache) {
           pointRadius: 4,
           spanGaps: false,
           yAxisID: "y1",
+          order: 0,
         });
+        // Nationwide traveler-share norm (~3–4%; midpoint plotted). Band + dashed midline on % axis.
         const natPct = Number(overlay.travelers.nationalPct);
-        if (Number.isFinite(natPct)) {
+        const natRange = Array.isArray(overlay.travelers.nationalPctRange)
+          ? overlay.travelers.nationalPctRange.map(Number)
+          : [3, 4];
+        const natLo = Number.isFinite(natRange[0]) ? natRange[0] : 3;
+        const natHi = Number.isFinite(natRange[1]) ? natRange[1] : 4;
+        const natMid = Number.isFinite(natPct) ? natPct : (natLo + natHi) / 2;
+        if (Number.isFinite(natMid)) {
           datasets.push({
-            label: `National ~${natPct}%`,
-            data: tLabels.map(() => natPct),
-            borderColor: "#64748b",
-            backgroundColor: "#64748b",
-            borderDash: [2, 3],
+            label: "_natBandHi",
+            data: tLabels.map(() => natHi),
+            borderColor: "transparent",
+            backgroundColor: "rgba(71, 85, 105, 0.16)",
+            fill: "+1",
             pointRadius: 0,
-            borderWidth: 2,
+            borderWidth: 0,
+            yAxisID: "y1",
+            order: 3,
+          });
+          datasets.push({
+            label: "_natBandLo",
+            data: tLabels.map(() => natLo),
+            borderColor: "transparent",
+            backgroundColor: "transparent",
+            fill: false,
+            pointRadius: 0,
+            borderWidth: 0,
+            yAxisID: "y1",
+            order: 3,
+          });
+          datasets.push({
+            label: "Nationwide norm",
+            data: tLabels.map(() => natMid),
+            borderColor: "#475569",
+            backgroundColor: "#475569",
+            borderDash: [6, 4],
+            pointRadius: 0,
+            borderWidth: 2.5,
             spanGaps: true,
             yAxisID: "y1",
+            order: 1,
           });
         }
       }
@@ -951,7 +982,17 @@ function renderDashboard(cache) {
       }
       mk("travelerChart", { type: "line", data: { labels: tLabels, datasets }, options: {
         ...common,
-        plugins: { legend: { display: hasPct, labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } } },
+        plugins: {
+          legend: {
+            display: hasPct,
+            labels: {
+              usePointStyle: true,
+              boxWidth: 8,
+              font: { size: 10 },
+              filter: (item) => !!item.text && !String(item.text).startsWith("_"),
+            },
+          },
+        },
         scales: {
           y: {
             min: yBottom,
