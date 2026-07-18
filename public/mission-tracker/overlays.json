@@ -125,6 +125,57 @@
         ],
         "note": "CMS Care Compare Hospital overall rating from archived Hospital General Information releases (Oct/Nov each year; 2026 from May 2026 extract)."
       }
+    },
+    "340014": {
+      "name": "Novant Health Forsyth Medical Center",
+      "city": "Winston-Salem",
+      "state": "NC",
+      "starTrend": {
+        "labels": [
+          "2019",
+          "2020",
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "stars": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "note": "CMS HCAHPS summary star rating from Parigrado CMS archive theme snapshots (Oct/Nov each year; 2026 from May 2026 extract)."
+      },
+      "overallTrend": {
+        "labels": [
+          "2019",
+          "2020",
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "stars": [
+          3,
+          3,
+          4,
+          3,
+          3,
+          3,
+          4,
+          4
+        ],
+        "note": "CMS Care Compare Hospital overall rating from archived Hospital General Information releases (Oct/Nov each year; 2026 from May 2026 extract)."
+      }
     }
   }
 }

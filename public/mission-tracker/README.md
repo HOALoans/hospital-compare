@@ -10,7 +10,7 @@ Linked from the Parigrado homepage and header nav. CMS pulls go through `/api/cm
 
 - Load **any hospital** by CCN or name search (uses Parigrado `/api/hospitals/*` when available, otherwise CMS APIs).
 - CMS Care Compare: HCAHPS stars, overall rating, HAIs, mortality, complications, readmissions, top vs low patient ratings (9–10 vs ≤6) with **national** comparison.
-- Optional **overlays** (Immediate Jeopardy, staff-to-bed, travelers, overall CMS star history) from `overlays.json` when curated for that CCN (Mission `340002` included).
+- Optional **overlays** from `overlays.json` when curated for that CCN: Mission `340002` has IJ / staff-to-bed / travelers / star history; Forsyth `340014` has CMS HCAHPS + overall star history only (no IJ/travelers/staff overlays).
 - Configurable **trend window** (3 / 5 / 7 / 10 years) with increasing / decreasing / staying-the-same badges.
 
 ## Files
