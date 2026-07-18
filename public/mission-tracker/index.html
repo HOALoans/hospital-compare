@@ -68,6 +68,16 @@
   .dot.clear { background: #ecfdf5; border: 1px solid #a7f3d0; }
   .toplink { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: #2563eb; text-decoration: none; margin-bottom: 10px; }
   .toplink:hover { text-decoration: underline; }
+  .searchbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; width: 100%; max-width: 720px; }
+  .searchbar .grow { flex: 1 1 240px; }
+  .searchbar .state { flex: 0 0 120px; }
+  .results { list-style: none; margin-top: 8px; max-width: 720px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; overflow: hidden; }
+  .results li button { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid #f1f5f9; background: #fff; padding: 10px 12px; cursor: pointer; }
+  .results li:last-child button { border-bottom: 0; }
+  .results li button:hover { background: #f0fdfa; }
+  .results .name { font-weight: 600; font-size: 0.9rem; color: #0f172a; }
+  .results .meta { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+  .search-status { font-size: 0.8rem; color: #0f766e; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -76,26 +86,31 @@
 <div class="sub">CCN <span id="ccnLabel">—</span> · Last refreshed <span id="lastRefresh"></span> · CMS Care Compare · optional HCRIS overlays</div>
 <div class="err" id="loadErr"></div>
 
-<div class="toolbar">
-  <div class="field searchwrap">
-    <label for="hospitalSearch">Hospital</label>
-    <input id="hospitalSearch" type="search" placeholder="Search name, city, or enter CCN" autocomplete="off" />
-    <div id="suggest" class="suggest" style="display:none"></div>
+<div class="toolbar" style="flex-direction:column;align-items:stretch;gap:8px;">
+  <div class="searchbar">
+    <div class="field grow">
+      <label for="hospitalSearch">Hospital name</label>
+      <input id="hospitalSearch" type="search" placeholder="Search by hospital name, city, or ZIP…" autocomplete="off" />
+    </div>
+    <div class="field state">
+      <label for="stateFilter">State</label>
+      <select id="stateFilter">
+        <option value="">All states</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="trendYears">Trend window</label>
+      <select id="trendYears">
+        <option value="3">3 years</option>
+        <option value="5" selected>5 years</option>
+        <option value="7">7 years</option>
+        <option value="10">10 years</option>
+      </select>
+    </div>
   </div>
-  <div class="field">
-    <label for="ccnInput">CCN</label>
-    <input id="ccnInput" type="text" maxlength="6" placeholder="340002" />
-  </div>
-  <div class="field">
-    <label for="trendYears">Trend window</label>
-    <select id="trendYears">
-      <option value="3">3 years</option>
-      <option value="5" selected>5 years</option>
-      <option value="7">7 years</option>
-      <option value="10">10 years</option>
-    </select>
-  </div>
-  <button class="btn primary" id="loadBtn" type="button">Load</button>
+  <div id="searchStatus" class="search-status" style="display:none"></div>
+  <ul id="results" class="results" style="display:none"></ul>
+  <input type="hidden" id="ccnInput" value="340002" />
 </div>
 
 <div class="banner" id="banner">Select a hospital to load CMS quality and safety signals.</div>
@@ -205,12 +220,23 @@
 
 <script>
 const DEFAULT_CCN = "340002";
+const US_STATES = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC"].sort();
 const charts = {};
 let overlays = { hospitals: {}, trendYearsDefault: 5 };
 let trendYears = 5;
 
 const $ = (id) => document.getElementById(id);
 const showErr = (msg) => { const el = $("loadErr"); el.style.display = msg ? "block" : "none"; el.textContent = msg || ""; };
+const common = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 }, filter: (item) => !!item.text } } }
+};
+const lineOpts = (yScale) => ({
+  ...common,
+  plugins: { legend: { display: false } },
+  scales: { y: yScale },
+});
 
 function setTrendEl(id, direction, higherIsBetter) {
   const el = $(id);
@@ -262,12 +288,6 @@ function mk(id, cfg) {
   try { charts[id] = new Chart(el, cfg); } catch (e) { console.error(id, e); }
 }
 
-const common = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: { legend: { labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 }, filter: (item) => !!item.text } } }
-};
-
 async function cmsQuery(dataset, body) {
   // Proxied through Parigrado to avoid browser CORS blocks on data.cms.gov
   const res = await fetch(`/api/cms/query/${dataset}`, {
@@ -279,20 +299,13 @@ async function cmsQuery(dataset, body) {
   return res.json();
 }
 
-async function searchHospitals(q) {
-  try {
-    const res = await fetch(`/api/hospitals/search?q=${encodeURIComponent(q)}&limit=12`);
-    if (!res.ok) throw new Error("search failed");
-    const data = await res.json();
-    return data.hospitals || [];
-  } catch {
-    // Fallback: treat numeric query as CCN
-    if (/^\d{6}$/.test(q.trim())) {
-      const h = await loadHospitalMeta(q.trim());
-      return h ? [h] : [];
-    }
-    return [];
-  }
+async function searchHospitals(q, state) {
+  const params = new URLSearchParams({ q, limit: "12" });
+  if (state) params.set("state", state);
+  const res = await fetch(`/api/hospitals/search?${params}`);
+  if (!res.ok) throw new Error("Search is temporarily unavailable.");
+  const data = await res.json();
+  return data.hospitals || [];
 }
 
 async function loadHospitalMeta(ccn) {
@@ -355,7 +368,11 @@ async function loadDashboard(ccn) {
   if (!meta) { showErr("Hospital not found for CCN " + ccn); return; }
 
   $("pageTitle").textContent = `${meta.name}${meta.city ? " (" + meta.city + (meta.state ? ", " + meta.state : "") + ")" : ""} — Hospital Health Dashboard`;
-  $("hospitalSearch").value = meta.name;
+  // Prefer friendly overlay name in the title when available
+  if (overlay?.name) {
+    $("pageTitle").textContent = `${overlay.name}${overlay.city ? " (" + overlay.city + (overlay.state ? ", " + overlay.state : "") + ")" : ""} — Hospital Health Dashboard`;
+  }
+
 
   const facility = {
     conditions: [{ property: "facility_id", operator: "=", value: ccn }],
@@ -388,18 +405,34 @@ async function loadDashboard(ccn) {
   const natHigh = Number(natRows.find((r) => r.hcahps_measure_id === "H_HSP_RATING_9_10")?.hcahps_answer_percent);
   const natLow = Number(natRows.find((r) => r.hcahps_measure_id === "H_HSP_RATING_0_6")?.hcahps_answer_percent);
 
-  // Star history from Parigrado archives when available
+  // Star history: curated overlay > Parigrado archive trends > current CMS snapshot
   const points = (trends.points || []).slice().sort((a, b) => a.year - b.year);
-  const starLabels = points.map((p) => String(p.year));
-  const starVals = points.map((p) => {
-    const v = p.scores?.H_STAR_RATING;
-    return v != null ? Number(v) : null;
-  });
-  if (!starLabels.length && Number.isFinite(starNow)) {
-    starLabels.push(String(new Date().getFullYear()));
-    starVals.push(starNow);
-  } else if (starLabels.length && Number.isFinite(starNow)) {
-    starVals[starVals.length - 1] = starNow;
+  let starLabels = [];
+  let starVals = [];
+  if (overlay?.starTrend?.labels?.length) {
+    starLabels = overlay.starTrend.labels.slice();
+    starVals = overlay.starTrend.stars.map((v) => (v == null ? null : Number(v)));
+    if (Number.isFinite(starNow)) {
+      // Refresh latest year in overlay series with live CMS value
+      const lastLbl = starLabels[starLabels.length - 1];
+      const yr = String(new Date().getFullYear());
+      if (lastLbl.replace("*", "") === yr || lastLbl.startsWith(String(yr - 1)) || lastLbl.includes("2025")) {
+        starVals[starVals.length - 1] = starNow;
+      } else {
+        starLabels.push(yr);
+        starVals.push(starNow);
+      }
+    }
+  } else if (points.length) {
+    starLabels = points.map((p) => String(p.year));
+    starVals = points.map((p) => {
+      const v = p.scores?.H_STAR_RATING;
+      return v != null && v !== "" ? Number(v) : null;
+    });
+    if (Number.isFinite(starNow) && starVals.length) starVals[starVals.length - 1] = starNow;
+  } else if (Number.isFinite(starNow)) {
+    starLabels = [String(new Date().getFullYear())];
+    starVals = [starNow];
   }
 
   const bannerBits = [];
@@ -435,13 +468,11 @@ async function loadDashboard(ccn) {
   // --- Stars ---
   setTrendEl("trendStars", seriesTrend(starVals, true), true);
   $("noteStars").textContent = Number.isFinite(starNow)
-    ? `Latest summary star rating: ${starNow}★.`
+    ? `Latest summary star rating: ${starNow}★.` + (overlay?.starTrend?.note ? " " + overlay.starTrend.note : "")
     : "No HCAHPS summary star available.";
-  if (typeof Chart !== "undefined") {
-    mk("starChart", { type: "line", data: { labels: starLabels, datasets: [
-      { label: "HCAHPS stars", data: starVals, borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 3, tension: 0.25, spanGaps: true }
-    ]}, options: { ...common, scales: { y: { min: 1, max: 5, ticks: { stepSize: 1 } } } } });
-  }
+  mk("starChart", { type: "line", data: { labels: starLabels, datasets: [
+    { label: "HCAHPS stars", data: starVals, borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 4, pointHoverRadius: 5, tension: 0.25, spanGaps: true }
+  ]}, options: lineOpts({ min: 1, max: 5, ticks: { stepSize: 1 } }) });
 
   // --- Overall ---
   setTrendEl("trendOverall", "insufficient", true);
@@ -451,18 +482,24 @@ async function loadDashboard(ccn) {
   mk("overallStarChart", { type: "bar", data: {
     labels: ["Current"],
     datasets: [{ label: "Overall CMS stars", data: [overall || null], backgroundColor: "#2563eb", borderRadius: 3 }]
-  }, options: { ...common, scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } } } } });
+  }, options: { ...common, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } } } } });
 
   // --- Staff overlay ---
   const cardStaff = $("cardStaff");
   if (overlay?.staffRatio) {
     cardStaff.classList.remove("hidden");
     $("noteStaff").textContent = overlay.staffRatio.note || "";
-    setTrendEl("trendStaff", seriesTrend(overlay.staffRatio.ratio, true), true);
+    // Plot only years with values so the series stays continuous and readable
+    const staffPairs = overlay.staffRatio.labels
+      .map((lbl, i) => [lbl, overlay.staffRatio.ratio[i]])
+      .filter(([, v]) => v != null && !Number.isNaN(Number(v)));
+    const staffLabels = staffPairs.map(([l]) => l);
+    const staffVals = staffPairs.map(([, v]) => Number(v));
+    setTrendEl("trendStaff", seriesTrend(staffVals, true), true);
     mk("staffChart", { type: "line", data: {
-      labels: overlay.staffRatio.labels,
-      datasets: [{ label: "Staff per bed", data: overlay.staffRatio.ratio, borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true }]
-    }, options: { ...common, scales: { y: { min: 0, suggestedMax: 10 } } } });
+      labels: staffLabels,
+      datasets: [{ label: "Staff per bed", data: staffVals, borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true }]
+    }, options: lineOpts({ min: 0, max: 10, ticks: { stepSize: 2 } }) });
   } else cardStaff.classList.add("hidden");
 
   // --- Travelers overlay ---
@@ -474,7 +511,7 @@ async function loadDashboard(ccn) {
     mk("travelerChart", { type: "line", data: {
       labels: overlay.travelers.labels,
       datasets: [{ label: "% travelers", data: overlay.travelers.pct, borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true }]
-    }, options: { ...common, scales: { y: { min: 0, max: 50 } } } });
+    }, options: lineOpts({ min: 0, max: 50 }) });
   } else cardTrav.classList.add("hidden");
 
   // --- HAI ---
@@ -593,42 +630,72 @@ async function loadDashboard(ccn) {
 }
 
 function wireUi() {
-  const suggest = $("suggest");
+  const stateSel = $("stateFilter");
+  US_STATES.forEach((s) => {
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = s;
+    stateSel.appendChild(opt);
+  });
+
+  const resultsEl = $("results");
+  const statusEl = $("searchStatus");
   let timer;
-  $("hospitalSearch").addEventListener("input", () => {
+  let searchGen = 0;
+
+  const runSearch = () => {
     clearTimeout(timer);
     const q = $("hospitalSearch").value.trim();
-    if (q.length < 2) { suggest.style.display = "none"; return; }
+    const state = $("stateFilter").value;
+    if (q.length < 2) {
+      resultsEl.style.display = "none";
+      statusEl.style.display = "none";
+      return;
+    }
+    statusEl.style.display = "block";
+    statusEl.textContent = "Searching hospitals…";
+    const gen = ++searchGen;
     timer = setTimeout(async () => {
-      const hospitals = await searchHospitals(q);
-      if (!hospitals.length) { suggest.style.display = "none"; return; }
-      suggest.innerHTML = hospitals.map((h) =>
-        `<button type="button" data-ccn="${h.facilityId}">${h.name} · ${h.city}, ${h.state} (${h.facilityId})</button>`
-      ).join("");
-      suggest.style.display = "block";
-    }, 220);
-  });
-  suggest.addEventListener("click", (e) => {
+      try {
+        const hospitals = await searchHospitals(q, state);
+        if (gen !== searchGen) return;
+        if (!hospitals.length) {
+          resultsEl.style.display = "none";
+          statusEl.textContent = "No hospitals matched. Try another name or state.";
+          return;
+        }
+        statusEl.style.display = "none";
+        resultsEl.innerHTML = hospitals.map((h) => `
+          <li>
+            <button type="button" data-ccn="${h.facilityId}">
+              <div class="name">${h.name}</div>
+              <div class="meta">${h.city}, ${h.state}${h.zip ? " " + h.zip : ""}${h.overallRating ? " · " + h.overallRating + "★ overall" : ""} · CCN ${h.facilityId}</div>
+            </button>
+          </li>`).join("");
+        resultsEl.style.display = "block";
+      } catch (err) {
+        if (gen !== searchGen) return;
+        resultsEl.style.display = "none";
+        statusEl.style.display = "block";
+        statusEl.textContent = err.message || "Search is temporarily unavailable.";
+      }
+    }, 300);
+  };
+
+  $("hospitalSearch").addEventListener("input", runSearch);
+  $("stateFilter").addEventListener("change", runSearch);
+  resultsEl.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-ccn]");
     if (!btn) return;
-    suggest.style.display = "none";
+    resultsEl.style.display = "none";
+    statusEl.style.display = "none";
+    $("hospitalSearch").value = "";
     loadDashboard(btn.dataset.ccn);
-  });
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".searchwrap")) suggest.style.display = "none";
-  });
-  $("loadBtn").addEventListener("click", () => {
-    const ccn = ($("ccnInput").value || $("hospitalSearch").value || "").trim();
-    const id = /^\d{6}$/.test(ccn) ? ccn : DEFAULT_CCN;
-    loadDashboard(id);
   });
   $("trendYears").addEventListener("change", () => {
     trendYears = Number($("trendYears").value) || 5;
     const ccn = $("ccnInput").value.trim() || DEFAULT_CCN;
     loadDashboard(ccn);
-  });
-  $("ccnInput").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") $("loadBtn").click();
   });
 }
 
@@ -650,7 +717,6 @@ window.addEventListener("load", async () => {
     console.error(e);
     showErr("Could not load hospital data. " + (e.message || e));
   }
-});
-</script>
+});</script>
 </body>
 </html>

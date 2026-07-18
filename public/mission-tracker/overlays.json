@@ -7,19 +7,80 @@
       "state": "NC",
       "bannerNote": "Not under Immediate Jeopardy as of Mar 4, 2026 (4th IJ removed after Enhanced Plan of Correction).",
       "ij": {
-        "years": ["2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"],
-        "counts": [0, 0, 1, 0, 0, 1, 1, 1],
+        "years": [
+          "2019",
+          "2020",
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "counts": [
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
         "note": "Four IJs since 2019 HCA sale; cleared Mar 4, 2026. Sourced from CMS/NCDHHS Form 2567 reporting."
       },
       "staffRatio": {
-        "labels": ["2018", "2019", "2020", "2021", "2022", "2023", "2024"],
-        "ratio": [8.6, null, null, 5.1, 4.6, 4.7, 4.8],
-        "note": "CMS HCRIS S-3 FTEs ÷ beds. FY2019–FY2020 not yet loaded from cost reports (gap shown). FY2025 pending CMS processing."
+        "labels": [
+          "2018",
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "ratio": [
+          8.6,
+          5.1,
+          4.6,
+          4.7,
+          4.8
+        ],
+        "note": "CMS HCRIS S-3 FTEs \u00f7 beds (FY ends Sept). FY2019\u2013FY2020 and FY2025 not in this series yet."
       },
       "travelers": {
-        "labels": ["2022", "2023", "2024"],
-        "pct": [null, null, 40],
-        "note": "Union/news estimates only — not audited Worksheet S-3. 2022–2023 share not published as a single %; 2024 ~40% union estimate."
+        "labels": [
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "pct": [
+          null,
+          null,
+          40
+        ],
+        "note": "Union/news estimates only \u2014 not audited Worksheet S-3. No published single % for 2022\u20132023; 2024 ~40% union estimate."
+      },
+      "starTrend": {
+        "labels": [
+          "2018",
+          "2019",
+          "2020",
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025"
+        ],
+        "stars": [
+          4,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          2
+        ],
+        "note": "2018\u20132024 compiled from CMS archive analyses (Asheville Watchdog / public CMS); 2025 from current CMS HCAHPS release."
       }
     }
   }
