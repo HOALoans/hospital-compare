@@ -62,16 +62,16 @@
           527
         ],
         "totalNurses": [
-          null,
-          null,
+          1574,
+          1663,
           2027
         ],
         "pct": [
-          null,
-          null,
+          22,
+          23,
           26
         ],
-        "note": "Travel RN headcounts from Asheville Watchdog staffing lists (not audited Worksheet S-3). Dec 2025: ~527 travelers + ~1,500 FT nurses \u2248 2,027 total (~26% travelers; national norm ~3\u20134%). Sep 2023 (352) and Feb 2024 (376) have no published hospital-wide nursing denominator, so % is omitted for those points."
+        "note": "Travel RN headcounts from Asheville Watchdog (not audited Worksheet S-3). % = travelers \u00f7 (travelers + filled permanent RNs). Sep 2023: 352 travelers (mid-Sep) with Oct 19, 2023 vacancy snapshot (452 openings / ~27% of ~1,674 bargaining-unit RN positions \u21d2 ~1,222 filled; total ~1,574 \u2248 22%). Feb 2024: 376 travelers (Feb 4) with Feb 5 vacancies (302 / ~19% \u21d2 ~1,287 filled; total ~1,663 \u2248 23%). Dec 2025: ~527 travelers + ~1,500 FT from staffing lists \u2248 2,027 (~26%). National norm ~3\u20134%."
       },
       "starTrend": {
         "labels": [

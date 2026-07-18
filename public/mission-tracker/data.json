@@ -158,16 +158,18 @@
         {
           "period": "2023-09",
           "count": 352,
-          "totalNurses": null,
-          "pctOfNursingStaff": null,
-          "basis": "Watchdog: 352 travel RNs working at Mission mid-Sep 2023; no published hospital-wide nursing denominator for %"
+          "ftNurses": 1222,
+          "totalNurses": 1574,
+          "pctOfNursingStaff": 22,
+          "basis": "Watchdog: 352 travel RNs mid-Sep 2023. Denominator from nearest published vacancy snapshot (Oct 19, 2023): 452 openings at ~27% of ~1,674 non-management RN positions → ~1,222 filled permanent; total nurses ≈ 352+1,222=1,574; 352/1,574 ≈ 22%. Source: avlwatchdog.org vacant-nurse-positions analysis."
         },
         {
           "period": "2024-02",
           "count": 376,
-          "totalNurses": null,
-          "pctOfNursingStaff": null,
-          "basis": "Watchdog: 376 travel RNs as of Feb 4, 2024; no published hospital-wide nursing denominator for %"
+          "ftNurses": 1287,
+          "totalNurses": 1663,
+          "pctOfNursingStaff": 23,
+          "basis": "Watchdog: 376 travel RNs as of Feb 4, 2024. Feb 5, 2024: 302 openings at ~19% of non-management RN positions → ~1,589 positions / ~1,287 filled; total ≈ 376+1,287=1,663; 376/1,663 ≈ 23%. Same Watchdog vacancy analysis."
         },
         {
           "period": "2022-07 to 2024-04",

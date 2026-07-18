@@ -875,7 +875,12 @@ function renderDashboard(cache) {
         }
         if (pct != null && !Number.isNaN(Number(pct))) {
           $("travelerPctStat").textContent = `${Number(pct)}%`;
-          $("travelerPctSub").textContent = "National norm ~3–4%";
+          const pctHist = tPct
+            .map((v, i) => (v != null && !Number.isNaN(Number(v)) ? `${Number(v)}%` : null))
+            .filter(Boolean);
+          $("travelerPctSub").textContent = pctHist.length > 1
+            ? `${pctHist.join(" → ")} · norm ~3–4%`
+            : "National norm ~3–4%";
         } else {
           $("travelerPctStat").textContent = "—";
           $("travelerPctSub").textContent = "Need total nurses to compute %";
@@ -897,7 +902,8 @@ function renderDashboard(cache) {
       if (yBottom < 0) yBottom = 0;
       if (tMin >= 100) yBottom = Math.max(step, yBottom);
       if (yTop <= yBottom) yTop = yBottom + step;
-      const hasPct = tPct.some((v) => v != null && !Number.isNaN(Number(v)));
+      const pctNums = tPct.filter((v) => v != null && !Number.isNaN(Number(v))).map(Number);
+      const hasPct = pctNums.length > 0;
       const datasets = [{
         label: "Travel RNs",
         data: tCount,
@@ -915,9 +921,17 @@ function renderDashboard(cache) {
           backgroundColor: "#2563eb",
           borderDash: [5, 4],
           pointRadius: 4,
-          spanGaps: true,
+          spanGaps: false,
           yAxisID: "y1",
         });
+      }
+      // % axis: always from 0; top padded above max observed point
+      let y1Top = 30;
+      let y1Step = 5;
+      if (hasPct) {
+        const pMax = Math.max(...pctNums);
+        y1Top = Math.max(20, Math.ceil((pMax + 4) / 5) * 5);
+        y1Step = y1Top <= 30 ? 5 : 10;
       }
       mk("travelerChart", { type: "line", data: { labels: tLabels, datasets }, options: {
         ...common,
@@ -933,9 +947,9 @@ function renderDashboard(cache) {
             y1: {
               position: "right",
               min: 0,
-              max: 40,
+              max: y1Top,
               grid: { drawOnChartArea: false },
-              ticks: { stepSize: 10, callback: (v) => v + "%" },
+              ticks: { stepSize: y1Step, callback: (v) => v + "%" },
               title: { display: true, text: "% of nurses", font: { size: 10 } },
             },
           } : {}),
