@@ -49,6 +49,8 @@
   .statrow { display: flex; gap: 16px; flex-wrap: wrap; margin: 4px 0 8px; }
   .stat { font-size: 1.4rem; font-weight: 700; line-height: 1.1; }
   .statlbl { font-size: 0.68rem; color: #64748b; }
+  .statsub { font-size: 0.65rem; color: #94a3b8; margin-top: 2px; line-height: 1.3; }
+  .takeaway { font-size: 0.75rem; color: #334155; line-height: 1.4; margin: 2px 0 6px; font-weight: 500; }
   .note { font-size: 0.7rem; color: #64748b; line-height: 1.4; margin-top: 6px; }
   .banner { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 14px; font-size: 0.8rem; margin-bottom: 14px; max-width: 1800px; margin-left: auto; margin-right: auto; }
   .err { color: #b91c1c; font-size: 0.8rem; padding: 8px 0; display: none; }
@@ -198,15 +200,24 @@
   </div>
 
   <div class="card" id="cardRating">
-    <h2>Patient rating mix</h2>
-    <div class="meta">HCAHPS rated 9–10 vs ≤6 · hospital vs national</div>
-    <span class="trend" id="trendRating">Trend: —</span>
+    <h2>Top vs low patient ratings</h2>
+    <div class="meta">HCAHPS · % of patients rating 9–10 (top) vs ≤6 (low)</div>
+    <span class="trend flat" id="trendRating">Current snapshot</span>
+    <div class="takeaway" id="ratingTakeaway"></div>
     <div class="statrow">
-      <div><div class="stat" id="ratioHospital">—</div><div class="statlbl">Hospital good:bad ratio</div></div>
-      <div><div class="stat" id="ratioNational">—</div><div class="statlbl">National good:bad ratio</div></div>
+      <div>
+        <div class="stat" id="ratioHospital">—</div>
+        <div class="statlbl">Hospital · top per low rating</div>
+        <div class="statsub" id="ratioHospitalDetail"></div>
+      </div>
+      <div>
+        <div class="stat" id="ratioNational">—</div>
+        <div class="statlbl">National · top per low rating</div>
+        <div class="statsub" id="ratioNationalDetail"></div>
+      </div>
     </div>
     <div class="chartbox"><canvas id="ratingChart"></canvas></div>
-    <div class="note" id="noteRating">Ratio = (% rated 9–10) ÷ (% rated ≤6). Higher means a stronger share of top-box vs low ratings. CMS archives keep star/linear history, not a long 9–10 / ≤6 series — trend uses summary stars when history is available.</div>
+    <div class="note" id="noteRating">Higher ratio is better (more top ratings for each low rating). CMS does not publish a long public history of this 9–10 / ≤6 split — see HCAHPS stars for year-over-year trend.</div>
   </div>
 </div>
 </div>
@@ -628,23 +639,42 @@ async function loadDashboard(ccn) {
     { label: "National", data: rNat, backgroundColor: "#94a3b8", borderRadius: 3 }
   ]}, options: { ...common, indexAxis: "y", scales: { x: { beginAtZero: true } } } });
 
-  // --- Patient rating mix (ratio) ---
+  // --- Top vs low patient ratings (current HCAHPS 9–10 / ≤6 split) ---
   const hospRatio = (Number.isFinite(high) && Number.isFinite(low) && low > 0) ? (high / low) : null;
   const natRatio = (Number.isFinite(natHigh) && Number.isFinite(natLow) && natLow > 0) ? (natHigh / natLow) : null;
   $("ratioHospital").textContent = hospRatio != null ? `${hospRatio.toFixed(1)} : 1` : "—";
   $("ratioNational").textContent = natRatio != null ? `${natRatio.toFixed(1)} : 1` : "—";
-  setTrendEl("trendRating", seriesTrend(starVals, true), true);
-  $("noteRating").textContent =
-    `Hospital ${Number.isFinite(high) ? high : "—"}% rated 9–10 / ${Number.isFinite(low) ? low : "—"}% rated ≤6` +
-    (Number.isFinite(natHigh) ? ` · National ${natHigh}% / ${natLow}%.` : ".") +
-    " CMS public archives retain summary stars and linear scores more reliably than the 9–10 / ≤6 split, so the trend badge uses HCAHPS stars.";
+  $("ratioHospitalDetail").textContent = Number.isFinite(high) && Number.isFinite(low)
+    ? `${high}% top · ${low}% low`
+    : "";
+  $("ratioNationalDetail").textContent = Number.isFinite(natHigh) && Number.isFinite(natLow)
+    ? `${natHigh}% top · ${natLow}% low`
+    : "";
+  const trendRating = $("trendRating");
+  trendRating.className = "trend flat";
+  trendRating.textContent = "Current snapshot";
+  let takeaway = "Patient rating split unavailable.";
+  if (Number.isFinite(high) && Number.isFinite(low) && Number.isFinite(natHigh) && Number.isFinite(natLow)) {
+    if (high < natHigh && low > natLow) {
+      takeaway = "Weaker than national: fewer top ratings (9–10) and more low ratings (≤6).";
+    } else if (high > natHigh && low < natLow) {
+      takeaway = "Stronger than national: more top ratings (9–10) and fewer low ratings (≤6).";
+    } else if (hospRatio != null && natRatio != null && hospRatio < natRatio) {
+      takeaway = "Weaker top-to-low mix than the national average.";
+    } else if (hospRatio != null && natRatio != null && hospRatio > natRatio) {
+      takeaway = "Stronger top-to-low mix than the national average.";
+    } else {
+      takeaway = "Similar top-to-low mix to the national average.";
+    }
+  }
+  $("ratingTakeaway").textContent = takeaway;
   mk("ratingChart", { type: "bar", data: {
-    labels: ["Rated 9–10 %", "Rated ≤6 %"],
+    labels: ["Top ratings (9–10)", "Low ratings (≤6)"],
     datasets: [
-      { label: "Hospital", data: [high, low], backgroundColor: "#2563eb", borderRadius: 3 },
-      { label: "National", data: [natHigh, natLow], backgroundColor: "#94a3b8", borderRadius: 3 }
+      { label: "This hospital", data: [high, low], backgroundColor: "#2563eb", borderRadius: 3 },
+      { label: "National average", data: [natHigh, natLow], backgroundColor: "#94a3b8", borderRadius: 3 }
     ]
-  }, options: { ...common, scales: { y: { min: 0, max: 100 } } } });
+  }, options: { ...common, scales: { y: { min: 0, max: 100, title: { display: true, text: "% of patients", font: { size: 10 } } } } } });
 
   if (typeof Chart === "undefined") showErr("Chart library failed to load.");
 }
