@@ -61,7 +61,6 @@
     min-width: 0;
     overflow: hidden;
   }
-  .card.hidden { display: none; }
   .card h2 { font-size: clamp(0.84rem, 1.8vw, 0.92rem); margin-bottom: 2px; line-height: 1.25; }
   .card .meta { font-size: 0.68rem; color: #94a3b8; margin-bottom: 6px; line-height: 1.35; }
   .trend { display: inline-block; border-radius: 999px; font-size: 0.65rem; padding: 1px 8px; margin-bottom: 6px; border: 1px solid #e2e8f0; color: #475569; background: #f8fafc; }
@@ -70,6 +69,27 @@
   .trend.flat { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
   .chartbox { position: relative; width: 100%; height: var(--chart-h); }
   .chartbox.tall { height: var(--chart-h-tall); }
+  .chartbox.is-empty,
+  .yearstrip.is-empty,
+  .tablewrap.is-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+  }
+  .chartbox.is-empty canvas { display: none !important; }
+  .yearstrip.is-empty { min-height: 88px; }
+  .tablewrap.is-empty { min-height: 72px; }
+  .tablewrap.is-empty .minitable { display: none; }
+  .nodata-msg {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: center;
+    padding: 12px 16px;
+  }
   .tablewrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 4px; }
   .minitable { width: 100%; border-collapse: collapse; font-size: 0.68rem; min-width: 240px; }
   .minitable th, .minitable td { text-align: right; padding: 3px 4px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
@@ -210,11 +230,11 @@
 <div class="banner" id="banner">Select a hospital to load CMS quality and safety signals.</div>
 
 <div class="grid">
-  <div class="card hidden" id="cardIj">
+  <div class="card" id="cardIj">
     <h2>Immediate Jeopardy by year</h2>
     <div class="meta">CMS/NCDHHS Form 2567 · curated overlay</div>
     <span class="trend" id="trendIj">Trend: —</span>
-    <div class="striplegend">
+    <div class="striplegend" id="ijLegend">
       <span><i class="dot ij"></i> IJ</span>
       <span><i class="dot clear"></i> Clear</span>
     </div>
@@ -238,7 +258,7 @@
     <div class="note" id="noteOverall"></div>
   </div>
 
-  <div class="card hidden" id="cardStaff">
+  <div class="card" id="cardStaff">
     <h2>Staff-to-bed ratio</h2>
     <div class="meta">CMS HCRIS S-3 FTEs ÷ beds · FY ends Sept</div>
     <span class="trend" id="trendStaff">Trend: —</span>
@@ -246,7 +266,7 @@
     <div class="note" id="noteStaff"></div>
   </div>
 
-  <div class="card hidden" id="cardTravelers">
+  <div class="card" id="cardTravelers">
     <h2>Travel nurse staffing</h2>
     <div class="meta">Watchdog travel RN headcounts · not audited S-3</div>
     <span class="trend" id="trendTravelers">Trend: —</span>
@@ -390,6 +410,40 @@ function mk(id, cfg) {
   const el = document.getElementById(id);
   if (!el) return;
   try { charts[id] = new Chart(el, cfg); } catch (e) { console.error(id, e); }
+}
+
+const NO_DATA = "Data not available";
+
+function setEmptyPanel(el, empty) {
+  if (!el) return;
+  el.classList.toggle("is-empty", !!empty);
+  let msg = el.querySelector(":scope > .nodata-msg");
+  if (empty) {
+    if (!msg) {
+      msg = document.createElement("div");
+      msg.className = "nodata-msg";
+      msg.textContent = NO_DATA;
+      el.appendChild(msg);
+    } else {
+      msg.textContent = NO_DATA;
+    }
+  } else if (msg) {
+    msg.remove();
+  }
+}
+
+function setCanvasEmpty(canvasId, empty) {
+  const canvas = $(canvasId);
+  const box = canvas?.closest(".chartbox");
+  setEmptyPanel(box, empty);
+  if (canvas) canvas.style.display = empty ? "none" : "";
+}
+
+function setTrendNoData(id) {
+  const el = $(id);
+  if (!el) return;
+  el.className = "trend flat";
+  el.textContent = NO_DATA;
 }
 
 function resizeCharts() {
@@ -566,12 +620,13 @@ async function loadDashboard(ccn) {
   }
   $("banner").textContent = bannerBits.join(" ");
 
-  // --- IJ overlay ---
-  const cardIj = $("cardIj");
+  // --- IJ overlay (always show card; empty state when not curated for this hospital) ---
+  const strip = $("ijStrip");
+  const ijLegend = $("ijLegend");
+  strip.innerHTML = "";
   if (overlay?.ij) {
-    cardIj.classList.remove("hidden");
-    const strip = $("ijStrip");
-    strip.innerHTML = "";
+    if (ijLegend) ijLegend.style.display = "";
+    setEmptyPanel(strip, false);
     overlay.ij.years.forEach((y, i) => {
       const count = overlay.ij.counts[i] || 0;
       const cell = document.createElement("div");
@@ -582,17 +637,28 @@ async function loadDashboard(ccn) {
     $("noteIj").textContent = overlay.ij.note || "";
     setTrendEl("trendIj", seriesTrend(overlay.ij.counts, false), false);
   } else {
-    cardIj.classList.add("hidden");
+    if (ijLegend) ijLegend.style.display = "none";
+    setEmptyPanel(strip, true);
+    setTrendNoData("trendIj");
+    $("noteIj").textContent = NO_DATA + " — Immediate Jeopardy history is curated for selected hospitals only.";
   }
 
   // --- Stars ---
-  setTrendEl("trendStars", seriesTrend(starVals, true), true);
-  $("noteStars").textContent = Number.isFinite(starNow)
-    ? `Latest summary star rating: ${starNow}★.` + (overlay?.starTrend?.note ? " " + overlay.starTrend.note : "")
-    : "No HCAHPS summary star available.";
-  mk("starChart", { type: "line", data: { labels: starLabels, datasets: [
-    { label: "HCAHPS stars", data: starVals, borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 4, pointHoverRadius: 5, tension: 0.25, spanGaps: true }
-  ]}, options: lineOpts({ min: 1, max: 5, ticks: { stepSize: 1 } }) });
+  const hasStars = starLabels.length && starVals.some((v) => v != null);
+  if (hasStars) {
+    setCanvasEmpty("starChart", false);
+    setTrendEl("trendStars", seriesTrend(starVals, true), true);
+    $("noteStars").textContent = Number.isFinite(starNow)
+      ? `Latest summary star rating: ${starNow}★.` + (overlay?.starTrend?.note ? " " + overlay.starTrend.note : "")
+      : NO_DATA;
+    mk("starChart", { type: "line", data: { labels: starLabels, datasets: [
+      { label: "HCAHPS stars", data: starVals, borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 4, pointHoverRadius: 5, tension: 0.25, spanGaps: true }
+    ]}, options: lineOpts({ min: 1, max: 5, ticks: { stepSize: 1 } }) });
+  } else {
+    setCanvasEmpty("starChart", true);
+    setTrendNoData("trendStars");
+    $("noteStars").textContent = NO_DATA;
+  }
 
   // --- Overall CMS quality stars (curated archive series when available) ---
   let overallLabels = [];
@@ -613,63 +679,81 @@ async function loadDashboard(ccn) {
     overallLabels = [String(new Date().getFullYear())];
     overallVals = [overall];
   }
-  setTrendEl("trendOverall", seriesTrend(overallVals, true), true);
-  $("noteOverall").textContent = Number.isFinite(overall)
-    ? `Latest Care Compare overall rating: ${overall}★.` + (overlay?.overallTrend?.note ? " " + overlay.overallTrend.note : "")
-    : "Overall rating unavailable.";
-  mk("overallStarChart", { type: "line", data: {
-    labels: overallLabels,
-    datasets: [{ label: "Overall CMS stars", data: overallVals, borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 4, pointHoverRadius: 5, tension: 0.25, spanGaps: true }]
-  }, options: lineOpts({ min: 1, max: 5, ticks: { stepSize: 1 } }) });
+  const hasOverall = overallLabels.length && overallVals.some((v) => v != null);
+  if (hasOverall) {
+    setCanvasEmpty("overallStarChart", false);
+    setTrendEl("trendOverall", seriesTrend(overallVals, true), true);
+    $("noteOverall").textContent = Number.isFinite(overall)
+      ? `Latest Care Compare overall rating: ${overall}★.` + (overlay?.overallTrend?.note ? " " + overlay.overallTrend.note : "")
+      : NO_DATA;
+    mk("overallStarChart", { type: "line", data: {
+      labels: overallLabels,
+      datasets: [{ label: "Overall CMS stars", data: overallVals, borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 4, pointHoverRadius: 5, tension: 0.25, spanGaps: true }]
+    }, options: lineOpts({ min: 1, max: 5, ticks: { stepSize: 1 } }) });
+  } else {
+    setCanvasEmpty("overallStarChart", true);
+    setTrendNoData("trendOverall");
+    $("noteOverall").textContent = NO_DATA;
+  }
 
   // --- Staff overlay ---
-  const cardStaff = $("cardStaff");
   if (overlay?.staffRatio) {
-    cardStaff.classList.remove("hidden");
     $("noteStaff").textContent = overlay.staffRatio.note || "";
-    // Plot only years with values so the series stays continuous and readable
     const staffPairs = overlay.staffRatio.labels
       .map((lbl, i) => [lbl, overlay.staffRatio.ratio[i]])
       .filter(([, v]) => v != null && !Number.isNaN(Number(v)));
     const staffLabels = staffPairs.map(([l]) => l);
     const staffVals = staffPairs.map(([, v]) => Number(v));
+    setCanvasEmpty("staffChart", false);
     setTrendEl("trendStaff", seriesTrend(staffVals, true), true);
     mk("staffChart", { type: "line", data: {
       labels: staffLabels,
       datasets: [{ label: "Staff per bed", data: staffVals, borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true }]
     }, options: lineOpts({ min: 0, max: 10, ticks: { stepSize: 2 } }) });
-  } else cardStaff.classList.add("hidden");
+  } else {
+    setCanvasEmpty("staffChart", true);
+    setTrendNoData("trendStaff");
+    $("noteStaff").textContent = NO_DATA + " — staff-to-bed history is curated for selected hospitals only.";
+  }
 
   // --- Travelers overlay (prefer headcounts; fall back to legacy % series) ---
-  const cardTrav = $("cardTravelers");
   if (overlay?.travelers) {
-    cardTrav.classList.remove("hidden");
     $("noteTravelers").textContent = overlay.travelers.note || "";
     const travSeries = Array.isArray(overlay.travelers.count) && overlay.travelers.count.length
       ? overlay.travelers.count
       : overlay.travelers.pct;
     const travIsCount = Array.isArray(overlay.travelers.count) && overlay.travelers.count.length;
-    setTrendEl("trendTravelers", seriesTrend(travSeries, false), false);
     const travNums = (travSeries || []).filter((v) => v != null).map(Number);
-    const travMax = Math.max(travIsCount ? 100 : 50, ...travNums, 0);
-    const yTop = travIsCount ? Math.ceil(travMax / 50) * 50 : Math.ceil(travMax / 10) * 10;
-    mk("travelerChart", { type: "line", data: {
-      labels: overlay.travelers.labels,
-      datasets: [{
-        label: travIsCount ? "Travel RNs on staff" : "% travelers",
-        data: travSeries,
-        borderColor: "#b45309",
-        backgroundColor: "#b45309",
-        pointRadius: 4,
-        spanGaps: true,
-      }]
-    }, options: lineOpts({
-      min: 0,
-      max: yTop,
-      title: { display: true, text: travIsCount ? "Travel RNs" : "% of nurses", font: { size: 10 } },
-    }) });
-  } else cardTrav.classList.add("hidden");
-
+    if (travNums.length) {
+      setCanvasEmpty("travelerChart", false);
+      setTrendEl("trendTravelers", seriesTrend(travSeries, false), false);
+      const travMax = Math.max(travIsCount ? 100 : 50, ...travNums, 0);
+      const yTop = travIsCount ? Math.ceil(travMax / 50) * 50 : Math.ceil(travMax / 10) * 10;
+      mk("travelerChart", { type: "line", data: {
+        labels: overlay.travelers.labels,
+        datasets: [{
+          label: travIsCount ? "Travel RNs on staff" : "% travelers",
+          data: travSeries,
+          borderColor: "#b45309",
+          backgroundColor: "#b45309",
+          pointRadius: 4,
+          spanGaps: true,
+        }]
+      }, options: lineOpts({
+        min: 0,
+        max: yTop,
+        title: { display: true, text: travIsCount ? "Travel RNs" : "% of nurses", font: { size: 10 } },
+      }) });
+    } else {
+      setCanvasEmpty("travelerChart", true);
+      setTrendNoData("trendTravelers");
+      $("noteTravelers").textContent = NO_DATA;
+    }
+  } else {
+    setCanvasEmpty("travelerChart", true);
+    setTrendNoData("trendTravelers");
+    $("noteTravelers").textContent = NO_DATA + " — travel-nurse counts are curated for selected hospitals only.";
+  }
   // --- HAI ---
   const haiIds = [
     ["HAI_1_SIR", "Central-line bloodstream infection"],
@@ -698,19 +782,27 @@ async function loadDashboard(ccn) {
     if (!vals.length) return null;
     return vals.reduce((a, b) => a + b, 0) / vals.length;
   });
-  setTrendEl("trendHai", seriesTrend(haiTrendVals, false), false);
-  $("noteHai").textContent = worse.length ? `Worse than national: ${worse.join("; ")}.` : "No infection measure currently worse than national.";
-  mk("haiChart", { type: "bar", data: { labels: haiLabels, datasets: [
-    { label: "Infection rate vs expected (SIR)", data: haiSir, backgroundColor: haiColors, borderRadius: 3 },
-    { label: "Expected (=1.0)", data: Array(haiLabels.length).fill(1), type: "line", borderColor: "#059669", borderDash: [5,4], pointRadius: 0, order: 0 }
-  ]}, options: {
-    ...common,
-    indexAxis: "y",
-    scales: {
-      x: { min: 0, suggestedMax: 2.5, title: { display: true, text: "Lower is better", font: { size: 10 } } },
-      y: { ticks: { font: { size: 9 }, autoSkip: false } },
-    },
-  } });
+  const hasHai = haiSir.some((v) => v != null);
+  if (hasHai) {
+    setCanvasEmpty("haiChart", false);
+    setTrendEl("trendHai", seriesTrend(haiTrendVals, false), false);
+    $("noteHai").textContent = worse.length ? `Worse than national: ${worse.join("; ")}.` : "No infection measure currently worse than national.";
+    mk("haiChart", { type: "bar", data: { labels: haiLabels, datasets: [
+      { label: "Infection rate vs expected (SIR)", data: haiSir, backgroundColor: haiColors, borderRadius: 3 },
+      { label: "Expected (=1.0)", data: Array(haiLabels.length).fill(1), type: "line", borderColor: "#059669", borderDash: [5,4], pointRadius: 0, order: 0 }
+    ]}, options: {
+      ...common,
+      indexAxis: "y",
+      scales: {
+        x: { min: 0, suggestedMax: 2.5, title: { display: true, text: "Lower is better", font: { size: 10 } } },
+        y: { ticks: { font: { size: 9 }, autoSkip: false } },
+      },
+    } });
+  } else {
+    setCanvasEmpty("haiChart", true);
+    setTrendNoData("trendHai");
+    $("noteHai").textContent = NO_DATA;
+  }
 
   // --- Mortality ---
   const mortIds = [
@@ -736,12 +828,22 @@ async function loadDashboard(ccn) {
     tr.innerHTML = `<td>${label}</td><td>${mv}%</td><td>${nv}%</td><td class="${vs.cls}">${vs.label}</td>`;
     mortBody.appendChild(tr);
   }
-  setTrendEl("trendMort", "insufficient", false);
-  $("noteMort").textContent = "Compared to CMS national rates. Trend history for condition mortality is not in the local archive set.";
-  mk("mortChart", { type: "bar", data: { labels: mLabels, datasets: [
-    { label: "Hospital", data: mHosp, backgroundColor: "#2563eb", borderRadius: 3 },
-    { label: "National", data: mNat, backgroundColor: "#94a3b8", borderRadius: 3 }
-  ]}, options: { ...common, indexAxis: "y", scales: { x: { beginAtZero: true }, y: { ticks: { font: { size: 9 }, autoSkip: false } } } } });
+  const mortWrap = $("mortTable")?.closest(".tablewrap");
+  if (mLabels.length) {
+    setEmptyPanel(mortWrap, false);
+    setCanvasEmpty("mortChart", false);
+    setTrendEl("trendMort", "insufficient", false);
+    $("noteMort").textContent = "Compared to CMS national rates. Trend history for condition mortality is not in the local archive set.";
+    mk("mortChart", { type: "bar", data: { labels: mLabels, datasets: [
+      { label: "Hospital", data: mHosp, backgroundColor: "#2563eb", borderRadius: 3 },
+      { label: "National", data: mNat, backgroundColor: "#94a3b8", borderRadius: 3 }
+    ]}, options: { ...common, indexAxis: "y", scales: { x: { beginAtZero: true }, y: { ticks: { font: { size: 9 }, autoSkip: false } } } } });
+  } else {
+    setEmptyPanel(mortWrap, true);
+    setCanvasEmpty("mortChart", true);
+    setTrendNoData("trendMort");
+    $("noteMort").textContent = NO_DATA;
+  }
 
   // --- Complications: hospital % of national + national 100 bars ---
   const compSpec = [
@@ -766,11 +868,22 @@ async function loadDashboard(ccn) {
     tr.innerHTML = `<td>${label}</td><td>${pctLike ? mv + "%" : mv}</td><td>${pctLike ? nv + "%" : nv}</td><td class="${vs.cls}">${vs.label}</td>`;
     compBody.appendChild(tr);
   }
-  setTrendEl("trendComp", "insufficient", false);
-  mk("compChart", { type: "bar", data: { labels: cLabels, datasets: [
-    { label: "Hospital (% of national)", data: cHospPct, backgroundColor: "#2563eb", borderRadius: 3 },
-    { label: "National (=100)", data: cNatPct, backgroundColor: "#94a3b8", borderRadius: 3 }
-  ]}, options: { ...common, indexAxis: "y", scales: { x: { min: 0, suggestedMax: 120 }, y: { ticks: { font: { size: 9 }, autoSkip: false } } } } });
+  const compWrap = $("compTable")?.closest(".tablewrap");
+  if (cLabels.length) {
+    setEmptyPanel(compWrap, false);
+    setCanvasEmpty("compChart", false);
+    setTrendEl("trendComp", "insufficient", false);
+    $("noteComp").textContent = "Bars show hospital vs national as % of national (national = 100; lower is better).";
+    mk("compChart", { type: "bar", data: { labels: cLabels, datasets: [
+      { label: "Hospital (% of national)", data: cHospPct, backgroundColor: "#2563eb", borderRadius: 3 },
+      { label: "National (=100)", data: cNatPct, backgroundColor: "#94a3b8", borderRadius: 3 }
+    ]}, options: { ...common, indexAxis: "y", scales: { x: { min: 0, suggestedMax: 120 }, y: { ticks: { font: { size: 9 }, autoSkip: false } } } } });
+  } else {
+    setEmptyPanel(compWrap, true);
+    setCanvasEmpty("compChart", true);
+    setTrendNoData("trendComp");
+    $("noteComp").textContent = NO_DATA;
+  }
 
   // --- Readmissions ---
   const readmIds = [
@@ -791,50 +904,62 @@ async function loadDashboard(ccn) {
     if (!Number.isFinite(mv) || !Number.isFinite(nv)) continue;
     rLabels.push(label); rHosp.push(mv); rNat.push(nv);
   }
-  setTrendEl("trendReadm", "insufficient", false);
-  $("noteReadm").textContent = rLabels.length ? `Hospital-wide ${rHosp[0]}% vs national ${rNat[0]}%.` : "No readmission rates available.";
-  mk("readmChart", { type: "bar", data: { labels: rLabels, datasets: [
-    { label: "Hospital", data: rHosp, backgroundColor: "#2563eb", borderRadius: 3 },
-    { label: "National", data: rNat, backgroundColor: "#94a3b8", borderRadius: 3 }
-  ]}, options: { ...common, indexAxis: "y", scales: { x: { beginAtZero: true }, y: { ticks: { font: { size: 9 }, autoSkip: false } } } } });
+  if (rLabels.length) {
+    setCanvasEmpty("readmChart", false);
+    setTrendEl("trendReadm", "insufficient", false);
+    $("noteReadm").textContent = `Hospital-wide ${rHosp[0]}% vs national ${rNat[0]}%.`;
+    mk("readmChart", { type: "bar", data: { labels: rLabels, datasets: [
+      { label: "Hospital", data: rHosp, backgroundColor: "#2563eb", borderRadius: 3 },
+      { label: "National", data: rNat, backgroundColor: "#94a3b8", borderRadius: 3 }
+    ]}, options: { ...common, indexAxis: "y", scales: { x: { beginAtZero: true }, y: { ticks: { font: { size: 9 }, autoSkip: false } } } } });
+  } else {
+    setCanvasEmpty("readmChart", true);
+    setTrendNoData("trendReadm");
+    $("noteReadm").textContent = NO_DATA;
+  }
 
   // --- Top vs low patient ratings (current HCAHPS 9–10 / ≤6 split) ---
   const hospRatio = (Number.isFinite(high) && Number.isFinite(low) && low > 0) ? (high / low) : null;
   const natRatio = (Number.isFinite(natHigh) && Number.isFinite(natLow) && natLow > 0) ? (natHigh / natLow) : null;
+  const hasRatingMix = Number.isFinite(high) && Number.isFinite(low);
   $("ratioHospital").textContent = hospRatio != null ? `${hospRatio.toFixed(1)} : 1` : "—";
   $("ratioNational").textContent = natRatio != null ? `${natRatio.toFixed(1)} : 1` : "—";
-  $("ratioHospitalDetail").textContent = Number.isFinite(high) && Number.isFinite(low)
-    ? `${high}% top · ${low}% low`
-    : "";
+  $("ratioHospitalDetail").textContent = hasRatingMix ? `${high}% top · ${low}% low` : "";
   $("ratioNationalDetail").textContent = Number.isFinite(natHigh) && Number.isFinite(natLow)
     ? `${natHigh}% top · ${natLow}% low`
     : "";
   const trendRating = $("trendRating");
-  trendRating.className = "trend flat";
-  trendRating.textContent = "Current snapshot";
-  let takeaway = "Patient rating split unavailable.";
-  if (Number.isFinite(high) && Number.isFinite(low) && Number.isFinite(natHigh) && Number.isFinite(natLow)) {
-    if (high < natHigh && low > natLow) {
-      takeaway = "Weaker than national: fewer top ratings (9–10) and more low ratings (≤6).";
-    } else if (high > natHigh && low < natLow) {
-      takeaway = "Stronger than national: more top ratings (9–10) and fewer low ratings (≤6).";
-    } else if (hospRatio != null && natRatio != null && hospRatio < natRatio) {
-      takeaway = "Weaker top-to-low mix than the national average.";
-    } else if (hospRatio != null && natRatio != null && hospRatio > natRatio) {
-      takeaway = "Stronger top-to-low mix than the national average.";
-    } else {
-      takeaway = "Similar top-to-low mix to the national average.";
+  if (hasRatingMix) {
+    trendRating.className = "trend flat";
+    trendRating.textContent = "Current snapshot";
+    let takeaway = "Patient rating split unavailable.";
+    if (Number.isFinite(natHigh) && Number.isFinite(natLow)) {
+      if (high < natHigh && low > natLow) {
+        takeaway = "Weaker than national: fewer top ratings (9–10) and more low ratings (≤6).";
+      } else if (high > natHigh && low < natLow) {
+        takeaway = "Stronger than national: more top ratings (9–10) and fewer low ratings (≤6).";
+      } else if (hospRatio != null && natRatio != null && hospRatio < natRatio) {
+        takeaway = "Weaker top-to-low mix than the national average.";
+      } else if (hospRatio != null && natRatio != null && hospRatio > natRatio) {
+        takeaway = "Stronger top-to-low mix than the national average.";
+      } else {
+        takeaway = "Similar top-to-low mix to the national average.";
+      }
     }
+    $("ratingTakeaway").textContent = takeaway;
+    setCanvasEmpty("ratingChart", false);
+    mk("ratingChart", { type: "bar", data: {
+      labels: ["Top ratings (9–10)", "Low ratings (≤6)"],
+      datasets: [
+        { label: "This hospital", data: [high, low], backgroundColor: "#2563eb", borderRadius: 3 },
+        { label: "National average", data: [natHigh, natLow], backgroundColor: "#94a3b8", borderRadius: 3 }
+      ]
+    }, options: { ...common, scales: { y: { min: 0, max: 100, title: { display: true, text: "% of patients", font: { size: 10 } } } } } });
+  } else {
+    setTrendNoData("trendRating");
+    $("ratingTakeaway").textContent = NO_DATA;
+    setCanvasEmpty("ratingChart", true);
   }
-  $("ratingTakeaway").textContent = takeaway;
-  mk("ratingChart", { type: "bar", data: {
-    labels: ["Top ratings (9–10)", "Low ratings (≤6)"],
-    datasets: [
-      { label: "This hospital", data: [high, low], backgroundColor: "#2563eb", borderRadius: 3 },
-      { label: "National average", data: [natHigh, natLow], backgroundColor: "#94a3b8", borderRadius: 3 }
-    ]
-  }, options: { ...common, scales: { y: { min: 0, max: 100, title: { display: true, text: "% of patients", font: { size: 10 } } } } } });
-
   if (typeof Chart === "undefined") showErr("Chart library failed to load.");
 }
 
