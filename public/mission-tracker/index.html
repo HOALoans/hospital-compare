@@ -408,15 +408,11 @@ function labelYear(label) {
   return m ? Number(m[0]) : NaN;
 }
 
-const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/** Format axis labels like "2023-09" → "Sep 2023"; leave other labels unchanged. */
-function formatMonthAxisLabel(label) {
-  const m = String(label ?? "").match(/^(\d{4})-(\d{2})$/);
+/** Format axis labels like "2023-09" → "2023"; leave other labels unchanged. */
+function formatYearAxisLabel(label) {
+  const m = String(label ?? "").match(/^(\d{4})(?:-(\d{2}))?$/);
   if (!m) return String(label ?? "");
-  const month = Number(m[2]);
-  if (month < 1 || month > 12) return String(label);
-  return `${MONTH_SHORT[month - 1]} ${m[1]}`;
+  return m[1];
 }
 
 /**
@@ -991,7 +987,7 @@ function renderDashboard(cache) {
         y1Top = Math.max(20, Math.ceil((pMax + 4) / 5) * 5);
         y1Step = y1Top <= 30 ? 5 : 10;
       }
-      const tAxisLabels = tLabels.map(formatMonthAxisLabel);
+      const tAxisLabels = tLabels.map(formatYearAxisLabel);
       mk("travelerChart", { type: "line", data: { labels: tAxisLabels, datasets }, options: {
         ...common,
         layout: { padding: { bottom: 2 } },
@@ -1010,9 +1006,9 @@ function renderDashboard(cache) {
           x: {
             ticks: {
               autoSkip: false,
-              maxRotation: 40,
+              maxRotation: 0,
               minRotation: 0,
-              font: { size: 10 },
+              font: { size: 11 },
               padding: 4,
             },
           },
