@@ -727,8 +727,17 @@ async function loadDashboard(ccn) {
     if (travNums.length) {
       setCanvasEmpty("travelerChart", false);
       setTrendEl("trendTravelers", seriesTrend(travSeries, false), false);
-      const travMax = Math.max(travIsCount ? 100 : 50, ...travNums, 0);
-      const yTop = travIsCount ? Math.ceil(travMax / 50) * 50 : Math.ceil(travMax / 10) * 10;
+      const tMin = Math.min(...travNums);
+      const tMax = Math.max(...travNums);
+      const pad = Math.max(travIsCount ? 25 : 5, (tMax - tMin) * 0.25);
+      const step = travIsCount ? 50 : 5;
+      let yBottom = Math.floor((tMin - pad) / step) * step;
+      let yTop = Math.ceil((tMax + pad) / step) * step;
+      if (!travIsCount) yBottom = Math.max(0, yBottom);
+      else if (yBottom < 0) yBottom = 0;
+      // For headcounts clustered well above 0, keep axis tight (e.g. ~300–600 for 352–527)
+      if (travIsCount && tMin >= 100) yBottom = Math.max(step, yBottom);
+      if (yTop <= yBottom) yTop = yBottom + step;
       mk("travelerChart", { type: "line", data: {
         labels: overlay.travelers.labels,
         datasets: [{
@@ -740,8 +749,9 @@ async function loadDashboard(ccn) {
           spanGaps: true,
         }]
       }, options: lineOpts({
-        min: 0,
+        min: yBottom,
         max: yTop,
+        ticks: { stepSize: step },
         title: { display: true, text: travIsCount ? "Travel RNs" : "% of nurses", font: { size: 10 } },
       }) });
     } else {
