@@ -25,6 +25,7 @@ Linked from the Parigrado homepage and header nav. CMS pulls go through `/api/cm
 
 ## Notes
 
-- FY2019–FY2020 staff-to-bed are charted as gaps until HCRIS rows are loaded.
-- Traveler 2023 has no published single % — year is shown with a gap.
+- Staff-to-bed uses CMS HCRIS S-3 Part I line 14 (FTEs ÷ beds). FY2019–FY2020 filled from HOSP10FY zips for CCN 340002.
+- Travel nurse card plots Watchdog headcounts; % of nursing staff and total nurses shown when a published denominator exists (Dec 2025 ≈ 26% of ~2,027). Earlier points show count only.
+- Trend window changes re-render from the last loaded snapshot (no CMS re-fetch) so overlapping loads cannot blank charts. If fewer than N years exist, available years are shown with a note.
 - Top vs low rating **ratio** = (% 9–10) ÷ (% ≤6); national from CMS dataset `99ue-w85f`. Shown as a current snapshot (CMS does not publish a long public 9–10/≤6 history); year-over-year trend is on the HCAHPS stars card.

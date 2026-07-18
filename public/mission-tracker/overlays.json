@@ -32,6 +32,8 @@
       "staffRatio": {
         "labels": [
           "2018",
+          "2019",
+          "2020",
           "2021",
           "2022",
           "2023",
@@ -39,12 +41,14 @@
         ],
         "ratio": [
           8.6,
+          7.1,
+          5.7,
           5.1,
           4.6,
           4.7,
           4.8
         ],
-        "note": "CMS HCRIS S-3 FTEs \u00f7 beds (FY ends Sept). FY2019\u2013FY2020 and FY2025 not in this series yet."
+        "note": "CMS HCRIS S-3 Part I line 14: employees on payroll FTEs (col 10) \u00f7 beds (col 2); FY ends Sept. FY2019 uses the post-sale report (02/01/2019\u201309/30/2019; pre-sale stub Oct\u2013Jan was 7.4). FY2025 pending CMS processing."
       },
       "travelers": {
         "labels": [
@@ -57,7 +61,17 @@
           376,
           527
         ],
-        "note": "Travel RN headcounts from Asheville Watchdog staffing data (not audited Worksheet S-3). Counts rose from 352 (Sep 2023) to 376 (Feb 2024) to 527 (Dec 2025). Dec 2025 lists also show ~1,500 full-time nurses (~26% travelers vs a national ~3–4% norm). Earlier unit-level “half travelers” anecdotes are not hospital-wide counts and are omitted."
+        "totalNurses": [
+          null,
+          null,
+          2027
+        ],
+        "pct": [
+          null,
+          null,
+          26
+        ],
+        "note": "Travel RN headcounts from Asheville Watchdog staffing lists (not audited Worksheet S-3). Dec 2025: ~527 travelers + ~1,500 FT nurses \u2248 2,027 total (~26% travelers; national norm ~3\u20134%). Sep 2023 (352) and Feb 2024 (376) have no published hospital-wide nursing denominator, so % is omitted for those points."
       },
       "starTrend": {
         "labels": [

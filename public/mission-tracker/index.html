@@ -5,7 +5,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Hospital Health Dashboard · Parigrado</title>
-<script src="vendor/chart.umd.js?v=20260718d"></script>
+<script src="vendor/chart.umd.js?v=20260718e"></script>
 <style>
   :root {
     color-scheme: light;
@@ -270,6 +270,22 @@
     <h2>Travel nurse staffing</h2>
     <div class="meta">Watchdog travel RN headcounts · not audited S-3</div>
     <span class="trend" id="trendTravelers">Trend: —</span>
+    <div class="statrow" id="travelerStats" style="display:none">
+      <div>
+        <div class="statlbl">Travel RNs (latest)</div>
+        <div class="stat" id="travelerCountStat">—</div>
+      </div>
+      <div>
+        <div class="statlbl">Total nurses (latest)</div>
+        <div class="stat" id="travelerTotalStat">—</div>
+        <div class="statsub" id="travelerTotalSub"></div>
+      </div>
+      <div>
+        <div class="statlbl">Travelers % of total</div>
+        <div class="stat" id="travelerPctStat">—</div>
+        <div class="statsub" id="travelerPctSub"></div>
+      </div>
+    </div>
     <div class="chartbox"><canvas id="travelerChart"></canvas></div>
     <div class="note" id="noteTravelers"></div>
   </div>
@@ -348,6 +364,8 @@ const US_STATES = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","
 const charts = {};
 let overlays = { hospitals: {}, trendYearsDefault: 5 };
 let trendYears = 5;
+let dashGen = 0;
+let dashCache = null; // last successful render payload for trend-window re-renders
 
 const $ = (id) => document.getElementById(id);
 const showErr = (msg) => { const el = $("loadErr"); el.style.display = msg ? "block" : "none"; el.textContent = msg || ""; };
@@ -381,11 +399,50 @@ function setTrendEl(id, direction, higherIsBetter) {
   el.textContent = label;
 }
 
-/** Linear slope over last N non-null points; stable if small relative change. */
+/** Parse a leading calendar/fiscal year from labels like "2019", "2025*", "2023-09". */
+function labelYear(label) {
+  const m = String(label ?? "").match(/(19|20)\d{2}/);
+  return m ? Number(m[0]) : NaN;
+}
+
+/**
+ * Keep points inside the selected trend window (by calendar year on labels).
+ * Returns available span messaging when history is shorter than the window.
+ */
+function windowByYears(labels, seriesList, years = trendYears) {
+  const labs = (labels || []).slice();
+  const lists = (seriesList || []).map((s) => (s || []).slice());
+  if (!labs.length) {
+    return { labels: labs, series: lists, availableSpan: 0, shortWindow: false, windowNote: "" };
+  }
+  const yrs = labs.map(labelYear);
+  const finite = yrs.filter((y) => Number.isFinite(y));
+  if (!finite.length) {
+    return { labels: labs, series: lists, availableSpan: labs.length, shortWindow: labs.length < years, windowNote: labs.length < years ? `Showing all ${labs.length} available points (less than ${years}-year window).` : "" };
+  }
+  const maxY = Math.max(...finite);
+  const minAvailable = Math.min(...finite);
+  const availableSpan = maxY - minAvailable + 1;
+  const minKeep = maxY - Math.max(1, years) + 1;
+  const keep = [];
+  for (let i = 0; i < labs.length; i++) {
+    const y = yrs[i];
+    if (!Number.isFinite(y) || y >= minKeep) keep.push(i);
+  }
+  const outLabs = keep.map((i) => labs[i]);
+  const outSeries = lists.map((s) => keep.map((i) => (i < s.length ? s[i] : null)));
+  const shortWindow = availableSpan < years;
+  const windowNote = shortWindow
+    ? `Showing ${availableSpan} available year${availableSpan === 1 ? "" : "s"} (less than ${years}-year window).`
+    : "";
+  return { labels: outLabs, series: outSeries, availableSpan, shortWindow, windowNote };
+}
+
+/** Linear slope over windowed non-null points; stable if small relative change. */
 function seriesTrend(values, higherIsBetter = true) {
   const pts = values.map((v, i) => [i, v]).filter(([, v]) => v != null && !Number.isNaN(Number(v)));
   if (pts.length < 2) return "insufficient";
-  const slice = pts.slice(-Math.max(2, Math.min(trendYears, pts.length)));
+  const slice = pts.slice(-Math.max(2, pts.length));
   if (slice.length < 2) return "insufficient";
   const xs = slice.map((_, i) => i);
   const ys = slice.map(([, v]) => Number(v));
@@ -400,6 +457,14 @@ function seriesTrend(values, higherIsBetter = true) {
   const rel = (last - first) / base;
   if (Math.abs(rel) < 0.05 && Math.abs(slope) < base * 0.02) return "stable";
   return slope > 0 ? "increasing" : "decreasing";
+}
+
+function appendWindowNote(base, windowNote) {
+  const b = (base || "").trim();
+  const w = (windowNote || "").trim();
+  if (!w) return b;
+  if (!b) return w;
+  return b.endsWith(".") ? `${b} ${w}` : `${b}. ${w}`;
 }
 
 function destroyCharts() {
@@ -527,17 +592,23 @@ function vsClass(text) {
   return { label: "Same", cls: "same" };
 }
 
-async function loadDashboard(ccn) {
+async function loadDashboard(ccn, { fromCache = false } = {}) {
   showErr("");
-  destroyCharts();
   $("ccnLabel").textContent = ccn;
   $("ccnInput").value = ccn;
   const url = new URL(location.href);
   url.searchParams.set("ccn", ccn);
   history.replaceState(null, "", url);
 
+  if (fromCache && dashCache && dashCache.ccn === ccn) {
+    renderDashboard(dashCache);
+    return;
+  }
+
+  const loadId = ++dashGen;
   const overlay = overlays.hospitals[ccn] || null;
   const meta = await loadHospitalMeta(ccn);
+  if (loadId !== dashGen) return;
   if (!meta) { showErr("Hospital not found for CCN " + ccn); return; }
 
   const displayName = overlay?.name || meta.name;
@@ -553,20 +624,56 @@ async function loadDashboard(ccn) {
     limit: 100,
   };
 
-  const [hcahps, gen, hai, mortMis, mortNat, readMis, readNat, natHcahps, trends] = await Promise.all([
-    cmsQuery("dgck-syfz", facility),
-    cmsQuery("xubh-q36u", { conditions: facility.conditions, limit: 5 }),
-    cmsQuery("77hc-ibv8", facility),
-    cmsQuery("ynj2-r877", facility),
-    cmsQuery("qqw3-t4ie", { limit: 100 }),
-    cmsQuery("632h-zaca", facility),
-    cmsQuery("cvcs-xecj", { limit: 100 }),
-    cmsQuery("99ue-w85f", { limit: 100 }),
-    loadTrends(ccn),
-  ]);
+  let hcahps, gen, hai, mortMis, mortNat, readMis, readNat, natHcahps, trends;
+  try {
+    [hcahps, gen, hai, mortMis, mortNat, readMis, readNat, natHcahps, trends] = await Promise.all([
+      cmsQuery("dgck-syfz", facility),
+      cmsQuery("xubh-q36u", { conditions: facility.conditions, limit: 5 }),
+      cmsQuery("77hc-ibv8", facility),
+      cmsQuery("ynj2-r877", facility),
+      cmsQuery("qqw3-t4ie", { limit: 100 }),
+      cmsQuery("632h-zaca", facility),
+      cmsQuery("cvcs-xecj", { limit: 100 }),
+      cmsQuery("99ue-w85f", { limit: 100 }),
+      loadTrends(ccn),
+    ]);
+  } catch (e) {
+    if (loadId !== dashGen) return;
+    throw e;
+  }
+  if (loadId !== dashGen) return;
 
   const today = new Date().toISOString().slice(0, 10);
   $("lastRefresh").textContent = today;
+
+  dashCache = {
+    ccn,
+    overlay,
+    meta,
+    displayName,
+    displayCity,
+    displayState,
+    hcahps,
+    gen,
+    hai,
+    mortMis,
+    mortNat,
+    readMis,
+    readNat,
+    natHcahps,
+    trends,
+    today,
+  };
+  renderDashboard(dashCache);
+}
+
+function renderDashboard(cache) {
+  const {
+    ccn, overlay, meta, hcahps, gen, hai, mortMis, mortNat, readMis, readNat, natHcahps, trends, today,
+  } = cache;
+  // Destroy only once fresh data (or cached payload) is ready — avoids blank UI during overlapping loads.
+  destroyCharts();
+  $("lastRefresh").textContent = today || new Date().toISOString().slice(0, 10);
 
   const hRows = hcahps.results || [];
   const hFind = (id) => hRows.find((r) => r.hcahps_measure_id === id);
@@ -627,15 +734,18 @@ async function loadDashboard(ccn) {
   if (overlay?.ij) {
     if (ijLegend) ijLegend.style.display = "";
     setEmptyPanel(strip, false);
-    overlay.ij.years.forEach((y, i) => {
-      const count = overlay.ij.counts[i] || 0;
+    const ijWin = windowByYears(overlay.ij.years, [overlay.ij.counts]);
+    const ijYears = ijWin.labels;
+    const ijCounts = ijWin.series[0];
+    ijYears.forEach((y, i) => {
+      const count = ijCounts[i] || 0;
       const cell = document.createElement("div");
       cell.className = "yearcell " + (count > 0 ? "ij" : "clear");
       cell.innerHTML = `<span class="yr">${y}</span><span class="mark">${count}</span>`;
       strip.appendChild(cell);
     });
-    $("noteIj").textContent = overlay.ij.note || "";
-    setTrendEl("trendIj", seriesTrend(overlay.ij.counts, false), false);
+    $("noteIj").textContent = appendWindowNote(overlay.ij.note || "", ijWin.windowNote);
+    setTrendEl("trendIj", seriesTrend(ijCounts, false), false);
   } else {
     if (ijLegend) ijLegend.style.display = "none";
     setEmptyPanel(strip, true);
@@ -644,20 +754,24 @@ async function loadDashboard(ccn) {
   }
 
   // --- Stars ---
+  const starWin = windowByYears(starLabels, [starVals]);
+  starLabels = starWin.labels;
+  starVals = starWin.series[0];
   const hasStars = starLabels.length && starVals.some((v) => v != null);
   if (hasStars) {
     setCanvasEmpty("starChart", false);
     setTrendEl("trendStars", seriesTrend(starVals, true), true);
-    $("noteStars").textContent = Number.isFinite(starNow)
+    const starNote = Number.isFinite(starNow)
       ? `Latest summary star rating: ${starNow}★.` + (overlay?.starTrend?.note ? " " + overlay.starTrend.note : "")
       : NO_DATA;
+    $("noteStars").textContent = appendWindowNote(starNote, starWin.windowNote);
     mk("starChart", { type: "line", data: { labels: starLabels, datasets: [
       { label: "HCAHPS stars", data: starVals, borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 4, pointHoverRadius: 5, tension: 0.25, spanGaps: true }
     ]}, options: lineOpts({ min: 1, max: 5, ticks: { stepSize: 1 } }) });
   } else {
     setCanvasEmpty("starChart", true);
     setTrendNoData("trendStars");
-    $("noteStars").textContent = NO_DATA;
+    $("noteStars").textContent = appendWindowNote(NO_DATA, starWin.windowNote);
   }
 
   // --- Overall CMS quality stars (curated archive series when available) ---
@@ -679,13 +793,17 @@ async function loadDashboard(ccn) {
     overallLabels = [String(new Date().getFullYear())];
     overallVals = [overall];
   }
+  const overallWin = windowByYears(overallLabels, [overallVals]);
+  overallLabels = overallWin.labels;
+  overallVals = overallWin.series[0];
   const hasOverall = overallLabels.length && overallVals.some((v) => v != null);
   if (hasOverall) {
     setCanvasEmpty("overallStarChart", false);
     setTrendEl("trendOverall", seriesTrend(overallVals, true), true);
-    $("noteOverall").textContent = Number.isFinite(overall)
+    const overallNote = Number.isFinite(overall)
       ? `Latest Care Compare overall rating: ${overall}★.` + (overlay?.overallTrend?.note ? " " + overlay.overallTrend.note : "")
       : NO_DATA;
+    $("noteOverall").textContent = appendWindowNote(overallNote, overallWin.windowNote);
     mk("overallStarChart", { type: "line", data: {
       labels: overallLabels,
       datasets: [{ label: "Overall CMS stars", data: overallVals, borderColor: "#2563eb", backgroundColor: "#2563eb", pointRadius: 4, pointHoverRadius: 5, tension: 0.25, spanGaps: true }]
@@ -693,76 +811,144 @@ async function loadDashboard(ccn) {
   } else {
     setCanvasEmpty("overallStarChart", true);
     setTrendNoData("trendOverall");
-    $("noteOverall").textContent = NO_DATA;
+    $("noteOverall").textContent = appendWindowNote(NO_DATA, overallWin.windowNote);
   }
 
-  // --- Staff overlay ---
+  // --- Staff overlay (keep null years on the axis as gaps; do not skip labels) ---
   if (overlay?.staffRatio) {
-    $("noteStaff").textContent = overlay.staffRatio.note || "";
-    const staffPairs = overlay.staffRatio.labels
-      .map((lbl, i) => [lbl, overlay.staffRatio.ratio[i]])
-      .filter(([, v]) => v != null && !Number.isNaN(Number(v)));
-    const staffLabels = staffPairs.map(([l]) => l);
-    const staffVals = staffPairs.map(([, v]) => Number(v));
-    setCanvasEmpty("staffChart", false);
-    setTrendEl("trendStaff", seriesTrend(staffVals, true), true);
-    mk("staffChart", { type: "line", data: {
-      labels: staffLabels,
-      datasets: [{ label: "Staff per bed", data: staffVals, borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true }]
-    }, options: lineOpts({ min: 0, max: 10, ticks: { stepSize: 2 } }) });
+    const staffWin = windowByYears(overlay.staffRatio.labels, [overlay.staffRatio.ratio]);
+    const staffLabels = staffWin.labels;
+    const staffVals = staffWin.series[0].map((v) => (v == null || Number.isNaN(Number(v)) ? null : Number(v)));
+    const hasStaff = staffVals.some((v) => v != null);
+    if (hasStaff) {
+      setCanvasEmpty("staffChart", false);
+      setTrendEl("trendStaff", seriesTrend(staffVals, true), true);
+      $("noteStaff").textContent = appendWindowNote(overlay.staffRatio.note || "", staffWin.windowNote);
+      mk("staffChart", { type: "line", data: {
+        labels: staffLabels,
+        datasets: [{ label: "Staff per bed", data: staffVals, borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true }]
+      }, options: lineOpts({ min: 0, max: 10, ticks: { stepSize: 2 } }) });
+    } else {
+      setCanvasEmpty("staffChart", true);
+      setTrendNoData("trendStaff");
+      $("noteStaff").textContent = appendWindowNote(NO_DATA, staffWin.windowNote);
+    }
   } else {
     setCanvasEmpty("staffChart", true);
     setTrendNoData("trendStaff");
     $("noteStaff").textContent = NO_DATA + " — staff-to-bed history is curated for selected hospitals only.";
   }
 
-  // --- Travelers overlay (prefer headcounts; fall back to legacy % series) ---
+  // --- Travelers overlay: headcount series + % when denominator exists ---
+  const travStats = $("travelerStats");
   if (overlay?.travelers) {
-    $("noteTravelers").textContent = overlay.travelers.note || "";
-    const travSeries = Array.isArray(overlay.travelers.count) && overlay.travelers.count.length
-      ? overlay.travelers.count
-      : overlay.travelers.pct;
-    const travIsCount = Array.isArray(overlay.travelers.count) && overlay.travelers.count.length;
-    const travNums = (travSeries || []).filter((v) => v != null).map(Number);
+    const travLabels = overlay.travelers.labels || [];
+    const travCount = Array.isArray(overlay.travelers.count) ? overlay.travelers.count : [];
+    const travPct = Array.isArray(overlay.travelers.pct) ? overlay.travelers.pct : [];
+    const travTotal = Array.isArray(overlay.travelers.totalNurses) ? overlay.travelers.totalNurses : [];
+    const travWin = windowByYears(travLabels, [travCount, travPct, travTotal]);
+    const tLabels = travWin.labels;
+    const tCount = travWin.series[0];
+    const tPct = travWin.series[1];
+    const tTotal = travWin.series[2];
+    const travNums = tCount.filter((v) => v != null).map(Number);
+    // Latest point with a count for the summary stats
+    let latestIdx = -1;
+    for (let i = tCount.length - 1; i >= 0; i--) {
+      if (tCount[i] != null && !Number.isNaN(Number(tCount[i]))) { latestIdx = i; break; }
+    }
+    if (travStats) {
+      if (latestIdx >= 0) {
+        travStats.style.display = "";
+        $("travelerCountStat").textContent = String(tCount[latestIdx]);
+        const tot = tTotal[latestIdx];
+        const pct = tPct[latestIdx];
+        if (tot != null && !Number.isNaN(Number(tot))) {
+          $("travelerTotalStat").textContent = `~${Number(tot).toLocaleString()}`;
+          $("travelerTotalSub").textContent = "Travelers + FT nurses";
+        } else {
+          $("travelerTotalStat").textContent = "—";
+          $("travelerTotalSub").textContent = "No published total for this point";
+        }
+        if (pct != null && !Number.isNaN(Number(pct))) {
+          $("travelerPctStat").textContent = `${Number(pct)}%`;
+          $("travelerPctSub").textContent = "National norm ~3–4%";
+        } else {
+          $("travelerPctStat").textContent = "—";
+          $("travelerPctSub").textContent = "Need total nurses to compute %";
+        }
+      } else {
+        travStats.style.display = "none";
+      }
+    }
     if (travNums.length) {
       setCanvasEmpty("travelerChart", false);
-      setTrendEl("trendTravelers", seriesTrend(travSeries, false), false);
+      setTrendEl("trendTravelers", seriesTrend(tCount, false), false);
+      $("noteTravelers").textContent = appendWindowNote(overlay.travelers.note || "", travWin.windowNote);
       const tMin = Math.min(...travNums);
       const tMax = Math.max(...travNums);
-      const pad = Math.max(travIsCount ? 25 : 5, (tMax - tMin) * 0.25);
-      const step = travIsCount ? 50 : 5;
+      const pad = Math.max(25, (tMax - tMin) * 0.25);
+      const step = 50;
       let yBottom = Math.floor((tMin - pad) / step) * step;
       let yTop = Math.ceil((tMax + pad) / step) * step;
-      if (!travIsCount) yBottom = Math.max(0, yBottom);
-      else if (yBottom < 0) yBottom = 0;
-      // For headcounts clustered well above 0, keep axis tight (e.g. ~300–600 for 352–527)
-      if (travIsCount && tMin >= 100) yBottom = Math.max(step, yBottom);
+      if (yBottom < 0) yBottom = 0;
+      if (tMin >= 100) yBottom = Math.max(step, yBottom);
       if (yTop <= yBottom) yTop = yBottom + step;
-      mk("travelerChart", { type: "line", data: {
-        labels: overlay.travelers.labels,
-        datasets: [{
-          label: travIsCount ? "Travel RNs on staff" : "% travelers",
-          data: travSeries,
-          borderColor: "#b45309",
-          backgroundColor: "#b45309",
+      const hasPct = tPct.some((v) => v != null && !Number.isNaN(Number(v)));
+      const datasets = [{
+        label: "Travel RNs",
+        data: tCount,
+        borderColor: "#b45309",
+        backgroundColor: "#b45309",
+        pointRadius: 4,
+        spanGaps: true,
+        yAxisID: "y",
+      }];
+      if (hasPct) {
+        datasets.push({
+          label: "% of nursing staff",
+          data: tPct,
+          borderColor: "#2563eb",
+          backgroundColor: "#2563eb",
+          borderDash: [5, 4],
           pointRadius: 4,
           spanGaps: true,
-        }]
-      }, options: lineOpts({
-        min: yBottom,
-        max: yTop,
-        ticks: { stepSize: step },
-        title: { display: true, text: travIsCount ? "Travel RNs" : "% of nurses", font: { size: 10 } },
-      }) });
+          yAxisID: "y1",
+        });
+      }
+      mk("travelerChart", { type: "line", data: { labels: tLabels, datasets }, options: {
+        ...common,
+        plugins: { legend: { display: hasPct, labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } } },
+        scales: {
+          y: {
+            min: yBottom,
+            max: yTop,
+            ticks: { stepSize: step },
+            title: { display: true, text: "Travel RNs", font: { size: 10 } },
+          },
+          ...(hasPct ? {
+            y1: {
+              position: "right",
+              min: 0,
+              max: 40,
+              grid: { drawOnChartArea: false },
+              ticks: { stepSize: 10, callback: (v) => v + "%" },
+              title: { display: true, text: "% of nurses", font: { size: 10 } },
+            },
+          } : {}),
+        },
+      } });
     } else {
       setCanvasEmpty("travelerChart", true);
       setTrendNoData("trendTravelers");
       $("noteTravelers").textContent = NO_DATA;
+      if (travStats) travStats.style.display = "none";
     }
   } else {
     setCanvasEmpty("travelerChart", true);
     setTrendNoData("trendTravelers");
     $("noteTravelers").textContent = NO_DATA + " — travel-nurse counts are curated for selected hospitals only.";
+    if (travStats) travStats.style.display = "none";
   }
   // --- HAI ---
   const haiIds = [
@@ -785,18 +971,22 @@ async function loadDashboard(ccn) {
     haiColors.push(cmp.includes("worse") ? "#dc2626" : (Number.isFinite(v) && v < 1 ? "#059669" : "#94a3b8"));
     if (cmp.includes("worse")) worse.push(label);
   }
-  // HAI trend from archives (mean SIR of available measures)
-  const haiTrendVals = points.map((p) => {
+  // HAI trend from archives (mean SIR of available measures), windowed by selected years
+  const haiTrendLabels = points.map((p) => String(p.year));
+  const haiTrendRaw = points.map((p) => {
     const s = p.scores || {};
     const vals = ["HAI_1_SIR","HAI_2_SIR","HAI_3_SIR","HAI_4_SIR","HAI_5_SIR","HAI_6_SIR"].map((k) => s[k]).filter((v) => v != null).map(Number);
     if (!vals.length) return null;
     return vals.reduce((a, b) => a + b, 0) / vals.length;
   });
+  const haiTrendWin = windowByYears(haiTrendLabels, [haiTrendRaw]);
+  const haiTrendVals = haiTrendWin.series[0];
   const hasHai = haiSir.some((v) => v != null);
   if (hasHai) {
     setCanvasEmpty("haiChart", false);
     setTrendEl("trendHai", seriesTrend(haiTrendVals, false), false);
-    $("noteHai").textContent = worse.length ? `Worse than national: ${worse.join("; ")}.` : "No infection measure currently worse than national.";
+    const haiBase = worse.length ? `Worse than national: ${worse.join("; ")}.` : "No infection measure currently worse than national.";
+    $("noteHai").textContent = appendWindowNote(haiBase, haiTrendWin.windowNote);
     mk("haiChart", { type: "bar", data: { labels: haiLabels, datasets: [
       { label: "Infection rate vs expected (SIR)", data: haiSir, backgroundColor: haiColors, borderRadius: 3 },
       { label: "Expected (=1.0)", data: Array(haiLabels.length).fill(1), type: "line", borderColor: "#059669", borderDash: [5,4], pointRadius: 0, order: 0 }
@@ -1040,7 +1230,11 @@ function wireUi() {
   $("trendYears").addEventListener("change", () => {
     trendYears = Number($("trendYears").value) || 5;
     const ccn = $("ccnInput").value.trim() || DEFAULT_CCN;
-    loadDashboard(ccn);
+    // Re-render from cache so trend-window changes never blank charts mid CMS re-fetch.
+    loadDashboard(ccn, { fromCache: true }).catch((e) => {
+      console.error(e);
+      showErr("Could not update trend window. " + (e.message || e));
+    });
   });
 }
 
