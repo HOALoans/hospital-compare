@@ -271,7 +271,7 @@
 
   <div class="card" id="cardTravelers">
     <h2>Travel nurse staffing</h2>
-    <div class="meta">Watchdog travel RN headcounts · not audited S-3</div>
+    <div class="meta">Watchdog travel RN headcounts · national ~3.5% (HMR 2023)</div>
     <span class="trend" id="trendTravelers">Trend: —</span>
     <div class="statrow" id="travelerStats" style="display:none">
       <div>
@@ -875,12 +875,14 @@ function renderDashboard(cache) {
         }
         if (pct != null && !Number.isNaN(Number(pct))) {
           $("travelerPctStat").textContent = `${Number(pct)}%`;
+          const natPct = Number(overlay.travelers.nationalPct);
+          const natLabel = Number.isFinite(natPct) ? `nat'l ~${natPct}%` : "nat'l ~3–4%";
           const pctHist = tPct
-            .map((v, i) => (v != null && !Number.isNaN(Number(v)) ? `${Number(v)}%` : null))
+            .map((v) => (v != null && !Number.isNaN(Number(v)) ? `${Number(v)}%` : null))
             .filter(Boolean);
           $("travelerPctSub").textContent = pctHist.length > 1
-            ? `${pctHist.join(" → ")} · norm ~3–4%`
-            : "National norm ~3–4%";
+            ? `${pctHist.join(" → ")} · ${natLabel}`
+            : `Typical U.S. hospitals ${natLabel}`;
         } else {
           $("travelerPctStat").textContent = "—";
           $("travelerPctSub").textContent = "Need total nurses to compute %";
@@ -915,7 +917,7 @@ function renderDashboard(cache) {
       }];
       if (hasPct) {
         datasets.push({
-          label: "% of nursing staff",
+          label: "Mission % of nursing staff",
           data: tPct,
           borderColor: "#2563eb",
           backgroundColor: "#2563eb",
@@ -924,6 +926,20 @@ function renderDashboard(cache) {
           spanGaps: false,
           yAxisID: "y1",
         });
+        const natPct = Number(overlay.travelers.nationalPct);
+        if (Number.isFinite(natPct)) {
+          datasets.push({
+            label: `National ~${natPct}%`,
+            data: tLabels.map(() => natPct),
+            borderColor: "#64748b",
+            backgroundColor: "#64748b",
+            borderDash: [2, 3],
+            pointRadius: 0,
+            borderWidth: 2,
+            spanGaps: true,
+            yAxisID: "y1",
+          });
+        }
       }
       // % axis: always from 0; top padded above max observed point
       let y1Top = 30;

@@ -71,7 +71,13 @@
           23,
           26
         ],
-        "note": "Travel RN headcounts from Asheville Watchdog (not audited Worksheet S-3). % = travelers \u00f7 (travelers + filled permanent RNs). Sep 2023: 352 travelers (mid-Sep) with Oct 19, 2023 vacancy snapshot (452 openings / ~27% of ~1,674 bargaining-unit RN positions \u21d2 ~1,222 filled; total ~1,574 \u2248 22%). Feb 2024: 376 travelers (Feb 4) with Feb 5 vacancies (302 / ~19% \u21d2 ~1,287 filled; total ~1,663 \u2248 23%). Dec 2025: ~527 travelers + ~1,500 FT from staffing lists \u2248 2,027 (~26%). National norm ~3\u20134%."
+        "nationalPct": 3.5,
+        "nationalPctRange": [
+          3,
+          4
+        ],
+        "nationalSource": "Vander Weerdt et al., Health Care Manage Rev. 2023;48(4):352-362 (travel nurses typically ~3\u20134% of hospital nursing staff; midpoint 3.5% plotted). Also cited in AHRQ PSNet and Asheville Watchdog coverage.",
+        "note": "Travel RN headcounts from Asheville Watchdog (not audited Worksheet S-3). % = travelers \u00f7 (travelers + filled permanent RNs). Sep 2023: 352 travelers (mid-Sep) with Oct 19, 2023 vacancy snapshot (452 openings / ~27% of ~1,674 bargaining-unit RN positions \u21d2 ~1,222 filled; total ~1,574 \u2248 22%). Feb 2024: 376 travelers (Feb 4) with Feb 5 vacancies (302 / ~19% \u21d2 ~1,287 filled; total ~1,663 \u2248 23%). Dec 2025: ~527 travelers + ~1,500 FT from staffing lists \u2248 2,027 (~26%). National benchmark line at 3.5% (typical ~3\u20134%; Vander Weerdt et al., Health Care Manage Rev. 2023)."
       },
       "starTrend": {
         "labels": [
