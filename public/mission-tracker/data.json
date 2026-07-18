@@ -140,34 +140,30 @@
       "note": "FY2025 report pending CMS processing (hcris.io). Pre-sale CMS recomputation is 8.6; some published analyses cited ~9.1 for 2018 using a related methodology."
     },
     "travelers": {
-      "source": "News/union estimates of RN traveler share; Medicare cost report Worksheet S-3 contract-labor hours are a separate audited metric (~1yr lag) and are not plotted here",
+      "source": "Asheville Watchdog staffing counts of travel RNs; Medicare cost report Worksheet S-3 contract-labor hours are a separate audited metric (~1yr lag) and are not plotted here",
       "estimates": [
         {
-          "period": "2022",
-          "pct": 50,
-          "basis": "Asheville Watchdog: staff nurses reported roughly half of hospital nurses were travelers"
+          "period": "2023-09",
+          "count": 352,
+          "basis": "Watchdog: 352 travel RNs working at Mission mid-Sep 2023"
         },
         {
-          "period": "2023",
-          "pct": 30,
-          "basis": "Watchdog: 352 travel RNs mid-Sep 2023 vs ~1,600 RN positions with ~27% vacancy (~30% of filled)"
+          "period": "2024-02",
+          "count": 376,
+          "basis": "Watchdog: 376 travel RNs as of Feb 4, 2024"
         },
         {
           "period": "2022-07 to 2024-04",
-          "note": "~1,550 travelers on 2,680+ contracts"
-        },
-        {
-          "period": "2024",
-          "pct": 40,
-          "basis": "union nurse statement; staff estimated ~50% in some units"
+          "note": "~1,550 travelers on 2,680+ contracts (flow, not a point-in-time stock)"
         },
         {
           "period": "2025-12",
-          "pct": 26,
-          "basis": "Asheville Watchdog staffing lists: ~527 travel nurses + ~1,500 FT nurses (~26%)"
+          "count": 527,
+          "pctOfNursingStaff": 26,
+          "basis": "Watchdog staffing lists: ~527 travel nurses + ~1,500 FT nurses (~26%; national norm ~3–4%)"
         }
       ],
-      "context": "660+ RNs lost across HCA Asheville facilities 2022-23; ~1,500 temps hired; 182 open nursing positions listed 2024-04; HCA planned ~800 FTE cuts at purchase",
+      "context": "660+ RNs lost across HCA Asheville facilities 2022-23; traveler headcount rose 2023–2025 while core/unit permanent staffing remained under pressure",
       "goal": "Under 10% travelers by 2028"
     },
     "costReportDownload": "https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports/cost-reports-fiscal-year (HCRIS, Form 2552-10, Worksheet S-3 Parts II/V; filter provider 340002)"

@@ -247,8 +247,8 @@
   </div>
 
   <div class="card hidden" id="cardTravelers">
-    <h2>Traveler / contract share</h2>
-    <div class="meta">News/union estimates · not audited S-3</div>
+    <h2>Travel nurse staffing</h2>
+    <div class="meta">Watchdog travel RN headcounts · not audited S-3</div>
     <span class="trend" id="trendTravelers">Trend: —</span>
     <div class="chartbox"><canvas id="travelerChart"></canvas></div>
     <div class="note" id="noteTravelers"></div>
@@ -318,7 +318,7 @@
   <a href="/">Parigrado home</a> · Hospital Health Dashboard ·
   Sources: <a href="https://data.cms.gov/provider-data/">CMS Provider Data Catalog</a>,
   Medicare cost reports (HCRIS) where overlaid ·
-  Traveler % is news/union estimate only when shown.
+  Travel nurse counts are from news/Watchdog staffing reports when shown.
 </footer>
 </div>
 
@@ -640,17 +640,34 @@ async function loadDashboard(ccn) {
     }, options: lineOpts({ min: 0, max: 10, ticks: { stepSize: 2 } }) });
   } else cardStaff.classList.add("hidden");
 
-  // --- Travelers overlay ---
+  // --- Travelers overlay (prefer headcounts; fall back to legacy % series) ---
   const cardTrav = $("cardTravelers");
   if (overlay?.travelers) {
     cardTrav.classList.remove("hidden");
     $("noteTravelers").textContent = overlay.travelers.note || "";
-    setTrendEl("trendTravelers", seriesTrend(overlay.travelers.pct, false), false);
-    const travMax = Math.max(50, ...overlay.travelers.pct.filter((v) => v != null).map(Number), 0);
+    const travSeries = Array.isArray(overlay.travelers.count) && overlay.travelers.count.length
+      ? overlay.travelers.count
+      : overlay.travelers.pct;
+    const travIsCount = Array.isArray(overlay.travelers.count) && overlay.travelers.count.length;
+    setTrendEl("trendTravelers", seriesTrend(travSeries, false), false);
+    const travNums = (travSeries || []).filter((v) => v != null).map(Number);
+    const travMax = Math.max(travIsCount ? 100 : 50, ...travNums, 0);
+    const yTop = travIsCount ? Math.ceil(travMax / 50) * 50 : Math.ceil(travMax / 10) * 10;
     mk("travelerChart", { type: "line", data: {
       labels: overlay.travelers.labels,
-      datasets: [{ label: "% travelers", data: overlay.travelers.pct, borderColor: "#b45309", backgroundColor: "#b45309", pointRadius: 4, spanGaps: true }]
-    }, options: lineOpts({ min: 0, max: Math.ceil(travMax / 10) * 10 }) });
+      datasets: [{
+        label: travIsCount ? "Travel RNs on staff" : "% travelers",
+        data: travSeries,
+        borderColor: "#b45309",
+        backgroundColor: "#b45309",
+        pointRadius: 4,
+        spanGaps: true,
+      }]
+    }, options: lineOpts({
+      min: 0,
+      max: yTop,
+      title: { display: true, text: travIsCount ? "Travel RNs" : "% of nurses", font: { size: 10 } },
+    }) });
   } else cardTrav.classList.add("hidden");
 
   // --- HAI ---

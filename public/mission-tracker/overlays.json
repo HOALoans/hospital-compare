@@ -48,18 +48,16 @@
       },
       "travelers": {
         "labels": [
-          "2022",
-          "2023",
-          "2024",
-          "2025"
+          "2023-09",
+          "2024-02",
+          "2025-12"
         ],
-        "pct": [
-          50,
-          30,
-          40,
-          26
+        "count": [
+          352,
+          376,
+          527
         ],
-        "note": "News/union estimates of RN traveler share (not audited Worksheet S-3). 2022 ~50% staff-nurse reports (Asheville Watchdog); 2023 ~30% from Watchdog headcounts (352 travelers / filled RN positions, Sep 2023); 2024 ~40% union estimate; 2025 ~26% from Watchdog staffing lists (~527 travelers / ~2,027 nurses, Dec 2025)."
+        "note": "Travel RN headcounts from Asheville Watchdog staffing data (not audited Worksheet S-3). Counts rose from 352 (Sep 2023) to 376 (Feb 2024) to 527 (Dec 2025). Dec 2025 lists also show ~1,500 full-time nurses (~26% travelers vs a national ~3–4% norm). Earlier unit-level “half travelers” anecdotes are not hospital-wide counts and are omitted."
       },
       "starTrend": {
         "labels": [
