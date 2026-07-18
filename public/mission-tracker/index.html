@@ -11,7 +11,6 @@
     color-scheme: light;
     --page-max: 1800px;
     --page-pad: clamp(12px, 2.5vw, 24px);
-    --card-min: 280px;
     --chart-h: 200px;
     --chart-h-tall: 280px;
   }
@@ -47,10 +46,10 @@
     min-width: 0;
     background: #fff;
   }
-  .grid { display: flex; flex-direction: column; gap: 14px; }
-  .grid-row {
+  /* One continuous grid — column counts that fill evenly (avoid 4+1 orphans). */
+  .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--card-min)), 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     align-items: stretch;
   }
@@ -126,29 +125,24 @@
   .results .meta { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
   .search-status { font-size: 0.8rem; color: #0f766e; margin-top: 6px; }
 
-  /* Large desktop: fixed 5-up */
+  /* Wide desktop: 5 across (2 full rows of 5 for Mission) */
   @media (min-width: 1400px) {
-    :root { --card-min: 300px; }
-    .grid-row { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    :root {
+      --chart-h: 200px;
+      --chart-h-tall: 280px;
+    }
+    .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   }
 
-  /* Laptop / iPad landscape */
+  /* Laptop / iPad (portrait + landscape): stay at 2 columns for even rows */
   @media (max-width: 1399px) {
     :root {
-      --card-min: 270px;
-      --chart-h: 210px;
-      --chart-h-tall: 300px;
-    }
-  }
-
-  /* iPad portrait / small tablet: 2 columns */
-  @media (max-width: 900px) {
-    :root {
-      --card-min: 240px;
       --chart-h: 220px;
       --chart-h-tall: 310px;
     }
-    .grid-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 900px) {
     .searchbar {
       grid-template-columns: 1fr 1fr;
       max-width: none;
@@ -160,11 +154,10 @@
   /* Phone: single column */
   @media (max-width: 640px) {
     :root {
-      --card-min: 100%;
       --chart-h: 200px;
       --chart-h-tall: 300px;
     }
-    .grid-row { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: 1fr; }
     .searchbar { grid-template-columns: 1fr; }
     .statrow { gap: 12px; }
     .yearcell { flex: 1 1 calc(25% - 5px); max-width: none; }
@@ -217,7 +210,6 @@
 <div class="banner" id="banner">Select a hospital to load CMS quality and safety signals.</div>
 
 <div class="grid">
-<div class="grid-row">
   <div class="card hidden" id="cardIj">
     <h2>Immediate Jeopardy by year</h2>
     <div class="meta">CMS/NCDHHS Form 2567 · curated overlay</div>
@@ -261,9 +253,7 @@
     <div class="chartbox"><canvas id="travelerChart"></canvas></div>
     <div class="note" id="noteTravelers"></div>
   </div>
-</div>
 
-<div class="grid-row">
   <div class="card" id="cardHai">
     <h2>Hospital-acquired infections</h2>
     <div class="meta">CMS · rate vs expected (under 1.0 is better)</div>
@@ -322,7 +312,6 @@
     <div class="chartbox"><canvas id="ratingChart"></canvas></div>
     <div class="note" id="noteRating">Higher ratio is better (more top ratings for each low rating). CMS does not publish a long public history of this 9–10 / ≤6 split — see HCAHPS stars for year-over-year trend.</div>
   </div>
-</div>
 </div>
 
 <footer>
