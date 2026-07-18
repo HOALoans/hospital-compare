@@ -37,14 +37,23 @@ export function HomePage({ onStartCompare }: Props) {
               </span>
             </p>
           ) : null}
-          <button
-            type="button"
-            onClick={onStartCompare}
-            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:bg-brand-primary/90"
-          >
-            Compare a hospital
-            <ArrowRight className="h-5 w-5" />
-          </button>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={onStartCompare}
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:bg-brand-primary/90"
+            >
+              Compare a hospital
+              <ArrowRight className="h-5 w-5" />
+            </button>
+            <a
+              href="/mission-tracker/"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-brand-primary bg-white px-6 py-3.5 text-base font-semibold text-brand-primary transition hover:bg-brand-primary/5"
+            >
+              Hospital Health Dashboard
+              <ArrowRight className="h-5 w-5" />
+            </a>
+          </div>
         </div>
       </section>
 

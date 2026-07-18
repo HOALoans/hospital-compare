@@ -341,6 +341,43 @@ app.get("/api/meta/archives", (_req, res) => {
   });
 });
 
+/** Browser-safe proxy for Hospital Health Dashboard CMS pulls (avoids CORS). */
+const CMS_PROXY_DATASETS = new Set([
+  "dgck-syfz", // HCAHPS hospital
+  "xubh-q36u", // hospital general info
+  "77hc-ibv8", // HAI
+  "ynj2-r877", // complications & deaths hospital
+  "qqw3-t4ie", // complications & deaths national
+  "632h-zaca", // unplanned visits hospital
+  "cvcs-xecj", // unplanned visits national
+  "99ue-w85f", // HCAHPS national
+]);
+
+app.post("/api/cms/query/:dataset", async (req, res) => {
+  const dataset = String(req.params.dataset || "").trim();
+  if (!/^[a-z0-9-]+$/i.test(dataset) || !CMS_PROXY_DATASETS.has(dataset)) {
+    res.status(400).json({ error: "Dataset not allowed" });
+    return;
+  }
+  try {
+    const upstream = await fetch(
+      `https://data.cms.gov/provider-data/api/1/datastore/query/${dataset}/0`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(req.body ?? { limit: 100 }),
+      },
+    );
+    const text = await upstream.text();
+    res.status(upstream.status);
+    res.setHeader("Content-Type", upstream.headers.get("content-type") || "application/json");
+    res.send(text);
+  } catch (err) {
+    console.error("[cms-proxy]", dataset, err);
+    res.status(502).json({ error: "Failed to reach CMS Provider Data API" });
+  }
+});
+
 const clientDist = path.join(__dirname, "../client");
 if (fs.existsSync(clientDist)) {
   app.use(

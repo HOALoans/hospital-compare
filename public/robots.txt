@@ -1,5 +1,2 @@
 User-agent: *
 Allow: /
-
-# Unlisted internal dashboards — link-only access
-Disallow: /mission-tracker/

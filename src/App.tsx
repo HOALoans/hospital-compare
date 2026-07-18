@@ -520,6 +520,13 @@ export default function App() {
                 <BookOpen className="h-4 w-4" />
                 Methodology
               </button>
+              <a
+                href="/mission-tracker/"
+                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+              >
+                <Activity className="h-4 w-4" />
+                Health Dashboard
+              </a>
             </nav>
             )}
             {view !== "admin" && !ready && (

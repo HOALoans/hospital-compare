@@ -1,10 +1,10 @@
-# Hospital Health Dashboard (unlisted)
+# Hospital Health Dashboard
 
-Link-only hospital quality/safety dashboard on Parigrado.
+Hospital quality/safety dashboard on Parigrado.
 
 **URL:** https://parigrado.com/mission-tracker/?ccn=340002
 
-Not in main navigation. `noindex` + disallowed in `public/robots.txt`.
+Linked from the Parigrado homepage and header nav. CMS pulls go through `/api/cms/query/:dataset` (server proxy) to avoid browser CORS errors.
 
 ## What it does
 

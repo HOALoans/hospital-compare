@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache">
-<meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hospital Health Dashboard (unlisted)</title>
+<title>Hospital Health Dashboard · Parigrado</title>
 <script src="vendor/chart.umd.js?v=20260718d"></script>
 <style>
   :root { color-scheme: light; }
@@ -67,9 +66,12 @@
   .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
   .dot.ij { background: #dc2626; }
   .dot.clear { background: #ecfdf5; border: 1px solid #a7f3d0; }
+  .toplink { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: #2563eb; text-decoration: none; margin-bottom: 10px; }
+  .toplink:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
+<a class="toplink" href="/">← Back to Parigrado home</a>
 <h1 id="pageTitle">Hospital Health Dashboard</h1>
 <div class="sub">CCN <span id="ccnLabel">—</span> · Last refreshed <span id="lastRefresh"></span> · CMS Care Compare · optional HCRIS overlays</div>
 <div class="err" id="loadErr"></div>
@@ -195,10 +197,10 @@
 </div>
 
 <footer>
-  Unlisted Parigrado page · Sources: <a href="https://data.cms.gov/provider-data/">CMS Provider Data Catalog</a>,
+  <a href="/">Parigrado home</a> · Hospital Health Dashboard ·
+  Sources: <a href="https://data.cms.gov/provider-data/">CMS Provider Data Catalog</a>,
   Medicare cost reports (HCRIS) where overlaid ·
-  Traveler % is news/union estimate only when shown ·
-  Not linked from main navigation.
+  Traveler % is news/union estimate only when shown.
 </footer>
 
 <script>
@@ -267,7 +269,8 @@ const common = {
 };
 
 async function cmsQuery(dataset, body) {
-  const res = await fetch(`https://data.cms.gov/provider-data/api/1/datastore/query/${dataset}/0`, {
+  // Proxied through Parigrado to avoid browser CORS blocks on data.cms.gov
+  const res = await fetch(`/api/cms/query/${dataset}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
