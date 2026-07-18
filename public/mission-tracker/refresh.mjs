@@ -91,12 +91,12 @@ if (Number.isFinite(overall)) {
 
 // --- HAI SIRs ---
 const haiIds = [
-  ["HAI_1_SIR", "CLABSI"],
-  ["HAI_2_SIR", "CAUTI"],
-  ["HAI_3_SIR", "SSI colon"],
-  ["HAI_4_SIR", "SSI hyst"],
-  ["HAI_5_SIR", "MRSA"],
-  ["HAI_6_SIR", "C. diff"],
+  ["HAI_1_SIR", "Central-line bloodstream infection"],
+  ["HAI_2_SIR", "Catheter urinary tract infection"],
+  ["HAI_3_SIR", "Colon surgery infection"],
+  ["HAI_4_SIR", "Hysterectomy surgery infection"],
+  ["HAI_5_SIR", "MRSA bloodstream infection"],
+  ["HAI_6_SIR", "C. difficile infection"],
 ];
 const hai = await q("77hc-ibv8", facility);
 const haiRows = hai.results || [];
@@ -114,16 +114,17 @@ for (const [mid, label] of haiIds) {
   console.log(`HAI ${label}: ${v} (${r?.compared_to_national || "n/a"})`);
 }
 if (sir.some((v) => v != null)) {
+  charts.hai.labels = haiIds.map(([, label]) => label);
   charts.hai.sir = sir;
   charts.hai.colors = colors;
 }
 
 // --- Mortality Mission + National ---
 const mortIds = [
-  ["MORT_30_AMI", "AMI"],
-  ["MORT_30_CABG", "CABG"],
-  ["MORT_30_COPD", "COPD"],
-  ["MORT_30_HF", "HF"],
+  ["MORT_30_AMI", "Heart attack"],
+  ["MORT_30_CABG", "Heart bypass surgery"],
+  ["MORT_30_COPD", "Chronic lung disease (COPD)"],
+  ["MORT_30_HF", "Heart failure"],
   ["MORT_30_PN", "Pneumonia"],
   ["MORT_30_STK", "Stroke"],
 ];
@@ -151,11 +152,11 @@ if (mLabels.length) {
 
 // --- Complications key measures ---
 const compSpec = [
-  ["PSI_90", "PSI-90"],
+  ["PSI_90", "Overall patient-safety score"],
   ["PSI_03", "Pressure ulcer"],
-  ["PSI_12", "PE/DVT"],
-  ["COMP_HIP_KNEE", "Hip/knee comp"],
-  ["Hybrid_HWM", "Hosp-wide mort"],
+  ["PSI_12", "Blood clot after surgery"],
+  ["COMP_HIP_KNEE", "Hip/knee surgery complications"],
+  ["Hybrid_HWM", "Hospital-wide mortality"],
 ];
 const labels = [], pct = [], status = [], raw = [];
 for (const [mid, label] of compSpec) {
@@ -186,15 +187,14 @@ if (labels.length) {
 
 // --- Readmissions ---
 const readmIds = [
-  ["Hybrid_HWR", "Hospital-wide"],
-  ["READM_30_AMI", "AMI"],
-  ["READM_30_HF", "HF"],
+  ["Hybrid_HWR", "All patients"],
+  ["READM_30_AMI", "Heart attack"],
+  ["READM_30_HF", "Heart failure"],
   ["READM_30_PN", "Pneumonia"],
-  ["READM_30_COPD", "COPD"],
-  ["READM_30_CABG", "CABG"],
-  ["READM_30_HIP_KNEE", "Hip/knee"],
-];
-const [readMis, readNat] = await Promise.all([
+  ["READM_30_COPD", "Chronic lung disease (COPD)"],
+  ["READM_30_CABG", "Heart bypass surgery"],
+  ["READM_30_HIP_KNEE", "Hip/knee surgery"],
+];const [readMis, readNat] = await Promise.all([
   q("632h-zaca", facility),
   q("cvcs-xecj", { limit: 100 }),
 ]);

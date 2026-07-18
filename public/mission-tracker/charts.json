@@ -113,12 +113,12 @@
   },
   "hai": {
     "labels": [
-      "CLABSI",
-      "CAUTI",
-      "SSI colon",
-      "SSI hyst",
-      "MRSA",
-      "C. diff"
+      "Central-line bloodstream infection",
+      "Catheter urinary tract infection",
+      "Colon surgery infection",
+      "Hysterectomy surgery infection",
+      "MRSA bloodstream infection",
+      "C. difficile infection"
     ],
     "sir": [
       0.383,
@@ -139,10 +139,10 @@
   },
   "mortality": {
     "labels": [
-      "AMI",
-      "CABG",
-      "COPD",
-      "HF",
+      "Heart attack",
+      "Heart bypass surgery",
+      "Chronic lung disease (COPD)",
+      "Heart failure",
       "Pneumonia",
       "Stroke"
     ],
@@ -165,11 +165,11 @@
   },
   "complications": {
     "labels": [
-      "PSI-90",
+      "Overall patient-safety score",
       "Pressure ulcer",
-      "PE/DVT",
-      "Hip/knee comp",
-      "Hosp-wide mort"
+      "Blood clot after surgery",
+      "Hip/knee surgery complications",
+      "Hospital-wide mortality"
     ],
     "pctOfNational": [
       68,
@@ -210,13 +210,13 @@
   },
   "readmit": {
     "labels": [
-      "Hospital-wide",
-      "AMI",
-      "HF",
+      "All patients",
+      "Heart attack",
+      "Heart failure",
       "Pneumonia",
-      "COPD",
-      "CABG",
-      "Hip/knee"
+      "Chronic lung disease (COPD)",
+      "Heart bypass surgery",
+      "Hip/knee surgery"
     ],
     "mission": [
       13.8,

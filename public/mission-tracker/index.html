@@ -41,7 +41,7 @@
   .chartbox.tall { height: 260px; }
   .minitable { width: 100%; border-collapse: collapse; font-size: 0.68rem; margin-top: 4px; }
   .minitable th, .minitable td { text-align: right; padding: 2px 4px; border-bottom: 1px solid #f1f5f9; }
-  .minitable th:first-child, .minitable td:first-child { text-align: left; }
+  .minitable th:first-child, .minitable td:first-child { text-align: left; white-space: normal; max-width: 11rem; line-height: 1.25; }
   .minitable th { color: #64748b; font-weight: 600; }
   .minitable .better { color: #047857; }
   .minitable .same { color: #64748b; }
@@ -166,10 +166,10 @@
 
 <div class="grid-row">
   <div class="card" id="cardHai">
-    <h2>Hospital-acquired infections (SIR)</h2>
-    <div class="meta">CMS HAI · SIR &lt;1 better than expected</div>
+    <h2>Hospital-acquired infections</h2>
+    <div class="meta">CMS · rate vs expected (under 1.0 is better)</div>
     <span class="trend" id="trendHai">Trend: —</span>
-    <div class="chartbox"><canvas id="haiChart"></canvas></div>
+    <div class="chartbox tall"><canvas id="haiChart"></canvas></div>
     <div class="note" id="noteHai"></div>
   </div>
 
@@ -546,7 +546,14 @@ async function loadDashboard(ccn) {
   } else cardTrav.classList.add("hidden");
 
   // --- HAI ---
-  const haiIds = [["HAI_1_SIR","CLABSI"],["HAI_2_SIR","CAUTI"],["HAI_3_SIR","SSI colon"],["HAI_4_SIR","SSI hyst"],["HAI_5_SIR","MRSA"],["HAI_6_SIR","C. diff"]];
+  const haiIds = [
+    ["HAI_1_SIR", "Central-line bloodstream infection"],
+    ["HAI_2_SIR", "Catheter urinary tract infection"],
+    ["HAI_3_SIR", "Colon surgery infection"],
+    ["HAI_4_SIR", "Hysterectomy surgery infection"],
+    ["HAI_5_SIR", "MRSA bloodstream infection"],
+    ["HAI_6_SIR", "C. difficile infection"],
+  ];
   const haiRows = hai.results || [];
   const haiLabels = [], haiSir = [], haiColors = [];
   let worse = [];
@@ -567,14 +574,28 @@ async function loadDashboard(ccn) {
     return vals.reduce((a, b) => a + b, 0) / vals.length;
   });
   setTrendEl("trendHai", seriesTrend(haiTrendVals, false), false);
-  $("noteHai").textContent = worse.length ? `Worse than national: ${worse.join(", ")}.` : "No HAI measure currently worse than national.";
+  $("noteHai").textContent = worse.length ? `Worse than national: ${worse.join("; ")}.` : "No infection measure currently worse than national.";
   mk("haiChart", { type: "bar", data: { labels: haiLabels, datasets: [
-    { label: "SIR", data: haiSir, backgroundColor: haiColors, borderRadius: 3 },
-    { label: "Benchmark (1.0)", data: Array(haiLabels.length).fill(1), type: "line", borderColor: "#059669", borderDash: [5,4], pointRadius: 0, order: 0 }
-  ]}, options: { ...common, scales: { y: { min: 0, suggestedMax: 2.5 } } } });
+    { label: "Infection rate vs expected (SIR)", data: haiSir, backgroundColor: haiColors, borderRadius: 3 },
+    { label: "Expected (=1.0)", data: Array(haiLabels.length).fill(1), type: "line", borderColor: "#059669", borderDash: [5,4], pointRadius: 0, order: 0 }
+  ]}, options: {
+    ...common,
+    indexAxis: "y",
+    scales: {
+      x: { min: 0, suggestedMax: 2.5, title: { display: true, text: "Lower is better", font: { size: 10 } } },
+      y: { ticks: { font: { size: 9 }, autoSkip: false } },
+    },
+  } });
 
   // --- Mortality ---
-  const mortIds = [["MORT_30_AMI","AMI"],["MORT_30_CABG","CABG"],["MORT_30_COPD","COPD"],["MORT_30_HF","HF"],["MORT_30_PN","Pneumonia"],["MORT_30_STK","Stroke"]];
+  const mortIds = [
+    ["MORT_30_AMI", "Heart attack"],
+    ["MORT_30_CABG", "Heart bypass surgery"],
+    ["MORT_30_COPD", "Chronic lung disease (COPD)"],
+    ["MORT_30_HF", "Heart failure"],
+    ["MORT_30_PN", "Pneumonia"],
+    ["MORT_30_STK", "Stroke"],
+  ];
   const mortMisRows = mortMis.results || [];
   const mortNatBy = Object.fromEntries((mortNat.results || []).map((r) => [r.measure_id, r]));
   const mLabels = [], mHosp = [], mNat = [];
@@ -595,10 +616,16 @@ async function loadDashboard(ccn) {
   mk("mortChart", { type: "bar", data: { labels: mLabels, datasets: [
     { label: "Hospital", data: mHosp, backgroundColor: "#2563eb", borderRadius: 3 },
     { label: "National", data: mNat, backgroundColor: "#94a3b8", borderRadius: 3 }
-  ]}, options: { ...common, indexAxis: "y", scales: { x: { beginAtZero: true } } } });
+  ]}, options: { ...common, indexAxis: "y", scales: { x: { beginAtZero: true }, y: { ticks: { font: { size: 9 }, autoSkip: false } } } } });
 
   // --- Complications: hospital % of national + national 100 bars ---
-  const compSpec = [["PSI_90","PSI-90"],["PSI_03","Pressure ulcer"],["PSI_12","PE/DVT"],["COMP_HIP_KNEE","Hip/knee comp"],["Hybrid_HWM","Hosp-wide mort"]];
+  const compSpec = [
+    ["PSI_90", "Overall patient-safety score"],
+    ["PSI_03", "Pressure ulcer"],
+    ["PSI_12", "Blood clot after surgery"],
+    ["COMP_HIP_KNEE", "Hip/knee surgery complications"],
+    ["Hybrid_HWM", "Hospital-wide mortality"],
+  ];
   const cLabels = [], cHospPct = [], cNatPct = [], cStatus = [];
   const compBody = $("compTable"); compBody.innerHTML = "";
   for (const [mid, label] of compSpec) {
@@ -618,11 +645,18 @@ async function loadDashboard(ccn) {
   mk("compChart", { type: "bar", data: { labels: cLabels, datasets: [
     { label: "Hospital (% of national)", data: cHospPct, backgroundColor: "#2563eb", borderRadius: 3 },
     { label: "National (=100)", data: cNatPct, backgroundColor: "#94a3b8", borderRadius: 3 }
-  ]}, options: { ...common, indexAxis: "y", scales: { x: { min: 0, suggestedMax: 120 } } } });
+  ]}, options: { ...common, indexAxis: "y", scales: { x: { min: 0, suggestedMax: 120 }, y: { ticks: { font: { size: 9 }, autoSkip: false } } } } });
 
   // --- Readmissions ---
-  const readmIds = [["Hybrid_HWR","Hospital-wide"],["READM_30_AMI","AMI"],["READM_30_HF","HF"],["READM_30_PN","Pneumonia"],["READM_30_COPD","COPD"],["READM_30_CABG","CABG"],["READM_30_HIP_KNEE","Hip/knee"]];
-  const readMisRows = readMis.results || [];
+  const readmIds = [
+    ["Hybrid_HWR", "All patients"],
+    ["READM_30_AMI", "Heart attack"],
+    ["READM_30_HF", "Heart failure"],
+    ["READM_30_PN", "Pneumonia"],
+    ["READM_30_COPD", "Chronic lung disease (COPD)"],
+    ["READM_30_CABG", "Heart bypass surgery"],
+    ["READM_30_HIP_KNEE", "Hip/knee surgery"],
+  ];  const readMisRows = readMis.results || [];
   const readNatBy = Object.fromEntries((readNat.results || []).map((r) => [r.measure_id, r]));
   const rLabels = [], rHosp = [], rNat = [];
   for (const [mid, label] of readmIds) {
@@ -637,7 +671,7 @@ async function loadDashboard(ccn) {
   mk("readmChart", { type: "bar", data: { labels: rLabels, datasets: [
     { label: "Hospital", data: rHosp, backgroundColor: "#2563eb", borderRadius: 3 },
     { label: "National", data: rNat, backgroundColor: "#94a3b8", borderRadius: 3 }
-  ]}, options: { ...common, indexAxis: "y", scales: { x: { beginAtZero: true } } } });
+  ]}, options: { ...common, indexAxis: "y", scales: { x: { beginAtZero: true }, y: { ticks: { font: { size: 9 }, autoSkip: false } } } } });
 
   // --- Top vs low patient ratings (current HCAHPS 9–10 / ≤6 split) ---
   const hospRatio = (Number.isFinite(high) && Number.isFinite(low) && low > 0) ? (high / low) : null;
