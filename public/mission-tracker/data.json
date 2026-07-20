@@ -5,7 +5,7 @@
     "ccn": "340002",
     "owner": "HCA Healthcare (since Feb 2019)"
   },
-  "lastRefresh": "2026-07-18",
+  "lastRefresh": "2026-07-20",
   "immediateJeopardy": {
     "source": "CMS/NCDHHS inspection reports (Form 2567)",
     "goal": "0 designations by 2028, sustained",
@@ -156,7 +156,10 @@
       "source": "Asheville Watchdog staffing counts of travel RNs; Medicare cost report Worksheet S-3 contract-labor hours are a separate audited metric (~1yr lag) and are not plotted here",
       "nationalBenchmark": {
         "pct": 3.5,
-        "range": [3, 4],
+        "range": [
+          3,
+          4
+        ],
         "source": "Vander Weerdt C, Peck JA, Porter T. Travel nurses and patient outcomes: a systematic review. Health Care Manage Rev. 2023;48(4):352-362. doi:10.1097/HMR.0000000000000383",
         "note": "Travel nurses typically represent about 3–4% of a hospital's overall nursing staff; dashboard plots midpoint 3.5%. Also cited by AHRQ PSNet and Asheville Watchdog."
       },
