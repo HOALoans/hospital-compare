@@ -35,6 +35,7 @@ import {
 } from "./partnerStore.js";
 import { ARCHIVE_DIR } from "./dataPaths.js";
 import { getSavedComparison, saveComparison } from "./savedComparisons.js";
+import { cmsRateLimiter, hospitalRateLimiter, rateLimitConfig } from "./rateLimit.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 5175);
@@ -57,7 +58,13 @@ const logoUpload = multer({
 });
 
 const app = express();
+// Render (and most PaaS) terminate TLS upstream and set X-Forwarded-For.
+// Required so rate limits key on the real client IP, not the proxy.
+app.set("trust proxy", 1);
 app.use(express.json());
+
+const limitCms = cmsRateLimiter();
+const limitHospital = hospitalRateLimiter();
 
 function appOrigin(req: express.Request): string {
   const fromEnv = process.env.APP_URL?.trim();
@@ -201,7 +208,7 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-app.get("/api/hospitals/search", (req, res) => {
+app.get("/api/hospitals/search", limitHospital, (req, res) => {
   if (!isHospitalDirectoryReady()) {
     res.status(503).json({ error: "Hospital directory is still loading. Try again shortly." });
     return;
@@ -212,7 +219,7 @@ app.get("/api/hospitals/search", (req, res) => {
   res.json({ query: q, hospitals: searchHospitals(q, state, limit) });
 });
 
-app.get("/api/hospitals/:facilityId/nearby", (req, res) => {
+app.get("/api/hospitals/:facilityId/nearby", limitHospital, (req, res) => {
   if (!isHospitalDirectoryReady()) {
     res.status(503).json({ error: "Hospital directory is still loading." });
     return;
@@ -226,7 +233,7 @@ app.get("/api/hospitals/:facilityId/nearby", (req, res) => {
   res.json({ hospital, nearby: findNearbyHospitals(req.params.facilityId, limit) });
 });
 
-app.get("/api/hospitals/:facilityId", (req, res) => {
+app.get("/api/hospitals/:facilityId", limitHospital, (req, res) => {
   if (!isHospitalDirectoryReady()) {
     res.status(503).json({ error: "Hospital directory is still loading." });
     return;
@@ -290,7 +297,7 @@ app.get("/api/saved-comparisons/:code", (req, res) => {
   res.json({ ...record, shareUrl });
 });
 
-app.get("/api/hospitals/:facilityId/compare", (req, res) => {
+app.get("/api/hospitals/:facilityId/compare", limitHospital, (req, res) => {
   if (!isCacheReady()) {
     res.status(503).json({ error: "Quality scores are still loading. Try again shortly." });
     return;
@@ -308,7 +315,7 @@ app.get("/api/hospitals/:facilityId/compare", (req, res) => {
   res.json(comparison);
 });
 
-app.get("/api/hospitals/:facilityId/trends", (req, res) => {
+app.get("/api/hospitals/:facilityId/trends", limitHospital, (req, res) => {
   const facilityId = req.params.facilityId;
   const file = path.join(ARCHIVE_DIR, `${facilityId}.json`);
   if (!fs.existsSync(file)) {
@@ -353,7 +360,7 @@ const CMS_PROXY_DATASETS = new Set([
   "99ue-w85f", // HCAHPS national
 ]);
 
-app.post("/api/cms/query/:dataset", async (req, res) => {
+app.post("/api/cms/query/:dataset", limitCms, async (req, res) => {
   const dataset = String(req.params.dataset || "").trim();
   if (!/^[a-z0-9-]+$/i.test(dataset) || !CMS_PROXY_DATASETS.has(dataset)) {
     res.status(400).json({ error: "Dataset not allowed" });
@@ -428,7 +435,15 @@ async function start() {
   }
 
   app.listen(PORT, () => {
+    const rl = rateLimitConfig();
     console.log(`Parigrado listening on port ${PORT}`);
+    if (rl.disabled) {
+      console.log("[rate-limit] disabled (RATE_LIMIT_DISABLED)");
+    } else {
+      console.log(
+        `[rate-limit] window=${rl.windowMs}ms cms=${rl.cmsMax}/ip hospital=${rl.hospitalMax}/ip`,
+      );
+    }
   });
 }
 

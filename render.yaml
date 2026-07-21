@@ -35,3 +35,12 @@ services:
       # Password for partner admin sign-in (set in Render dashboard).
       - key: ADMIN_PASSWORD
         sync: false
+      # --- API usage caps (in-memory per IP; see server/rateLimit.ts) ---
+      # Set RATE_LIMIT_DISABLED=true to turn off. Defaults: 60s window,
+      # 60 CMS proxy requests/IP, 180 hospital API requests/IP.
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      - key: RATE_LIMIT_CMS_MAX
+        value: "60"
+      - key: RATE_LIMIT_HOSPITAL_MAX
+        value: "180"
