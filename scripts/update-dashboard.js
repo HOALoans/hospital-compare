@@ -4,6 +4,11 @@
  * Usage (from repo root): npm run update:hca-watchdog
  * Or: node scripts/update-dashboard.js
  *
+ * Live URL: https://parigrado.com/hca-watchdog/
+ * HTML path: public/hca-watchdog/index.html
+ * Hosted via Parigrado/Render (not GitHub Pages).
+ * Workflow: .github/workflows/update-dashboard.yml
+ *
  * Requires ANTHROPIC_API_KEY. Optional: DASHBOARD_HTML (default public/hca-watchdog/index.html)
  */
 
@@ -16,13 +21,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 
 const SYSTEM_PROMPT =
-  "You are a research assistant for Reclaim Healthcare WNC, a nonprofit holding HCA accountable for poor care at Mission Hospital in Asheville NC. Search for the latest news about HCA Healthcare, Mission Hospital Asheville, NC Attorney General lawsuit against HCA, CMS compliance status, and HCA earnings. Return ONLY a valid JSON object with these fields: { todayDate: string, newsItems: [{source, date, tag, headline, blurb}], talkingPoints: [{text}], arcUpdate: string }. No markdown, no preamble, just raw JSON.";
+  "You are a research assistant for Reclaim Healthcare WNC, a nonprofit holding HCA accountable for poor care at Mission Hospital in Asheville NC. Use the BACKGROUND FACTS in the user message as established advocacy context for the Watchdog page (do not invent conflicting history). Search for the latest news about HCA Healthcare, Mission Hospital Asheville, NC Attorney General lawsuit against HCA, CMS compliance status, and HCA earnings. Return ONLY a valid JSON object with these fields: { todayDate: string, newsItems: [{source, date, tag, headline, blurb}], talkingPoints: [{text}], arcUpdate: string }. No markdown, no preamble, just raw JSON.";
+
+const BACKGROUND_FACTS = `BACKGROUND FACTS (use as established context for talking points and framing; prefer fresh search results for current news):
+- HCA Healthcare is a Fortune 100 for-profit hospital company.
+- HCA acquired Mission Hospital (Asheville, NC) in 2019 for $1.5B.
+- Mission has received 4 Immediate Jeopardy citations from CMS since the acquisition (2021, 2024, 2025, 2026).
+- Mission HCAHPS patient experience has been 2 stars every year 2020–2024 — lowest of all CON applicants.
+- Over 200 physicians and 600 nurses have left Mission since 2019.
+- Staff ratio dropped from 6.1 FTE/bed to 3.7 FTE (NC average 5.1). (The Parigrado dashboard also publishes HCRIS staffing series; treat these FTE figures as advocacy narrative facts for the Watchdog page.)
+- NC Attorney General Jeff Jackson sued HCA for violating acquisition commitments; a judge denied summary judgment on July 28, 2026, and the case proceeds to trial.
+- Federal monitor (July 2026): Mission is not in substantial compliance; no staffing plans submitted.
+- NC DHHS awarded Mission 95 CON beds despite active federal safety sanctions.`;
 
 const USER_PROMPT = `Today's date is ${new Date().toLocaleDateString("en-US", {
   year: "numeric",
   month: "long",
   day: "numeric",
 })}.
+
+${BACKGROUND_FACTS}
 
 Use web search to find the most recent, credible news on:
 - HCA Healthcare / Mission Hospital Asheville
