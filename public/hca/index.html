@@ -343,14 +343,6 @@
     border-radius: 4px;
     white-space: nowrap;
     justify-self: end;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .rating-arrow {
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1;
   }
   .rating-buy, .rating-strongbuy, .rating-outperform, .rating-overweight {
     background: var(--up-bg); color: var(--up); border: 0.5px solid #b7dfc5;
@@ -979,20 +971,6 @@
       if (/hold|neutral|equalweight|marketperform|mktperform|peerperform|in[-]?line/.test(k)) return 'rating-hold';
       return 'rating-other';
     }
-    function ratingDirection(rating) {
-      const cls = ratingClass(rating);
-      if (cls === 'rating-buy') return 'up';
-      if (cls === 'rating-sell') return 'down';
-      if (cls === 'rating-hold') return 'side';
-      return 'other';
-    }
-    function ratingArrowMeta(rating) {
-      const dir = ratingDirection(rating);
-      if (dir === 'up') return { symbol: '↑', tone: 'bullish' };
-      if (dir === 'down') return { symbol: '↓', tone: 'bearish' };
-      if (dir === 'side') return { symbol: '→', tone: 'neutral' };
-      return { symbol: '', tone: '' };
-    }
     function fmtDate(iso) {
       if (!iso) return '';
       const dt = new Date(iso);
@@ -1155,7 +1133,7 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Analysts request failed');
 
-        const ratings = Array.isArray(data.ratings) ? data.ratings : [];
+        const ratings = (Array.isArray(data.ratings) ? data.ratings : []).slice(0, 6);
         if (data.consensus) {
           consensusEl.textContent = 'Consensus: ' + data.consensus;
         } else {
@@ -1173,20 +1151,12 @@
             const date = r.date
               ? '<div class="analyst-date">' + escapeHtml(fmtDate(r.date)) + '</div>'
               : '';
-            const arrow = ratingArrowMeta(r.rating);
             const ratingText = String(r.rating || '');
-            const aria = arrow.tone
-              ? escapeHtml(ratingText) + ', ' + arrow.tone
-              : escapeHtml(ratingText);
-            const arrowHtml = arrow.symbol
-              ? '<span class="rating-arrow" aria-hidden="true">' + arrow.symbol + '</span>'
-              : '';
             return '<div class="analyst-row">' +
               '<div><div class="analyst-firm">' + escapeHtml(r.firm) + '</div>' +
               analyst + date + '</div>' +
-              '<span class="rating-pill ' + ratingClass(r.rating) + '"' +
-              ' title="' + aria + '" aria-label="' + aria + '">' +
-              arrowHtml + escapeHtml(ratingText) + '</span></div>';
+              '<span class="rating-pill ' + ratingClass(r.rating) + '">' +
+              escapeHtml(ratingText) + '</span></div>';
           }).join('');
         }
 

@@ -964,7 +964,7 @@ export interface AnalystRating {
 }
 
 /** Max distinct-firm rows returned to the HCA dashboard. */
-const ANALYST_DISPLAY_LIMIT = 15;
+const ANALYST_DISPLAY_LIMIT = 6;
 
 type AnalystSourceResult = {
   ratings: AnalystRating[];
