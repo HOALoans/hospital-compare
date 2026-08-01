@@ -1,46 +1,40 @@
 # Auto-refresh HCA Watchdog dashboard via Anthropic.
-# Installs from scripts/ (scripts/package.json has @anthropic-ai/sdk);
-# Node resolves modules from the script file upward, so
-# `node scripts/update-dashboard.js` finds scripts/node_modules.
-name: Update HCA Watchdog dashboard
+name: Update HCA Dashboard
 
 on:
   schedule:
-    # Weekdays 7:00 AM Eastern = 12:00 UTC
+    # Weekdays ~7am Eastern / 12:00 UTC
     - cron: "0 12 * * 1-5"
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  update:
+  update-dashboard:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
 
       - name: Install deps
-        working-directory: scripts
+        working-directory: ./scripts
         run: npm install
 
       - name: Update dashboard
+        working-directory: ./scripts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node scripts/update-dashboard.js
+        run: node update-dashboard.js
 
-      - name: Commit and push if changed
+      - name: Check for changes and commit
         run: |
-          git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
+          git config user.email "github-actions@github.com"
           git add public/hca-watchdog/index.html
-          if git diff --staged --quiet; then
-            echo "No dashboard changes"
-          else
-            DATE=$(date +%Y-%m-%d)
-            git commit -m "Auto-update: HCA dashboard ${DATE}"
-            git push
-          fi
+          git diff --staged --quiet || git commit -m "Auto-update: HCA dashboard $(date +'%Y-%m-%d')"
+          git push
