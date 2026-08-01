@@ -20,41 +20,43 @@ import Anthropic from "@anthropic-ai/sdk";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 
-const SYSTEM_PROMPT =
-  "You are a research assistant for Reclaim Healthcare WNC, a nonprofit holding HCA accountable for poor care at Mission Hospital in Asheville NC. Use the BACKGROUND FACTS in the user message as established advocacy context for the Watchdog page (do not invent conflicting history). Search for the latest news about HCA Healthcare, Mission Hospital Asheville, NC Attorney General lawsuit against HCA, CMS compliance status, and HCA earnings. Return ONLY a valid JSON object with these fields: { todayDate: string, newsItems: [{source, date, tag, headline, blurb}], talkingPoints: [{text}], arcUpdate: string }. No markdown, no preamble, just raw JSON.";
-
-const BACKGROUND_FACTS = `BACKGROUND FACTS (use as established context for talking points and framing; prefer fresh search results for current news):
+const BACKGROUND_FACTS = `BACKGROUND FACTS (established advocacy context for the Watchdog page; do not invent conflicting history; prefer fresh news for current items):
 - HCA Healthcare is a Fortune 100 for-profit hospital company.
 - HCA acquired Mission Hospital (Asheville, NC) in 2019 for $1.5B.
 - Mission has received 4 Immediate Jeopardy citations from CMS since the acquisition (2021, 2024, 2025, 2026).
 - Mission HCAHPS patient experience has been 2 stars every year 2020–2024 — lowest of all CON applicants.
-- Over 200 physicians and 600 nurses have left Mission since 2019.
+- Over 200 physicians and 600 nurses have left Mission since 2019 (800+ clinical staff total).
 - Staff ratio dropped from 6.1 FTE/bed to 3.7 FTE (NC average 5.1). (The Parigrado dashboard also publishes HCRIS staffing series; treat these FTE figures as advocacy narrative facts for the Watchdog page.)
 - NC Attorney General Jeff Jackson sued HCA for violating acquisition commitments; a judge denied summary judgment on July 28, 2026, and the case proceeds to trial.
 - Federal monitor (July 2026): Mission is not in substantial compliance; no staffing plans submitted.
 - NC DHHS awarded Mission 95 CON beds despite active federal safety sanctions.`;
 
-const USER_PROMPT = `Today's date is ${new Date().toLocaleDateString("en-US", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-})}.
+const SYSTEM_PROMPT = `You are a research assistant for Reclaim Healthcare WNC, a nonprofit holding HCA Healthcare accountable for poor care at Mission Hospital in Asheville NC. Your job is to generate updated content for their public watchdog dashboard.
+
+Mission context: HCA acquired Mission in 2019, has received 4 Immediate Jeopardy citations, Mission has 2-star HCAHPS ratings 2020-2024, 800+ staff have left, staffing ratio fell from 6.1 to 3.7 FTE per bed vs 5.1 NC average. NC AG lawsuit proceeding to trial after July 28 2026 summary judgment denial. Federal monitor confirmed noncompliance July 2026.
 
 ${BACKGROUND_FACTS}
 
-Use web search to find the most recent, credible news on:
-- HCA Healthcare / Mission Hospital Asheville
-- NC Attorney General lawsuit against HCA
-- CMS compliance / Immediate Jeopardy / federal monitor at Mission
-- HCA earnings or investor communications mentioning Mission or WNC
+Generate updated dashboard content based on the most recent news you are aware of. Search for the latest news about HCA Healthcare, Mission Hospital Asheville, NC Attorney General lawsuit against HCA, CMS compliance status, and HCA earnings when tools are available.
 
-Return 4–6 newsItems (newest first) and 5–6 talkingPoints.
-For talkingPoints[].text, start with a short punchy title sentence ending in a period, then the supporting sentences.
-For tag, use a short label like Trial, Noncompliance, Earnings, CON, Lawsuit, Safety, Monitor, or Update.
-Set todayDate to today's date in "Month D, YYYY" format.
-arcUpdate should be one paragraph on what comes next for accountability.
-
-Respond with raw JSON only.`;
+Return ONLY a valid raw JSON object with exactly this structure, no markdown, no backticks, no preamble:
+{
+  todayDate: "Month D, YYYY",
+  sectionLabel: "Today's news — Month D, YYYY",
+  newsItems: [
+    {
+      source: "Source name",
+      date: "Month D, YYYY",
+      tag: "Tag text",
+      tagClass: "tag-red or tag-amber or tag-blue or tag-teal",
+      headline: "Headline text",
+      blurb: "Two to three sentence summary with Reclaim framing"
+    }
+  ],
+  talkingPoints: [
+    { text: "Bold lead phrase. Rest of talking point." }
+  ]
+}`;
 
 function resolveHtmlPath() {
   const override = process.env.DASHBOARD_HTML;
@@ -90,7 +92,7 @@ function extractText(content) {
 
 function parseJsonResponse(raw) {
   let text = (raw || "").trim();
-  // Strip markdown fences if the model wraps JSON
+  // Strip markdown fences if the model wraps JSON anyway
   const fence = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
   if (fence) text = fence[1].trim();
   // Fallback: first {...} object
@@ -111,6 +113,12 @@ function parseJsonResponse(raw) {
 function validatePayload(data) {
   if (!data || typeof data !== "object") {
     throw new Error("Model response is not a JSON object");
+  }
+  if (typeof data.todayDate !== "string" || !data.todayDate.trim()) {
+    throw new Error("todayDate must be a non-empty string");
+  }
+  if (typeof data.sectionLabel !== "string" || !data.sectionLabel.trim()) {
+    throw new Error("sectionLabel must be a non-empty string");
   }
   if (!Array.isArray(data.newsItems) || data.newsItems.length === 0) {
     throw new Error("newsItems must be a non-empty array");
@@ -142,7 +150,7 @@ function escapeHtml(str) {
     .replace(/'/g, "&#39;");
 }
 
-function tagClass(tag) {
+function inferTagClass(tag) {
   const t = String(tag).toLowerCase();
   if (
     /trial|lawsuit|suit|noncompliance|jeopardy|safety|citation|sanction|violation|staff|death|harm/.test(
@@ -163,19 +171,29 @@ function tagClass(tag) {
   return "tag-amber";
 }
 
+function resolveTagClass(item) {
+  const allowed = new Set(["tag-red", "tag-amber", "tag-blue", "tag-teal"]);
+  const fromModel = typeof item.tagClass === "string" ? item.tagClass.trim() : "";
+  if (allowed.has(fromModel)) return fromModel;
+  return inferTagClass(item.tag);
+}
+
 function formatTalkingPointText(text) {
   const cleaned = String(text).trim();
   // **Title** rest
   const md = cleaned.match(/^\*\*(.+?)\*\*\s*(.*)$/s);
   if (md) {
-    return `<strong>${escapeHtml(md[1])}</strong> ${escapeHtml(md[2]).trim()}`;
+    const rest = md[2].trim();
+    return rest
+      ? `<strong>${escapeHtml(md[1])}</strong> ${escapeHtml(rest)}`
+      : `<strong>${escapeHtml(md[1])}</strong>`;
   }
-  // Title. Rest — bold first sentence when short
+  // First sentence in <strong>, rest plain
   const m = cleaned.match(/^(.+?[.!?])\s+(.+)$/s);
-  if (m && m[1].length <= 90) {
+  if (m) {
     return `<strong>${escapeHtml(m[1])}</strong> ${escapeHtml(m[2])}`;
   }
-  return escapeHtml(cleaned);
+  return `<strong>${escapeHtml(cleaned)}</strong>`;
 }
 
 function renderNewsItems(items) {
@@ -185,7 +203,7 @@ function renderNewsItems(items) {
         <div class="news-meta">
           <span class="news-source">${escapeHtml(item.source)}</span>
           <span class="news-date">${escapeHtml(item.date)}</span>
-          <span class="tag ${tagClass(item.tag)}">${escapeHtml(item.tag)}</span>
+          <span class="tag ${resolveTagClass(item)}">${escapeHtml(item.tag)}</span>
         </div>
         <h2 class="news-headline">${escapeHtml(item.headline)}</h2>
         <p class="news-blurb">${escapeHtml(item.blurb)}</p>
@@ -218,20 +236,55 @@ function replaceBetween(html, startMarker, endMarker, inner) {
   return `${before}\n${inner}\n      ${after}`;
 }
 
-function updateMastheadDate(html, todayDate) {
-  const date = todayDate || new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+function ensureMarkers(html) {
+  let out = html;
+  if (!out.includes("<!-- NEWS_START -->") || !out.includes("<!-- NEWS_END -->")) {
+    // Wrap existing news articles if markers are missing
+    const newsBody = out.match(
+      /(<span class="section-header-label"[^>]*>[\s\S]*?Today's news[\s\S]*?<\/span>\s*<\/div>\s*<div class="section-body">)([\s\S]*?)(<\/div>\s*<\/section>\s*<!-- TALKING POINTS -->)/i,
+    );
+    if (!newsBody) {
+      throw new Error("Missing NEWS markers and could not locate news section to wrap");
+    }
+    out =
+      out.slice(0, newsBody.index) +
+      `${newsBody[1]}\n      <!-- NEWS_START -->${newsBody[2]}<!-- NEWS_END -->\n      ${newsBody[3]}` +
+      out.slice(newsBody.index + newsBody[0].length);
+  }
+  if (!out.includes("<!-- TP_START -->") || !out.includes("<!-- TP_END -->")) {
+    const tpBody = out.match(
+      /(<span class="section-header-label"[^>]*>[\s\S]*?Talking points[\s\S]*?<\/span>\s*<\/div>\s*<div class="section-body">)([\s\S]*?)(<\/div>\s*<\/section>\s*<!-- ARC)/i,
+    );
+    if (!tpBody) {
+      throw new Error("Missing TP markers and could not locate talking-points section to wrap");
+    }
+    out =
+      out.slice(0, tpBody.index) +
+      `${tpBody[1]}\n      <!-- TP_START -->${tpBody[2]}<!-- TP_END -->\n      ${tpBody[3]}` +
+      out.slice(tpBody.index + tpBody[0].length);
+  }
+  return out;
+}
+
+function updateMastheadAndSection(html, todayDate, sectionLabel) {
+  const date = todayDate.trim();
+  const label = sectionLabel.trim();
+  const escapedLabel = escapeHtml(label);
   let out = html.replace(
     /(<div class="masthead-date" id="today-date">)([\s\S]*?)(<\/div>)/,
     `$1${escapeHtml(date)}$3`,
   );
-  out = out.replace(
-    /(<span class="section-header-label" id="news-heading">)([\s\S]*?)(<\/span>)/,
-    `$1Today's news — ${escapeHtml(date)}$3`,
-  );
+  if (/id="news-heading"/.test(out)) {
+    out = out.replace(
+      /(<span class="section-header-label" id="news-heading">)([\s\S]*?)(<\/span>)/,
+      `$1${escapedLabel}$3`,
+    );
+  } else {
+    out = out.replace(
+      /(<span class="section-header-label"[^>]*>)([\s\S]*?Today's news[\s\S]*?)(<\/span>)/,
+      `$1${escapedLabel}$3`,
+    );
+  }
   out = out.replace(
     /(<div class="masthead-updated">)([\s\S]*?)(<\/div>)/,
     `$1Last updated automatically — check sources for latest$3`,
@@ -242,11 +295,27 @@ function updateMastheadDate(html, todayDate) {
 async function fetchDashboardData(apiKey) {
   const client = new Anthropic({ apiKey });
   const model = "claude-sonnet-4-6";
+  const today = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const userPrompt = `Today's date is ${today}.
+
+Return 4–6 newsItems (newest first) and 5–6 talkingPoints.
+For talkingPoints[].text, start with a short punchy title sentence ending in a period, then the supporting sentences.
+For tag, use a short label like Trial, Noncompliance, Earnings, CON, Lawsuit, Safety, Monitor, or Update.
+For tagClass, choose tag-red, tag-amber, tag-blue, or tag-teal to match severity/topic.
+Set todayDate to today's date in "Month D, YYYY" format.
+Set sectionLabel to "Today's news — Month D, YYYY" using that same date.
+
+Respond with raw JSON only.`;
+
   const baseParams = {
     model,
-    max_tokens: 4096,
+    max_tokens: 4000,
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: USER_PROMPT }],
+    messages: [{ role: "user", content: userPrompt }],
   };
 
   // Prefer Anthropic web search when available; fall back without tools.
@@ -300,19 +369,10 @@ async function main() {
 
   console.log(`Dashboard: ${htmlPath}`);
 
-  let data;
-  try {
-    data = await fetchDashboardData(apiKey);
-  } catch (err) {
-    const status = err?.status ? ` (HTTP ${err.status})` : "";
-    console.error(`Anthropic API error${status}: ${err?.message || err}`);
-    if (err?.error) {
-      console.error(JSON.stringify(err.error, null, 2));
-    }
-    process.exit(1);
-  }
+  const data = await fetchDashboardData(apiKey);
 
   let html = fs.readFileSync(htmlPath, "utf8");
+  html = ensureMarkers(html);
   html = replaceBetween(
     html,
     "<!-- NEWS_START -->",
@@ -325,16 +385,10 @@ async function main() {
     "<!-- TP_END -->",
     renderTalkingPoints(data.talkingPoints),
   );
-  html = updateMastheadDate(html, data.todayDate);
+  html = updateMastheadAndSection(html, data.todayDate, data.sectionLabel);
 
   fs.writeFileSync(htmlPath, html, "utf8");
-  console.log(
-    `Updated ${data.newsItems.length} news items and ${data.talkingPoints.length} talking points.`,
-  );
-  if (data.arcUpdate) {
-    console.log(`\narcUpdate (not written to HTML):\n${data.arcUpdate}`);
-  }
-  console.log(`Wrote ${htmlPath}`);
+  console.log("Dashboard updated successfully");
 }
 
 main().catch((err) => {
