@@ -52,10 +52,10 @@
   }
   /* ── MASTHEAD ── */
   .masthead {
-    background: #1a1916;
-    color: #fff;
+    background: var(--bg);
+    color: var(--text);
     padding: 0;
-    border-bottom: 3px solid var(--accent);
+    border-bottom: 3px solid var(--teal);
   }
   .masthead-inner {
     max-width: 1100px;
@@ -67,35 +67,55 @@
     gap: 1rem;
     flex-wrap: wrap;
   }
+  .masthead-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--teal);
+    text-decoration: none;
+    border: 0.5px solid var(--teal-border);
+    background: var(--teal-bg);
+    padding: 5px 10px;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    line-height: 1.2;
+  }
+  .masthead-back:hover {
+    border-color: var(--teal);
+    background: #e0f3eb;
+  }
   .masthead-eyebrow {
     font-size: 11px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #888;
+    color: var(--teal);
     margin-bottom: 4px;
   }
   .masthead-title {
     font-family: var(--font-serif);
     font-size: 28px;
     font-weight: 600;
-    color: #fff;
+    color: var(--text);
     line-height: 1.2;
   }
-  .masthead-title span { color: var(--accent); }
+  .masthead-title span { color: var(--teal); }
   .masthead-sub {
     font-size: 13px;
-    color: #aaa;
+    color: var(--text-2);
     margin-top: 4px;
   }
   .masthead-right { text-align: right; }
   .masthead-date {
-    font-size: 12px;
-    color: #666;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
     font-variant-numeric: tabular-nums;
   }
   .masthead-updated {
     font-size: 11px;
-    color: #555;
+    color: var(--text-3);
     margin-top: 2px;
   }
   /* ── LAYOUT ── */
@@ -455,7 +475,7 @@
   }
   @media print {
     body { background: #fff; }
-    .masthead { background: #111; -webkit-print-color-adjust: exact; }
+    .masthead { background: #fff; -webkit-print-color-adjust: exact; }
   }
 </style>
 </head>
@@ -463,6 +483,7 @@
 <header class="masthead" role="banner">
   <div class="masthead-inner">
     <div class="masthead-left">
+      <a class="masthead-back" href="/">← Back to Parigrado home</a>
       <div class="masthead-eyebrow">Reclaim Healthcare WNC</div>
       <div class="masthead-title">HCA <span>/</span> Mission Hospital<br>Dashboard</div>
       <div class="masthead-sub">Tracking HCA's accountability to Western North Carolina</div>
@@ -533,10 +554,10 @@
         <div class="news-meta">
           <span class="news-source">NC Business Court</span>
           <span class="news-date">July 28, 2026</span>
-          <span class="tag tag-red">Trial</span>
+          <span class="tag tag-red">Lawsuit</span>
         </div>
-        <h2 class="news-headline">AG Jackson wins key pre-trial rulings — HCA/Mission case proceeding to trial</h2>
-        <p class="news-blurb">Judge denied HCA's motion for summary judgment on the core claims that HCA violated its commitments to the WNC community when it purchased Mission in 2019. The state's lawsuit alleges HCA broke promises on staffing, services, and capital investment. A full trial is now on the docket — the most significant legal development in the accountability effort to date.</p>
+        <h2 class="news-headline">AG Jackson wins key pre-trial rulings — HCA/Mission lawsuit moves forward</h2>
+        <p class="news-blurb">Judge denied HCA's motion for summary judgment on the core claims that HCA violated its commitments to the WNC community when it purchased Mission in 2019. The state's lawsuit alleges HCA broke promises on staffing, services, and capital investment. The lawsuit is now moving forward on the docket — the most significant legal development in the accountability effort to date.</p>
       </article>
       <article class="news-item">
         <div class="news-meta">

@@ -27,13 +27,13 @@ const BACKGROUND_FACTS = `BACKGROUND FACTS (established advocacy context for the
 - Mission HCAHPS patient experience has been 2 stars every year 2020–2024 — lowest of all CON applicants.
 - Over 200 physicians and 600 nurses have left Mission since 2019 (800+ clinical staff total).
 - Staff ratio dropped from 6.1 FTE/bed to 3.7 FTE (NC average 5.1). (The Parigrado dashboard also publishes HCRIS staffing series; treat these FTE figures as advocacy narrative facts for the Watchdog page.)
-- NC Attorney General Jeff Jackson sued HCA for violating acquisition commitments; a judge denied summary judgment on July 28, 2026, and the case proceeds to trial.
+- NC Attorney General Jeff Jackson sued HCA for violating acquisition commitments; a judge denied summary judgment on July 28, 2026, and the lawsuit proceeds.
 - Federal monitor (July 2026): Mission is not in substantial compliance; no staffing plans submitted.
 - NC DHHS awarded Mission 95 CON beds despite active federal safety sanctions.`;
 
 const SYSTEM_PROMPT = `You are a research assistant for Reclaim Healthcare WNC, a nonprofit holding HCA Healthcare accountable for poor care at Mission Hospital in Asheville NC. Your job is to generate updated content for their public watchdog dashboard.
 
-Mission context: HCA acquired Mission in 2019, has received 4 Immediate Jeopardy citations, Mission has 2-star HCAHPS ratings 2020-2024, 800+ staff have left, staffing ratio fell from 6.1 to 3.7 FTE per bed vs 5.1 NC average. NC AG lawsuit proceeding to trial after July 28 2026 summary judgment denial. Federal monitor confirmed noncompliance July 2026.
+Mission context: HCA acquired Mission in 2019, has received 4 Immediate Jeopardy citations, Mission has 2-star HCAHPS ratings 2020-2024, 800+ staff have left, staffing ratio fell from 6.1 to 3.7 FTE per bed vs 5.1 NC average. NC AG lawsuit advancing after July 28 2026 summary judgment denial. Federal monitor confirmed noncompliance July 2026. For the AG case, prefer "lawsuit" (not "trial") in tags and short notes when framing the case.
 
 ${BACKGROUND_FACTS}
 
@@ -368,7 +368,7 @@ Return 3–5 newsItems (accountability/care/CMS/lawsuit — newest first),
 3–5 financialNewsItems (earnings/revenue/margins/guidance/buybacks/stock only — newest first),
 and 5–6 talkingPoints.
 For talkingPoints[].text, start with a short punchy title sentence ending in a period, then the supporting sentences.
-For tag, use a short label like Trial, Noncompliance, Earnings, CON, Lawsuit, Safety, Monitor, Guidance, Margins, Buyback, or Update.
+For tag, use a short label like Lawsuit, Noncompliance, Earnings, CON, Safety, Monitor, Guidance, Margins, Buyback, or Update. Prefer "Lawsuit" (not "Trial") for AG case items.
 For tagClass, choose tag-red, tag-amber, tag-blue, or tag-teal to match severity/topic.
 Set todayDate to today's date in "Month D, YYYY" format.
 Set sectionLabel to "Today's news — Month D, YYYY" using that same date.
