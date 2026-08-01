@@ -1103,15 +1103,13 @@
 
         if (!data.points || !data.points.length) {
           clearChart();
-          const note = data.note || 'No historical points for this range.';
           statusEl.classList.add('error');
-          statusEl.innerHTML = escapeHtml(note) + ' · ' + yahooLinkHtml('Open HCA chart on Yahoo Finance');
+          statusEl.innerHTML = 'Chart temporarily unavailable. ' +
+            yahooLinkHtml('Open HCA chart on Yahoo Finance');
         } else {
           renderChart(data.points, range);
-          const note = data.note ? escapeHtml(data.note) + ' · ' : '';
           statusEl.classList.remove('error');
-          statusEl.innerHTML = note + 'Source: ' + escapeHtml(data.source || 'Yahoo Finance') +
-            ' · delayed/unofficial quote · ' + yahooLinkHtml('Yahoo Finance');
+          statusEl.innerHTML = 'Delayed/unofficial quote · ' + yahooLinkHtml('Yahoo Finance');
         }
       } catch (err) {
         clearChart();

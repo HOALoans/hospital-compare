@@ -914,10 +914,6 @@ export async function fetchHcaChart(rangeKey: ChartRangeKey) {
           asOf: new Date().toISOString(),
           source: "Nasdaq.com",
           yahooUrl: YAHOO_QUOTE_URL,
-          note:
-            rangeKey === "1d"
-              ? undefined
-              : "Showing Nasdaq daily history (Yahoo chart unavailable)",
         };
       }
     } catch (err) {
@@ -947,7 +943,6 @@ export async function fetchHcaChart(rangeKey: ChartRangeKey) {
       asOf: snap.asOf,
       source: "Stock Analysis (quote fallback)",
       yahooUrl: YAHOO_QUOTE_URL,
-      note: "Historical chart temporarily unavailable. View the live chart on Yahoo Finance.",
     };
   }
 
