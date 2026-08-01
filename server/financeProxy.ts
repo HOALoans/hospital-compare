@@ -6,6 +6,8 @@
  * MarketBeat “most recent per brokerage” adds further distinct firms. Display
  * capped at ANALYST_DISPLAY_LIMIT. Nasdaq /api/analyst/.../ratings lists broker
  * names but not per-firm grades (upgradesDowngrades empty) — not used for rows.
+ * Insiders: Yahoo quoteSummary (crumb) + OpenInsider Form 4 + Nasdaq; merge/dedupe;
+ * display capped at INSIDER_DISPLAY_LIMIT within ~INSIDER_LOOKBACK_DAYS.
  */
 
 const YAHOO_UA =
@@ -35,6 +37,10 @@ const CHART_TTL_MS = 60_000;
 const ANALYSTS_TTL_MS = 15 * 60_000;
 const STATS_TTL_MS = 15 * 60_000;
 const INSIDERS_TTL_MS = 15 * 60_000;
+/** Recent Form 4 window shown on the HCA dashboard. */
+const INSIDER_LOOKBACK_DAYS = 180;
+const INSIDER_DISPLAY_LIMIT = 25;
+const INSIDER_FETCH_LIMIT = 80;
 
 export interface HcaKeyStats {
   week52Low: number | null;
@@ -708,9 +714,371 @@ function titleCaseName(raw: string): string {
 
 function parseInsiderDate(raw: string | null | undefined): string | null {
   if (!raw) return null;
-  const t = Date.parse(raw);
-  if (!Number.isFinite(t)) return raw.trim() || null;
+  const s = String(raw).trim();
+  // OpenInsider / ISO already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const t = Date.parse(s);
+  if (!Number.isFinite(t)) return s || null;
   return new Date(t).toISOString().slice(0, 10);
+}
+
+/** Normalize Form 4 / vendor labels to short UI types (Sale/Award/Gift/…). */
+function normalizeInsiderType(
+  raw: string,
+  opts?: { price?: number | null },
+): string {
+  const t = raw.trim();
+  if (!t) return "Other";
+  const lower = t.toLowerCase();
+
+  // OpenInsider codes: "G - Gift", "A - Grant", "S - Sale", "F - Tax", "M - OptEx"
+  const oi = lower.match(/^([a-z]{1,3})\s*-\s*(.+)$/);
+  if (oi) {
+    const code = oi[1]!;
+    if (code === "g") return "Gift";
+    if (code === "a") return "Award";
+    if (code === "s") return "Sale";
+    if (code === "f") return "Tax";
+    if (code === "m" || code === "x") return "Option Exercise";
+    if (code === "p") return "Purchase";
+    if (code === "d") return "Sale";
+    if (code === "c") return "Conversion";
+  }
+
+  if (/\bgift\b/.test(lower)) return "Gift";
+  if (/\b(grant|award|stock award)\b/.test(lower)) return "Award";
+  if (/\b(sale|sell)\b/.test(lower)) return "Sale";
+  if (/\b(buy|purchase)\b/.test(lower)) return "Purchase";
+  if (/\b(tax|withhold)/.test(lower)) return "Tax";
+  if (/\b(option\s*exec|optex|exercise)\b/.test(lower)) return "Option Exercise";
+
+  // Nasdaq opaque non-open-market codes — infer from price when possible.
+  if (/disposition\s*\(non open market\)/.test(lower)) {
+    return opts?.price != null && opts.price > 0 ? "Tax" : "Gift";
+  }
+  if (/acquisition\s*\(non open market\)/.test(lower)) {
+    return opts?.price != null && opts.price > 0 ? "Acquisition" : "Award";
+  }
+  if (/option execute/.test(lower)) return "Option Exercise";
+
+  // Yahoo often: "Sale at price 505.00 per share."
+  if (/^sale\b/.test(lower)) return "Sale";
+  if (/^purchase\b/.test(lower)) return "Purchase";
+
+  return t.length > 28 ? `${t.slice(0, 25)}…` : t;
+}
+
+function insiderTypeRank(type: string): number {
+  // Higher = prefer when deduping (cleaner Form 4 labels beat Nasdaq jargon).
+  switch (type) {
+    case "Gift":
+    case "Award":
+    case "Sale":
+    case "Purchase":
+    case "Tax":
+    case "Option Exercise":
+    case "Conversion":
+      return 3;
+    case "Acquisition":
+      return 2;
+    default:
+      return 1;
+  }
+}
+
+function insiderDedupeKey(tx: InsiderTransaction): string {
+  const name = (tx.filer || "")
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const shares =
+    tx.shares != null && Number.isFinite(tx.shares)
+      ? String(Math.round(Math.abs(tx.shares)))
+      : "";
+  // Collapse Sale/Tax/Gift families loosely so Nasdaq Disposition≈Gift/Tax merge.
+  const family = (() => {
+    const t = tx.type;
+    if (t === "Sale" || t === "Purchase") return t;
+    if (t === "Gift" || t === "Tax") return t;
+    if (t === "Award" || t === "Acquisition") return "Award";
+    if (t === "Option Exercise") return "Option Exercise";
+    return t.toLowerCase();
+  })();
+  return `${tx.date || ""}|${name}|${shares}|${family}`;
+}
+
+function withinInsiderLookback(date: string | null, cutoffMs: number): boolean {
+  if (!date) return true; // keep undated rather than inventing a drop
+  const t = Date.parse(date);
+  if (!Number.isFinite(t)) return true;
+  return t >= cutoffMs;
+}
+
+function compareInsiderDateDesc(a: InsiderTransaction, b: InsiderTransaction): number {
+  const da = a.date || "";
+  const db = b.date || "";
+  if (da !== db) return db.localeCompare(da);
+  return (a.filer || "").localeCompare(b.filer || "");
+}
+
+/** Prefer Sale/Gift/Award over Tax/OptEx so open-market activity isn't crowded out. */
+function insiderSignalRank(type: string): number {
+  switch (type) {
+    case "Sale":
+    case "Purchase":
+    case "Gift":
+      return 0;
+    case "Award":
+    case "Acquisition":
+      return 1;
+    case "Option Exercise":
+    case "Conversion":
+      return 2;
+    case "Tax":
+      return 3;
+    default:
+      return 2;
+  }
+}
+
+function selectInsiderDisplay(rows: InsiderTransaction[]): InsiderTransaction[] {
+  if (rows.length <= INSIDER_DISPLAY_LIMIT) {
+    return [...rows].sort(compareInsiderDateDesc);
+  }
+  const sorted = [...rows].sort(compareInsiderDateDesc);
+  const high = sorted.filter((t) => insiderSignalRank(t.type) <= 1);
+  const low = sorted.filter((t) => insiderSignalRank(t.type) > 1);
+  const picked: InsiderTransaction[] = [];
+  for (const t of high) {
+    if (picked.length >= INSIDER_DISPLAY_LIMIT) break;
+    picked.push(t);
+  }
+  for (const t of low) {
+    if (picked.length >= INSIDER_DISPLAY_LIMIT) break;
+    picked.push(t);
+  }
+  return picked.sort(compareInsiderDateDesc);
+}
+
+function mergeInsiderTransactions(
+  batches: Array<{ source: string; rows: InsiderTransaction[] }>,
+): { transactions: InsiderTransaction[]; sources: string[] } {
+  const cutoff = Date.now() - INSIDER_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+  const best = new Map<
+    string,
+    { tx: InsiderTransaction; rank: number; source: string }
+  >();
+  const usedSources = new Set<string>();
+
+  for (const batch of batches) {
+    for (const row of batch.rows) {
+      if (!withinInsiderLookback(row.date, cutoff)) continue;
+      if (!row.filer || !row.type) continue;
+      const key = insiderDedupeKey(row);
+      const rank = insiderTypeRank(row.type);
+      const prev = best.get(key);
+      if (!prev || rank > prev.rank) {
+        // Prefer richer role/value from the winning row; fill gaps from prev.
+        const merged: InsiderTransaction = prev
+          ? {
+              ...row,
+              role: row.role || prev.tx.role,
+              ownership: row.ownership || prev.tx.ownership,
+              value: row.value ?? prev.tx.value,
+              price: row.price ?? prev.tx.price,
+              shares: row.shares ?? prev.tx.shares,
+            }
+          : row;
+        best.set(key, { tx: merged, rank, source: batch.source });
+        usedSources.add(batch.source);
+      } else if (prev) {
+        if (!prev.tx.role && row.role) prev.tx.role = row.role;
+        if (!prev.tx.ownership && row.ownership) prev.tx.ownership = row.ownership;
+        if (prev.tx.value == null && row.value != null) prev.tx.value = row.value;
+        if (prev.tx.price == null && row.price != null) prev.tx.price = row.price;
+        usedSources.add(batch.source);
+      }
+    }
+  }
+
+  const transactions = selectInsiderDisplay([...best.values()].map((v) => v.tx));
+
+  return { transactions, sources: [...usedSources] };
+}
+
+async function fetchInsidersFromNasdaq(): Promise<InsiderTransaction[]> {
+  const res = await nasdaqFetch(
+    `https://api.nasdaq.com/api/company/${SYMBOL}/insider-trades?limit=${INSIDER_FETCH_LIMIT}`,
+  );
+  if (!res.ok) return [];
+  const data = (await res.json()) as {
+    data?: {
+      transactionTable?: {
+        table?: {
+          rows?: Array<{
+            insider?: string;
+            relation?: string;
+            lastDate?: string;
+            transactionType?: string;
+            ownType?: string;
+            sharesTraded?: string;
+            lastPrice?: string;
+          }>;
+        };
+      };
+    };
+  };
+  const rows = data.data?.transactionTable?.table?.rows ?? [];
+  const transactions: InsiderTransaction[] = [];
+  for (const row of rows) {
+    const filer = titleCaseName(String(row.insider || "").trim());
+    const rawType = String(row.transactionType || "").trim();
+    if (!filer || !rawType) continue;
+    const shares = parseMoney(row.sharesTraded);
+    const price = parseMoney(row.lastPrice);
+    const type = normalizeInsiderType(rawType, { price });
+    const value =
+      shares != null && price != null && price > 0 ? shares * price : null;
+    transactions.push({
+      filer,
+      role: row.relation ? String(row.relation).trim() : null,
+      type,
+      shares: shares != null ? Math.abs(shares) : null,
+      price: price != null && price > 0 ? price : null,
+      value,
+      date: parseInsiderDate(row.lastDate),
+      ownership: row.ownType ? String(row.ownType).trim() : null,
+    });
+  }
+  return transactions;
+}
+
+async function fetchInsidersFromYahoo(): Promise<InsiderTransaction[]> {
+  const session = await getYahooSession();
+  if (!session) return [];
+  const url =
+    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${SYMBOL}` +
+    `?modules=insiderTransactions&crumb=${encodeURIComponent(session.crumb)}`;
+  const res = await yahooFetch(url, session.cookie);
+  if (!res.ok) return [];
+  const data = (await res.json()) as {
+    quoteSummary?: {
+      result?: Array<{
+        insiderTransactions?: {
+          transactions?: Array<{
+            filerName?: string;
+            filerRelation?: string;
+            transactionText?: string;
+            shares?: { raw?: number };
+            value?: { raw?: number };
+            startDate?: { raw?: number; fmt?: string };
+            ownership?: string;
+          }>;
+        };
+      }>;
+    };
+  };
+  const rows =
+    data.quoteSummary?.result?.[0]?.insiderTransactions?.transactions ?? [];
+  const transactions: InsiderTransaction[] = [];
+  for (const row of rows) {
+    const filer = String(row.filerName || "").trim();
+    const rawType = String(row.transactionText || "").trim();
+    if (!filer || !rawType) continue;
+    const sharesRaw = numOrNull(row.shares?.raw);
+    const valueRaw = numOrNull(row.value?.raw);
+    const shares = sharesRaw != null ? Math.abs(sharesRaw) : null;
+    const value =
+      valueRaw != null && Math.abs(valueRaw) > 0 ? Math.abs(valueRaw) : null;
+    const price =
+      shares != null && value != null && shares !== 0 ? value / shares : null;
+    transactions.push({
+      filer,
+      role: row.filerRelation ? String(row.filerRelation).trim() : null,
+      type: normalizeInsiderType(rawType, { price }),
+      shares,
+      price,
+      value,
+      date:
+        typeof row.startDate?.raw === "number"
+          ? new Date(row.startDate.raw * 1000).toISOString().slice(0, 10)
+          : row.startDate?.fmt
+            ? parseInsiderDate(String(row.startDate.fmt))
+            : null,
+      ownership: row.ownership ? String(row.ownership).trim() : null,
+    });
+  }
+  return transactions;
+}
+
+/** OpenInsider Form 4 screener — codes match Yahoo (Gift/Grant/Sale/Tax). */
+async function fetchInsidersFromOpenInsider(): Promise<InsiderTransaction[]> {
+  const url =
+    `http://openinsider.com/screener?s=${encodeURIComponent(SYMBOL)}` +
+    `&fd=${INSIDER_LOOKBACK_DAYS}&td=0` +
+    `&xp=1&xs=1&xa=1&xd=1&xg=1&xf=1&xm=1&xx=1&xc=1&xw=1` +
+    `&sortcol=0&cnt=${INSIDER_FETCH_LIMIT}&page=1`;
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": YAHOO_UA,
+      Accept: "text/html,application/xhtml+xml",
+      "Accept-Language": "en-US,en;q=0.9",
+    },
+  });
+  if (!res.ok) return [];
+  const html = await res.text();
+  const tableMatch = html.match(
+    /<table[^>]*class="[^"]*tinytable[^"]*"[^>]*>([\s\S]*?)<\/table>/i,
+  );
+  if (!tableMatch) return [];
+  const rowHtmls = tableMatch[1]!.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) ?? [];
+  const transactions: InsiderTransaction[] = [];
+
+  for (const rowHtml of rowHtmls) {
+    const cells = [...rowHtml.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(
+      (m) => m[1] ?? "",
+    );
+    if (cells.length < 9) continue;
+    const cellText = (i: number) =>
+      cells[i]!
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const tradeDate = cellText(2);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(tradeDate)) continue; // skip header
+    const filer = cellText(4);
+    const role = cellText(5) || null;
+    const rawType = cellText(6);
+    if (!filer || !rawType) continue;
+    // Ticker cell can include Tip() junk; require HCA somewhere in row.
+    if (!/HCA/i.test(cellText(3)) && !/HCA/i.test(rowHtml)) continue;
+
+    const price = parseMoney(cellText(7));
+    const sharesSigned = parseMoney(cellText(8));
+    const valueSigned = parseMoney(cellText(11));
+    const shares =
+      sharesSigned != null ? Math.abs(sharesSigned) : null;
+    const value =
+      valueSigned != null && Math.abs(valueSigned) > 0
+        ? Math.abs(valueSigned)
+        : null;
+
+    transactions.push({
+      filer,
+      role,
+      type: normalizeInsiderType(rawType, { price }),
+      shares,
+      price: price != null && price > 0 ? price : null,
+      value,
+      date: tradeDate,
+      ownership: null,
+    });
+  }
+  return transactions;
 }
 
 export async function fetchHcaInsiders() {
@@ -718,136 +1086,49 @@ export async function fetchHcaInsiders() {
     return insidersCache.body;
   }
 
+  const coded: Array<{ source: string; rows: InsiderTransaction[] }> = [];
+  const fallback: Array<{ source: string; rows: InsiderTransaction[] }> = [];
+
+  // Yahoo + OpenInsider carry Gift/Award/Sale codes (Yahoo-like). Nasdaq is jargon-heavy.
   try {
-    const res = await nasdaqFetch(
-      `https://api.nasdaq.com/api/company/${SYMBOL}/insider-trades?limit=20`,
-    );
-    if (res.ok) {
-      const data = (await res.json()) as {
-        data?: {
-          transactionTable?: {
-            table?: {
-              rows?: Array<{
-                insider?: string;
-                relation?: string;
-                lastDate?: string;
-                transactionType?: string;
-                ownType?: string;
-                sharesTraded?: string;
-                lastPrice?: string;
-              }>;
-            };
-          };
-        };
-      };
-      const rows = data.data?.transactionTable?.table?.rows ?? [];
-      const transactions: InsiderTransaction[] = [];
-      for (const row of rows) {
-        const filer = titleCaseName(String(row.insider || "").trim());
-        const type = String(row.transactionType || "").trim();
-        if (!filer || !type) continue;
-        const shares = parseMoney(row.sharesTraded);
-        const price = parseMoney(row.lastPrice);
-        const value =
-          shares != null && price != null && price > 0 ? shares * price : null;
-        transactions.push({
-          filer,
-          role: row.relation ? String(row.relation).trim() : null,
-          type,
-          shares,
-          price,
-          value,
-          date: parseInsiderDate(row.lastDate),
-          ownership: row.ownType ? String(row.ownType).trim() : null,
-        });
-        if (transactions.length >= 15) break;
-      }
-      if (transactions.length) {
-        const body = {
-          symbol: SYMBOL,
-          transactions,
-          asOf: new Date().toISOString(),
-          source: "Nasdaq.com",
-        };
-        insidersCache = { expires: Date.now() + INSIDERS_TTL_MS, body };
-        return body;
-      }
-    }
+    const rows = await fetchInsidersFromYahoo();
+    if (rows.length) coded.push({ source: "Yahoo Finance", rows });
+  } catch (err) {
+    console.warn("[finance] Yahoo insiders failed:", err);
+  }
+
+  try {
+    const rows = await fetchInsidersFromOpenInsider();
+    if (rows.length) coded.push({ source: "OpenInsider", rows });
+  } catch (err) {
+    console.warn("[finance] OpenInsider insiders failed:", err);
+  }
+
+  try {
+    const rows = await fetchInsidersFromNasdaq();
+    if (rows.length) fallback.push({ source: "Nasdaq.com", rows });
   } catch (err) {
     console.warn("[finance] Nasdaq insiders failed:", err);
   }
 
-  // Yahoo insiderTransactions module when crumb works.
-  try {
-    const session = await getYahooSession();
-    if (session) {
-      const url =
-        `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${SYMBOL}` +
-        `?modules=insiderTransactions&crumb=${encodeURIComponent(session.crumb)}`;
-      const res = await yahooFetch(url, session.cookie);
-      if (res.ok) {
-        const data = (await res.json()) as {
-          quoteSummary?: {
-            result?: Array<{
-              insiderTransactions?: {
-                transactions?: Array<{
-                  filerName?: string;
-                  filerRelation?: string;
-                  transactionText?: string;
-                  shares?: { raw?: number };
-                  value?: { raw?: number };
-                  startDate?: { raw?: number; fmt?: string };
-                  ownership?: string;
-                }>;
-              };
-            }>;
-          };
-        };
-        const rows =
-          data.quoteSummary?.result?.[0]?.insiderTransactions?.transactions ??
-          [];
-        const transactions: InsiderTransaction[] = [];
-        for (const row of rows) {
-          const filer = String(row.filerName || "").trim();
-          const type = String(row.transactionText || "").trim();
-          if (!filer || !type) continue;
-          const shares = numOrNull(row.shares?.raw);
-          const value = numOrNull(row.value?.raw);
-          const price =
-            shares != null && value != null && shares !== 0
-              ? value / shares
-              : null;
-          transactions.push({
-            filer,
-            role: row.filerRelation ? String(row.filerRelation).trim() : null,
-            type,
-            shares,
-            price,
-            value,
-            date:
-              typeof row.startDate?.raw === "number"
-                ? new Date(row.startDate.raw * 1000).toISOString().slice(0, 10)
-                : row.startDate?.fmt
-                  ? String(row.startDate.fmt)
-                  : null,
-            ownership: row.ownership ? String(row.ownership).trim() : null,
-          });
-          if (transactions.length >= 15) break;
-        }
-        if (transactions.length) {
-          const body = {
-            symbol: SYMBOL,
-            transactions,
-            asOf: new Date().toISOString(),
-            source: "Yahoo Finance",
-          };
-          insidersCache = { expires: Date.now() + INSIDERS_TTL_MS, body };
-          return body;
-        }
-      }
-    }
-  } catch (err) {
-    console.warn("[finance] Yahoo insiders failed:", err);
+  const codedCount = coded.reduce((n, b) => n + b.rows.length, 0);
+  // Avoid double-counting Nasdaq legs (e.g. Marks 3,336×2) when Form 4 codes exist.
+  const batches = codedCount >= 10 ? coded : [...coded, ...fallback];
+  const { transactions, sources } = mergeInsiderTransactions(
+    batches.length ? batches : fallback,
+  );
+
+  if (transactions.length) {
+    const body = {
+      symbol: SYMBOL,
+      transactions,
+      asOf: new Date().toISOString(),
+      source: sources.join(" + "),
+      lookbackDays: INSIDER_LOOKBACK_DAYS,
+      limit: INSIDER_DISPLAY_LIMIT,
+    };
+    insidersCache = { expires: Date.now() + INSIDERS_TTL_MS, body };
+    return body;
   }
 
   const body = {
