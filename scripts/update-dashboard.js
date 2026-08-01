@@ -39,10 +39,15 @@ ${BACKGROUND_FACTS}
 
 Generate updated dashboard content based on the most recent news you are aware of. Search for the latest news about HCA Healthcare, Mission Hospital Asheville, NC Attorney General lawsuit against HCA, CMS compliance status, and HCA earnings when tools are available.
 
+IMPORTANT COLUMN SPLIT:
+- newsItems = accountability / care / CMS / lawsuit / staffing / CON / advocacy framing for Mission and WNC. Do NOT put pure earnings/stock items here.
+- financialNewsItems = purely financial headlines about HCA: earnings, revenue, cost cutting, margins, guidance, buybacks, dividends, stock, analyst price targets, capital allocation. Do NOT put CMS citations, AG lawsuit, staffing, or patient-safety advocacy items here.
+
 Return ONLY a valid raw JSON object with exactly this structure, no markdown, no backticks, no preamble:
 {
   todayDate: "Month D, YYYY",
   sectionLabel: "Today's news — Month D, YYYY",
+  financialSectionLabel: "Financial news — Month D, YYYY",
   newsItems: [
     {
       source: "Source name",
@@ -51,6 +56,16 @@ Return ONLY a valid raw JSON object with exactly this structure, no markdown, no
       tagClass: "tag-red or tag-amber or tag-blue or tag-teal",
       headline: "Headline text",
       blurb: "Two to three sentence summary with Reclaim framing"
+    }
+  ],
+  financialNewsItems: [
+    {
+      source: "Source name",
+      date: "Month D, YYYY",
+      tag: "Tag text",
+      tagClass: "tag-red or tag-amber or tag-blue or tag-teal",
+      headline: "Headline text",
+      blurb: "Two to three sentence summary focused on financial facts"
     }
   ],
   talkingPoints: [
@@ -110,6 +125,14 @@ function parseJsonResponse(raw) {
   }
 }
 
+function validateNewsItem(item, label, i) {
+  for (const key of ["source", "date", "tag", "headline", "blurb"]) {
+    if (typeof item[key] !== "string" || !item[key].trim()) {
+      throw new Error(`${label}[${i}].${key} must be a non-empty string`);
+    }
+  }
+}
+
 function validatePayload(data) {
   if (!data || typeof data !== "object") {
     throw new Error("Model response is not a JSON object");
@@ -126,12 +149,25 @@ function validatePayload(data) {
   if (!Array.isArray(data.talkingPoints) || data.talkingPoints.length === 0) {
     throw new Error("talkingPoints must be a non-empty array");
   }
-  for (const [i, item] of data.newsItems.entries()) {
-    for (const key of ["source", "date", "tag", "headline", "blurb"]) {
-      if (typeof item[key] !== "string" || !item[key].trim()) {
-        throw new Error(`newsItems[${i}].${key} must be a non-empty string`);
-      }
+  // financialNewsItems: required non-empty when present; allow empty array only if key missing (legacy)
+  if (data.financialNewsItems != null) {
+    if (!Array.isArray(data.financialNewsItems) || data.financialNewsItems.length === 0) {
+      throw new Error("financialNewsItems must be a non-empty array when provided");
     }
+    for (const [i, item] of data.financialNewsItems.entries()) {
+      validateNewsItem(item, "financialNewsItems", i);
+    }
+  } else {
+    data.financialNewsItems = [];
+  }
+  if (
+    typeof data.financialSectionLabel !== "string" ||
+    !data.financialSectionLabel.trim()
+  ) {
+    data.financialSectionLabel = `Financial news — ${data.todayDate.trim()}`;
+  }
+  for (const [i, item] of data.newsItems.entries()) {
+    validateNewsItem(item, "newsItems", i);
   }
   for (const [i, tp] of data.talkingPoints.entries()) {
     if (typeof tp?.text !== "string" || !tp.text.trim()) {
@@ -159,7 +195,11 @@ function inferTagClass(tag) {
   ) {
     return "tag-red";
   }
-  if (/earnings|revenue|profit|con|financial|investor|beds|award/.test(t)) {
+  if (
+    /earnings|revenue|profit|con|financial|investor|beds|award|margin|guidance|buyback|dividend|stock/.test(
+      t,
+    )
+  ) {
     return "tag-amber";
   }
   if (/legal|court|ag|advocacy|media|press|politics|policy/.test(t)) {
@@ -241,7 +281,7 @@ function ensureMarkers(html) {
   if (!out.includes("<!-- NEWS_START -->") || !out.includes("<!-- NEWS_END -->")) {
     // Wrap existing news articles if markers are missing
     const newsBody = out.match(
-      /(<span class="section-header-label"[^>]*>[\s\S]*?Today's news[\s\S]*?<\/span>\s*<\/div>\s*<div class="section-body">)([\s\S]*?)(<\/div>\s*<\/section>\s*<!-- TALKING POINTS -->)/i,
+      /(<span class="section-header-label"[^>]*id="news-heading"[^>]*>[\s\S]*?<\/span>\s*<\/div>\s*<div class="section-body">)([\s\S]*?)(<\/div>\s*<\/section>)/i,
     );
     if (!newsBody) {
       throw new Error("Missing NEWS markers and could not locate news section to wrap");
@@ -250,6 +290,20 @@ function ensureMarkers(html) {
       out.slice(0, newsBody.index) +
       `${newsBody[1]}\n      <!-- NEWS_START -->${newsBody[2]}<!-- NEWS_END -->\n      ${newsBody[3]}` +
       out.slice(newsBody.index + newsBody[0].length);
+  }
+  if (!out.includes("<!-- FIN_NEWS_START -->") || !out.includes("<!-- FIN_NEWS_END -->")) {
+    const finBody = out.match(
+      /(<span class="section-header-label"[^>]*id="fin-news-heading"[^>]*>[\s\S]*?<\/span>\s*<\/div>\s*<div class="section-body">)([\s\S]*?)(<\/div>\s*<\/section>)/i,
+    );
+    if (!finBody) {
+      throw new Error(
+        "Missing FIN_NEWS markers and could not locate financial news section to wrap",
+      );
+    }
+    out =
+      out.slice(0, finBody.index) +
+      `${finBody[1]}\n      <!-- FIN_NEWS_START -->${finBody[2]}<!-- FIN_NEWS_END -->\n      ${finBody[3]}` +
+      out.slice(finBody.index + finBody[0].length);
   }
   if (!out.includes("<!-- TP_START -->") || !out.includes("<!-- TP_END -->")) {
     const tpBody = out.match(
@@ -266,10 +320,12 @@ function ensureMarkers(html) {
   return out;
 }
 
-function updateMastheadAndSection(html, todayDate, sectionLabel) {
+function updateMastheadAndSection(html, todayDate, sectionLabel, financialSectionLabel) {
   const date = todayDate.trim();
   const label = sectionLabel.trim();
+  const finLabel = (financialSectionLabel || `Financial news — ${date}`).trim();
   const escapedLabel = escapeHtml(label);
+  const escapedFinLabel = escapeHtml(finLabel);
   let out = html.replace(
     /(<div class="masthead-date" id="today-date">)([\s\S]*?)(<\/div>)/,
     `$1${escapeHtml(date)}$3`,
@@ -283,6 +339,12 @@ function updateMastheadAndSection(html, todayDate, sectionLabel) {
     out = out.replace(
       /(<span class="section-header-label"[^>]*>)([\s\S]*?Today's news[\s\S]*?)(<\/span>)/,
       `$1${escapedLabel}$3`,
+    );
+  }
+  if (/id="fin-news-heading"/.test(out)) {
+    out = out.replace(
+      /(<span class="section-header-label" id="fin-news-heading">)([\s\S]*?)(<\/span>)/,
+      `$1${escapedFinLabel}$3`,
     );
   }
   out = out.replace(
@@ -302,18 +364,21 @@ async function fetchDashboardData(apiKey) {
   });
   const userPrompt = `Today's date is ${today}.
 
-Return 4–6 newsItems (newest first) and 5–6 talkingPoints.
+Return 3–5 newsItems (accountability/care/CMS/lawsuit — newest first),
+3–5 financialNewsItems (earnings/revenue/margins/guidance/buybacks/stock only — newest first),
+and 5–6 talkingPoints.
 For talkingPoints[].text, start with a short punchy title sentence ending in a period, then the supporting sentences.
-For tag, use a short label like Trial, Noncompliance, Earnings, CON, Lawsuit, Safety, Monitor, or Update.
+For tag, use a short label like Trial, Noncompliance, Earnings, CON, Lawsuit, Safety, Monitor, Guidance, Margins, Buyback, or Update.
 For tagClass, choose tag-red, tag-amber, tag-blue, or tag-teal to match severity/topic.
 Set todayDate to today's date in "Month D, YYYY" format.
 Set sectionLabel to "Today's news — Month D, YYYY" using that same date.
+Set financialSectionLabel to "Financial news — Month D, YYYY" using that same date.
 
 Respond with raw JSON only.`;
 
   const baseParams = {
     model,
-    max_tokens: 4000,
+    max_tokens: 5000,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }],
   };
@@ -379,16 +444,32 @@ async function main() {
     "<!-- NEWS_END -->",
     renderNewsItems(data.newsItems),
   );
+  if (data.financialNewsItems.length > 0) {
+    html = replaceBetween(
+      html,
+      "<!-- FIN_NEWS_START -->",
+      "<!-- FIN_NEWS_END -->",
+      renderNewsItems(data.financialNewsItems),
+    );
+  }
   html = replaceBetween(
     html,
     "<!-- TP_START -->",
     "<!-- TP_END -->",
     renderTalkingPoints(data.talkingPoints),
   );
-  html = updateMastheadAndSection(html, data.todayDate, data.sectionLabel);
+  html = updateMastheadAndSection(
+    html,
+    data.todayDate,
+    data.sectionLabel,
+    data.financialSectionLabel,
+  );
 
   fs.writeFileSync(htmlPath, html, "utf8");
   console.log("Dashboard updated successfully");
+  console.log(
+    `  newsItems=${data.newsItems.length} financialNewsItems=${data.financialNewsItems.length} talkingPoints=${data.talkingPoints.length}`,
+  );
 }
 
 main().catch((err) => {

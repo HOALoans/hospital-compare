@@ -8,10 +8,11 @@ import type { Request, Response, NextFunction, RequestHandler } from "express";
  *   RATE_LIMIT_WINDOW_MS=60000        — sliding window (default 60s)
  *   RATE_LIMIT_CMS_MAX=60             — max POSTs to /api/cms/* per IP per window
  *   RATE_LIMIT_HOSPITAL_MAX=180       — max hospital API GETs per IP per window
+ *   RATE_LIMIT_FINANCE_MAX=60         — max GETs to /api/finance/* per IP per window
  *
  * Legitimate mission-tracker loads ~8 CMS calls; compare UI uses a handful of
  * hospital endpoints. Defaults allow normal browsing while stopping scrapers
- * and unbounded CMS proxy abuse.
+ * and unbounded CMS / finance proxy abuse.
  */
 
 interface Bucket {
@@ -38,6 +39,7 @@ export function rateLimitConfig() {
     windowMs: parsePositiveInt(process.env.RATE_LIMIT_WINDOW_MS, 60_000),
     cmsMax: parsePositiveInt(process.env.RATE_LIMIT_CMS_MAX, 60),
     hospitalMax: parsePositiveInt(process.env.RATE_LIMIT_HOSPITAL_MAX, 180),
+    financeMax: parsePositiveInt(process.env.RATE_LIMIT_FINANCE_MAX, 60),
   };
 }
 
@@ -126,4 +128,10 @@ export function cmsRateLimiter(): RequestHandler {
 export function hospitalRateLimiter(): RequestHandler {
   const { windowMs, hospitalMax } = rateLimitConfig();
   return createRateLimiter({ name: "hospital", max: hospitalMax, windowMs });
+}
+
+/** Limiter for Yahoo / StockAnalysis finance proxy (HCA Watchdog). */
+export function financeRateLimiter(): RequestHandler {
+  const { windowMs, financeMax } = rateLimitConfig();
+  return createRateLimiter({ name: "finance", max: financeMax, windowMs });
 }

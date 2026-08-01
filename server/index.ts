@@ -35,7 +35,8 @@ import {
 } from "./partnerStore.js";
 import { ARCHIVE_DIR } from "./dataPaths.js";
 import { getSavedComparison, saveComparison } from "./savedComparisons.js";
-import { cmsRateLimiter, hospitalRateLimiter, rateLimitConfig } from "./rateLimit.js";
+import { cmsRateLimiter, hospitalRateLimiter, financeRateLimiter, rateLimitConfig } from "./rateLimit.js";
+import { CHART_RANGES, fetchHcaAnalysts, fetchHcaChart, type ChartRangeKey } from "./financeProxy.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 5175);
@@ -65,6 +66,7 @@ app.use(express.json());
 
 const limitCms = cmsRateLimiter();
 const limitHospital = hospitalRateLimiter();
+const limitFinance = financeRateLimiter();
 
 function appOrigin(req: express.Request): string {
   const fromEnv = process.env.APP_URL?.trim();
@@ -348,6 +350,37 @@ app.get("/api/meta/archives", (_req, res) => {
   });
 });
 
+/** HCA Watchdog: Yahoo Finance chart + analyst ratings (avoids CORS / keys in client). */
+app.get("/api/finance/hca/chart", limitFinance, async (req, res) => {
+  const rawRange = String(req.query.range ?? "3mo").trim();
+  const range = (rawRange in CHART_RANGES ? rawRange : "3mo") as ChartRangeKey;
+  try {
+    const data = await fetchHcaChart(range);
+    res.setHeader("Cache-Control", "public, max-age=30");
+    res.json(data);
+  } catch (err) {
+    console.error("[finance-chart]", err);
+    res.status(502).json({
+      error: "Failed to fetch HCA chart data",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+app.get("/api/finance/hca/analysts", limitFinance, async (_req, res) => {
+  try {
+    const data = await fetchHcaAnalysts();
+    res.setHeader("Cache-Control", "public, max-age=60");
+    res.json(data);
+  } catch (err) {
+    console.error("[finance-analysts]", err);
+    res.status(502).json({
+      error: "Failed to fetch HCA analyst ratings",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
 /** Browser-safe proxy for Hospital Health Dashboard CMS pulls (avoids CORS). */
 const CMS_PROXY_DATASETS = new Set([
   "dgck-syfz", // HCAHPS hospital
@@ -441,7 +474,7 @@ async function start() {
       console.log("[rate-limit] disabled (RATE_LIMIT_DISABLED)");
     } else {
       console.log(
-        `[rate-limit] window=${rl.windowMs}ms cms=${rl.cmsMax}/ip hospital=${rl.hospitalMax}/ip`,
+        `[rate-limit] window=${rl.windowMs}ms cms=${rl.cmsMax}/ip hospital=${rl.hospitalMax}/ip finance=${rl.financeMax}/ip`,
       );
     }
   });

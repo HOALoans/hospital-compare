@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -33,6 +34,9 @@
     --teal-bg: #eef8f4;
     --teal-border: #9ed9c4;
     --accent: #c0392b;
+    --up: #1a6b3c;
+    --up-bg: #eef8f1;
+    --down: #9b2020;
     --font-body: 'Inter', system-ui, sans-serif;
     --font-serif: 'Source Serif 4', Georgia, serif;
     --radius: 8px;
@@ -54,7 +58,7 @@
     border-bottom: 3px solid var(--accent);
   }
   .masthead-inner {
-    max-width: 900px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 1.5rem 1.5rem 1.25rem;
     display: flex;
@@ -63,7 +67,6 @@
     gap: 1rem;
     flex-wrap: wrap;
   }
-  .masthead-left {}
   .masthead-eyebrow {
     font-size: 11px;
     letter-spacing: 0.12em;
@@ -97,37 +100,182 @@
   }
   /* ── LAYOUT ── */
   .container {
-    max-width: 900px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 1.5rem 1.5rem 3rem;
   }
-  /* ── STAT BAR ── */
-  .stat-bar {
+  /* ── MARKET ROW ── */
+  .market-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    grid-template-columns: 1.55fr 1fr;
+    gap: 1.25rem;
     margin-bottom: 1.25rem;
   }
-  .stat-card {
+  .market-card {
     background: var(--surface);
     border: 0.5px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 1rem 1.1rem;
-    text-align: center;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
-  .stat-num {
-    font-family: var(--font-serif);
-    font-size: 26px;
+  .market-card .section-header { flex-shrink: 0; }
+  .market-card .section-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .stock-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+  }
+  .stock-symbol {
+    font-size: 11px;
     font-weight: 600;
-    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .stock-price {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .stock-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .stock-change.up { color: var(--up); }
+  .stock-change.down { color: var(--down); }
+  .stock-change.flat { color: var(--text-3); }
+  .stock-meta {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 4px;
+  }
+  .range-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+  .range-btn {
+    appearance: none;
+    border: 0.5px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-2);
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
     line-height: 1;
   }
-  .stat-label {
+  .range-btn:hover { border-color: var(--border-strong); color: var(--text); }
+  .range-btn.active {
+    background: #1a1916;
+    border-color: #1a1916;
+    color: #fff;
+  }
+  .range-btn:disabled { opacity: 0.5; cursor: wait; }
+  .chart-wrap {
+    position: relative;
+    height: 200px;
+    width: 100%;
+  }
+  .widget-status {
     font-size: 12px;
     color: var(--text-3);
-    line-height: 1.4;
-    margin-top: 5px;
+    margin-top: 0.65rem;
   }
+  .widget-status.error { color: var(--red); }
+  .analyst-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+  .analyst-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 12px;
+    padding: 0.65rem 0;
+    border-bottom: 0.5px solid var(--border);
+    align-items: start;
+  }
+  .analyst-row:first-child { padding-top: 0; }
+  .analyst-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .analyst-firm {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .analyst-name {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+  .analyst-date {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+  .rating-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    justify-self: end;
+  }
+  .rating-buy, .rating-strongbuy, .rating-outperform, .rating-overweight {
+    background: var(--up-bg); color: var(--up); border: 0.5px solid #b7dfc5;
+  }
+  .rating-hold, .rating-neutral, .rating-equalweight, .rating-marketperform, .rating-peerperform {
+    background: var(--amber-bg); color: var(--amber); border: 0.5px solid var(--amber-border);
+  }
+  .rating-sell, .rating-strongsell, .rating-underperform, .rating-underweight {
+    background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red-border);
+  }
+  .rating-other {
+    background: var(--surface-2); color: var(--text-2); border: 0.5px solid var(--border);
+  }
+  .analyst-consensus {
+    font-size: 12px;
+    color: var(--text-2);
+    margin-bottom: 0.65rem;
+  }
+  .analyst-empty {
+    font-size: 13px;
+    color: var(--text-3);
+    padding: 0.5rem 0;
+  }
+  /* ── NEWS COLUMNS ── */
+  .news-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .news-col { margin-bottom: 0; }
   /* ── SECTIONS ── */
   .section {
     background: var(--surface);
@@ -272,7 +420,7 @@
   .sources-grid a:hover { text-decoration: underline; }
   /* ── FOOTER ── */
   .footer {
-    max-width: 900px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 1rem 1.5rem 2rem;
     border-top: 0.5px solid var(--border-strong);
@@ -290,14 +438,20 @@
   }
   .footer-right a:hover { text-decoration: underline; }
   /* ── RESPONSIVE ── */
+  @media (max-width: 800px) {
+    .market-row, .news-row { grid-template-columns: 1fr; }
+    .chart-wrap { height: 180px; }
+  }
   @media (max-width: 600px) {
     .masthead-inner { flex-direction: column; align-items: flex-start; }
     .masthead-right { text-align: left; }
-    .stat-bar { grid-template-columns: 1fr; }
     .arc-entry { grid-template-columns: 1fr; gap: 2px; }
     .sources-grid { grid-template-columns: 1fr; }
     .masthead-title { font-size: 22px; }
     .container { padding: 1rem 1rem 2rem; }
+    .stock-price { font-size: 28px; }
+    .range-btns { justify-content: flex-start; }
+    .stock-top { flex-direction: column; }
   }
   @media print {
     body { background: #fff; }
@@ -320,28 +474,60 @@
   </div>
 </header>
 <main class="container" role="main">
-  <!-- STAT BAR -->
-  <div class="stat-bar" aria-label="Key statistics">
-    <div class="stat-card">
-      <div class="stat-num">4×</div>
-      <div class="stat-label">Immediate Jeopardy citations since HCA acquired Mission in 2019</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-num">2★</div>
-      <div class="stat-label">Mission HCAHPS patient experience rating 2020–2024 (lowest of all CON applicants)</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-num">800+</div>
-      <div class="stat-label">Physicians and nurses who have left Mission since HCA's 2019 takeover</div>
-    </div>
+  <!-- MARKET: stock + analysts -->
+  <div class="market-row">
+    <section class="market-card" aria-labelledby="stock-heading">
+      <div class="section-header sh-amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        <span class="section-header-label" id="stock-heading">HCA Healthcare stock</span>
+      </div>
+      <div class="section-body">
+        <div class="stock-top">
+          <div>
+            <div class="stock-symbol">NYSE: HCA</div>
+            <div class="stock-price" id="stock-price">—</div>
+            <div class="stock-change flat" id="stock-change">Loading…</div>
+            <div class="stock-meta" id="stock-meta"></div>
+          </div>
+          <div class="range-btns" role="group" aria-label="Chart range">
+            <button type="button" class="range-btn" data-range="1d">1D</button>
+            <button type="button" class="range-btn" data-range="5d">5D</button>
+            <button type="button" class="range-btn active" data-range="1mo">1M</button>
+            <button type="button" class="range-btn" data-range="3mo">3M</button>
+            <button type="button" class="range-btn" data-range="6mo">6M</button>
+            <button type="button" class="range-btn" data-range="1y">1Y</button>
+            <button type="button" class="range-btn" data-range="5y">5Y</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="hca-chart" aria-label="HCA stock price chart"></canvas>
+        </div>
+        <div class="widget-status" id="stock-status">Loading price data…</div>
+      </div>
+    </section>
+    <section class="market-card" aria-labelledby="analysts-heading">
+      <div class="section-header sh-blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        <span class="section-header-label" id="analysts-heading">Top analyst ratings</span>
+      </div>
+      <div class="section-body">
+        <div class="analyst-consensus" id="analyst-consensus"></div>
+        <div class="analyst-list" id="analyst-list">
+          <div class="analyst-empty">Loading analyst ratings…</div>
+        </div>
+        <div class="widget-status" id="analyst-status"></div>
+      </div>
+    </section>
   </div>
-  <!-- TODAY'S NEWS -->
-  <section class="section" aria-labelledby="news-heading">
-    <div class="section-header sh-red">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span class="section-header-label" id="news-heading">Today's news — Aug 1, 2026</span>
-    </div>
-    <div class="section-body">
+
+  <!-- NEWS: advocacy | financial -->
+  <div class="news-row">
+    <section class="section news-col" aria-labelledby="news-heading">
+      <div class="section-header sh-red">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span class="section-header-label" id="news-heading">Today's news — Aug 1, 2026</span>
+      </div>
+      <div class="section-body">
       <!-- NEWS_START -->
       <article class="news-item">
         <div class="news-meta">
@@ -363,15 +549,6 @@
       </article>
       <article class="news-item">
         <div class="news-meta">
-          <span class="news-source">HCA Healthcare</span>
-          <span class="news-date">July 24, 2026</span>
-          <span class="tag tag-amber">Earnings</span>
-        </div>
-        <h2 class="news-headline">HCA reports strong Q2 2026 results — Mission safety failures invisible in earnings call</h2>
-        <p class="news-blurb">HCA posted robust Q2 revenue and earnings, cementing its Fortune 100 status. CEO and CFO language emphasized "cost discipline," "operational efficiency," and margin expansion. Mission Hospital's repeated safety failures, noncompliance, and pending trial were not mentioned. HCA's ability to report record profits while a hospital in its portfolio faces federal sanctions and a state attorney general lawsuit is the central tension Reclaim must amplify.</p>
-      </article>
-      <article class="news-item">
-        <div class="news-meta">
           <span class="news-source">BPR / NC DHHS</span>
           <span class="news-date">April 1, 2026</span>
           <span class="tag tag-amber">CON</span>
@@ -380,8 +557,38 @@
         <p class="news-blurb">NC DHHS approved HCA/Mission's application for 95 new hospital beds while the hospital was under active federal compliance orders. Reclaim's data shows Mission scored the lowest HCAHPS patient experience rating (2 stars) of all four CON applicants — far behind Advent Health (4 stars), Novant, and UNC Pardee. Reclaim formally opposed the award and testified at the CON hearing.</p>
       </article>
       <!-- NEWS_END -->
-    </div>
-  </section>
+      </div>
+    </section>
+    <section class="section news-col" aria-labelledby="fin-news-heading">
+      <div class="section-header sh-amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        <span class="section-header-label" id="fin-news-heading">Financial news — Aug 1, 2026</span>
+      </div>
+      <div class="section-body">
+      <!-- FIN_NEWS_START -->
+      <article class="news-item">
+        <div class="news-meta">
+          <span class="news-source">HCA Healthcare</span>
+          <span class="news-date">July 24, 2026</span>
+          <span class="tag tag-amber">Earnings</span>
+        </div>
+        <h2 class="news-headline">HCA reports strong Q2 2026 results — margin and cost discipline in focus</h2>
+        <p class="news-blurb">HCA posted robust Q2 revenue and earnings. Investor communications emphasized cost discipline, operational efficiency, and margin expansion. Wall Street reaction centered on guidance and same-facility growth; Mission Hospital compliance issues were not a focus of the earnings call.</p>
+      </article>
+      <article class="news-item">
+        <div class="news-meta">
+          <span class="news-source">Investor relations</span>
+          <span class="news-date">July 2026</span>
+          <span class="tag tag-blue">Guidance</span>
+        </div>
+        <h2 class="news-headline">Q3 outlook and capital returns remain the investor narrative</h2>
+        <p class="news-blurb">Following Q2, coverage of HCA continues to track revenue growth, EBITDA margins, share repurchase capacity, and full-year guidance updates. Check HCA investor relations for the latest filings and call transcripts.</p>
+      </article>
+      <!-- FIN_NEWS_END -->
+      </div>
+    </section>
+  </div>
+
   <!-- TALKING POINTS -->
   <section class="section" aria-labelledby="tp-heading">
     <div class="section-header sh-blue">
@@ -490,6 +697,248 @@
   const d = new Date();
   const opts = { year: 'numeric', month: 'long', day: 'numeric' };
   document.getElementById('today-date').textContent = d.toLocaleDateString('en-US', opts);
+
+  (function () {
+    const RANGES = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '5y'];
+    let currentRange = '1mo';
+    let chart = null;
+    let loading = false;
+
+    const priceEl = document.getElementById('stock-price');
+    const changeEl = document.getElementById('stock-change');
+    const metaEl = document.getElementById('stock-meta');
+    const statusEl = document.getElementById('stock-status');
+    const canvas = document.getElementById('hca-chart');
+    const rangeBtns = document.querySelectorAll('.range-btn');
+
+    function fmtMoney(n) {
+      if (n == null || !Number.isFinite(n)) return '—';
+      return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    }
+    function fmtPct(n) {
+      if (n == null || !Number.isFinite(n)) return '';
+      const sign = n > 0 ? '+' : '';
+      return sign + n.toFixed(2) + '%';
+    }
+    function fmtChange(n) {
+      if (n == null || !Number.isFinite(n)) return '';
+      const sign = n > 0 ? '+' : '';
+      return sign + n.toFixed(2);
+    }
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+    function ratingClass(rating) {
+      const k = String(rating || '').toLowerCase().replace(/[^a-z]/g, '');
+      if (/strongbuy|outperform|overweight|buy|accumulate/.test(k)) return 'rating-buy';
+      if (/strongsell|underperform|underweight|sell|reduce/.test(k)) return 'rating-sell';
+      if (/hold|neutral|equalweight|marketperform|peerperform|in[-]?line/.test(k)) return 'rating-hold';
+      return 'rating-other';
+    }
+    function fmtDate(iso) {
+      if (!iso) return '';
+      const dt = new Date(iso);
+      if (Number.isNaN(dt.getTime())) return String(iso);
+      return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+    function chartTimeLabel(ts, range) {
+      const dt = new Date(ts);
+      if (range === '1d' || range === '5d') {
+        return dt.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      }
+      if (range === '5y') {
+        return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      }
+      return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+    }
+
+    function setRangeButtons(active, disabled) {
+      rangeBtns.forEach((btn) => {
+        const r = btn.getAttribute('data-range');
+        btn.classList.toggle('active', r === active);
+        btn.disabled = !!disabled;
+      });
+    }
+
+    function renderChart(points, range) {
+      if (typeof Chart === 'undefined' || !canvas) return;
+      const labels = points.map((p) => chartTimeLabel(p.t, range));
+      const data = points.map((p) => p.p);
+      const up = data.length >= 2 ? data[data.length - 1] >= data[0] : true;
+      const stroke = up ? '#1a6b3c' : '#9b2020';
+      const fill = up ? 'rgba(26, 107, 60, 0.12)' : 'rgba(155, 32, 32, 0.10)';
+
+      if (chart) {
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = data;
+        chart.data.datasets[0].borderColor = stroke;
+        chart.data.datasets[0].backgroundColor = fill;
+        chart.update('none');
+        return;
+      }
+
+      chart = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            data,
+            borderColor: stroke,
+            backgroundColor: fill,
+            borderWidth: 2,
+            fill: true,
+            tension: 0.15,
+            pointRadius: 0,
+            pointHoverRadius: 3,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => fmtMoney(ctx.parsed.y),
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                maxTicksLimit: 6,
+                color: '#7a7772',
+                font: { size: 10 },
+              },
+            },
+            y: {
+              grid: { color: '#eeeae3' },
+              ticks: {
+                color: '#7a7772',
+                font: { size: 10 },
+                callback: (v) => '$' + Number(v).toFixed(0),
+              },
+            },
+          },
+        },
+      });
+    }
+
+    async function loadChart(range) {
+      if (loading) return;
+      loading = true;
+      currentRange = range;
+      setRangeButtons(range, true);
+      statusEl.textContent = 'Loading price data…';
+      statusEl.classList.remove('error');
+      try {
+        const res = await fetch('/api/finance/hca/chart?range=' + encodeURIComponent(range));
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || data.detail || 'Chart request failed');
+
+        priceEl.textContent = fmtMoney(data.price);
+        const ch = data.change;
+        const pct = data.changePercent;
+        changeEl.textContent = (fmtChange(ch) + ' (' + fmtPct(pct) + ')').replace(' ()', '');
+        changeEl.className = 'stock-change ' + (ch > 0 ? 'up' : ch < 0 ? 'down' : 'flat');
+        metaEl.textContent = (data.exchange || 'NYSE') + ' · ' + (data.marketState || '') +
+          (data.asOf ? ' · as of ' + fmtDate(data.asOf) : '');
+
+        if (!data.points || !data.points.length) {
+          statusEl.textContent = data.note
+            ? data.note + ' · Source: ' + (data.source || 'market data')
+            : 'No historical points for this range. Source: ' + (data.source || 'market data');
+        } else {
+          renderChart(data.points, range);
+          statusEl.textContent = 'Source: ' + (data.source || 'Yahoo Finance') + ' · delayed/unofficial quote';
+        }
+      } catch (err) {
+        statusEl.textContent = 'Could not load stock data. Try again shortly.';
+        statusEl.classList.add('error');
+        changeEl.textContent = 'Unavailable';
+        changeEl.className = 'stock-change flat';
+        console.warn(err);
+      } finally {
+        loading = false;
+        setRangeButtons(currentRange, false);
+      }
+    }
+
+    async function loadAnalysts() {
+      const listEl = document.getElementById('analyst-list');
+      const consensusEl = document.getElementById('analyst-consensus');
+      const aStatus = document.getElementById('analyst-status');
+      try {
+        const res = await fetch('/api/finance/hca/analysts');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Analysts request failed');
+
+        const ratings = Array.isArray(data.ratings) ? data.ratings : [];
+        if (data.consensus) {
+          consensusEl.textContent = 'Consensus: ' + data.consensus;
+        } else {
+          consensusEl.textContent = '';
+        }
+
+        if (!ratings.length) {
+          listEl.innerHTML = '<div class="analyst-empty">' +
+            escapeHtml(data.error || 'No analyst ratings available right now.') + '</div>';
+        } else {
+          listEl.innerHTML = ratings.map(function (r) {
+            const analyst = r.analyst
+              ? '<div class="analyst-name">' + escapeHtml(r.analyst) + '</div>'
+              : '';
+            const date = r.date
+              ? '<div class="analyst-date">' + escapeHtml(fmtDate(r.date)) + '</div>'
+              : '';
+            return '<div class="analyst-row">' +
+              '<div><div class="analyst-firm">' + escapeHtml(r.firm) + '</div>' +
+              analyst + date + '</div>' +
+              '<span class="rating-pill ' + ratingClass(r.rating) + '">' +
+              escapeHtml(r.rating) + '</span></div>';
+          }).join('');
+        }
+
+        const asOf = data.asOf ? fmtDate(data.asOf) : '';
+        aStatus.textContent = (data.source ? 'Source: ' + data.source : 'Best-effort ratings') +
+          (asOf ? ' · as of ' + asOf : '');
+      } catch (err) {
+        listEl.innerHTML = '<div class="analyst-empty">Analyst ratings temporarily unavailable.</div>';
+        aStatus.textContent = 'Could not load ratings.';
+        aStatus.classList.add('error');
+        console.warn(err);
+      }
+    }
+
+    rangeBtns.forEach((btn) => {
+      btn.addEventListener('click', function () {
+        const r = btn.getAttribute('data-range');
+        if (!r || !RANGES.includes(r) || r === currentRange) return;
+        loadChart(r);
+      });
+    });
+
+    function boot() {
+      loadChart(currentRange);
+      loadAnalysts();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        if (typeof Chart !== 'undefined') boot();
+        else window.addEventListener('load', boot);
+      });
+    } else if (typeof Chart !== 'undefined') {
+      boot();
+    } else {
+      window.addEventListener('load', boot);
+    }
+  })();
 </script>
 </body>
 </html>
