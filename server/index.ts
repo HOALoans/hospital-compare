@@ -36,7 +36,13 @@ import {
 import { ARCHIVE_DIR } from "./dataPaths.js";
 import { getSavedComparison, saveComparison } from "./savedComparisons.js";
 import { cmsRateLimiter, hospitalRateLimiter, financeRateLimiter, rateLimitConfig } from "./rateLimit.js";
-import { CHART_RANGES, fetchHcaAnalysts, fetchHcaChart, type ChartRangeKey } from "./financeProxy.js";
+import {
+  CHART_RANGES,
+  fetchHcaAnalysts,
+  fetchHcaChart,
+  fetchHcaInsiders,
+  type ChartRangeKey,
+} from "./financeProxy.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 5175);
@@ -376,6 +382,20 @@ app.get("/api/finance/hca/analysts", limitFinance, async (_req, res) => {
     console.error("[finance-analysts]", err);
     res.status(502).json({
       error: "Failed to fetch HCA analyst ratings",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+app.get("/api/finance/hca/insiders", limitFinance, async (_req, res) => {
+  try {
+    const data = await fetchHcaInsiders();
+    res.setHeader("Cache-Control", "public, max-age=60");
+    res.json(data);
+  } catch (err) {
+    console.error("[finance-insiders]", err);
+    res.status(502).json({
+      error: "Failed to fetch HCA insider transactions",
       detail: err instanceof Error ? err.message : String(err),
     });
   }
