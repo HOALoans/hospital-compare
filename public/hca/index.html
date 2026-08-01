@@ -437,6 +437,11 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
+  a.news-source.news-link {
+    color: var(--teal);
+    text-decoration: none;
+  }
+  a.news-source.news-link:hover { text-decoration: underline; }
   .news-date { font-size: 11px; color: var(--text-3); }
   .tag {
     font-size: 11px;
@@ -456,6 +461,11 @@
     margin-bottom: 4px;
     line-height: 1.35;
   }
+  .news-headline a.news-link {
+    color: var(--teal);
+    text-decoration: none;
+  }
+  .news-headline a.news-link:hover { text-decoration: underline; }
   .news-blurb {
     font-size: 13px;
     color: var(--text-2);
@@ -487,6 +497,18 @@
   }
   .tp-text { font-size: 13px; color: var(--text); line-height: 1.55; }
   .tp-text strong { font-weight: 600; color: var(--text); display: block; margin-bottom: 2px; }
+  .tp-source {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .tp-source-link {
+    color: var(--teal);
+    text-decoration: none;
+  }
+  .tp-source-link:hover { text-decoration: underline; }
   /* ── ARC NARRATIVE ── */
   .arc-details {
     border: 0;
@@ -722,29 +744,29 @@
       <!-- NEWS_START -->
       <article class="news-item">
         <div class="news-meta">
-          <span class="news-source">NC Business Court</span>
+          <a href="https://www.bpr.org/health/2026-07-28/judge-allows-nc-attorney-generals-lawsuit-against-hca-over-mission-hospital-to-proceed-to-trial" class="news-source news-link" target="_blank" rel="noopener noreferrer">NC Business Court</a>
           <span class="news-date">July 28, 2026</span>
           <span class="tag tag-red">Lawsuit</span>
         </div>
-        <h2 class="news-headline">AG Jackson wins key pre-trial rulings — HCA/Mission lawsuit moves forward</h2>
+        <h2 class="news-headline"><a href="https://www.bpr.org/health/2026-07-28/judge-allows-nc-attorney-generals-lawsuit-against-hca-over-mission-hospital-to-proceed-to-trial" class="news-link" target="_blank" rel="noopener noreferrer">AG Jackson wins key pre-trial rulings — HCA/Mission lawsuit moves forward</a></h2>
         <p class="news-blurb">Judge denied HCA's motion for summary judgment on the core claims that HCA violated its commitments to the WNC community when it purchased Mission in 2019. The state's lawsuit alleges HCA broke promises on staffing, services, and capital investment. The lawsuit is now moving forward on the docket — the most significant legal development in the accountability effort to date.</p>
       </article>
       <article class="news-item">
         <div class="news-meta">
-          <span class="news-source">NC Health News / Dogwood</span>
+          <a href="https://www.northcarolinahealthnews.org/2026/07/28/mission-hospital-immediate-jeopardy-hca-sale-contract/" class="news-source news-link" target="_blank" rel="noopener noreferrer">NC Health News / Dogwood</a>
           <span class="news-date">July 28, 2026</span>
           <span class="tag tag-red">Noncompliance</span>
         </div>
-        <h2 class="news-headline">CMS monitor report: Mission still out of compliance — no plans to add staff submitted</h2>
+        <h2 class="news-headline"><a href="https://www.northcarolinahealthnews.org/2026/07/28/mission-hospital-immediate-jeopardy-hca-sale-contract/" class="news-link" target="_blank" rel="noopener noreferrer">CMS monitor report: Mission still out of compliance — no plans to add staff submitted</a></h2>
         <p class="news-blurb">The court-appointed federal monitor's latest report found Mission Hospital still failing to meet Enhanced Plan of Correction requirements. Critically, the hospital has submitted no plans to add nursing, trauma, or security staff — the core deficiencies that triggered every Immediate Jeopardy finding. The July 26 CMS deadline came and went without Mission achieving substantial compliance.</p>
       </article>
       <article class="news-item">
         <div class="news-meta">
-          <span class="news-source">BPR / NC DHHS</span>
+          <a href="https://www.bpr.org/health/2026-04-01/despite-multiple-safety-sanctions-mission-hospital-receives-state-approval-to-add-95-more-beds-in-asheville" class="news-source news-link" target="_blank" rel="noopener noreferrer">BPR / NC DHHS</a>
           <span class="news-date">April 1, 2026</span>
           <span class="tag tag-amber">CON</span>
         </div>
-        <h2 class="news-headline">State awards Mission 95 CON beds — despite active federal safety sanctions</h2>
+        <h2 class="news-headline"><a href="https://www.bpr.org/health/2026-04-01/despite-multiple-safety-sanctions-mission-hospital-receives-state-approval-to-add-95-more-beds-in-asheville" class="news-link" target="_blank" rel="noopener noreferrer">State awards Mission 95 CON beds — despite active federal safety sanctions</a></h2>
         <p class="news-blurb">NC DHHS approved HCA/Mission's application for 95 new hospital beds while the hospital was under active federal compliance orders. Reclaim's data shows Mission scored the lowest HCAHPS patient experience rating (2 stars) of all four CON applicants — far behind Advent Health (4 stars), Novant, and UNC Pardee. Reclaim formally opposed the award and testified at the CON hearing.</p>
       </article>
       <!-- NEWS_END -->
@@ -759,20 +781,20 @@
       <!-- FIN_NEWS_START -->
       <article class="news-item">
         <div class="news-meta">
-          <span class="news-source">HCA Healthcare</span>
+          <a href="https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx" class="news-source news-link" target="_blank" rel="noopener noreferrer">HCA Healthcare</a>
           <span class="news-date">July 24, 2026</span>
           <span class="tag tag-amber">Earnings</span>
         </div>
-        <h2 class="news-headline">HCA reports strong Q2 2026 results — margin and cost discipline in focus</h2>
+        <h2 class="news-headline"><a href="https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx" class="news-link" target="_blank" rel="noopener noreferrer">HCA reports strong Q2 2026 results — margin and cost discipline in focus</a></h2>
         <p class="news-blurb">HCA posted robust Q2 revenue and earnings. Investor communications emphasized cost discipline, operational efficiency, and margin expansion. Wall Street reaction centered on guidance and same-facility growth; Mission Hospital compliance issues were not a focus of the earnings call.</p>
       </article>
       <article class="news-item">
         <div class="news-meta">
-          <span class="news-source">Investor relations</span>
+          <a href="https://investor.hcahealthcare.com" class="news-source news-link" target="_blank" rel="noopener noreferrer">Investor relations</a>
           <span class="news-date">July 2026</span>
           <span class="tag tag-blue">Guidance</span>
         </div>
-        <h2 class="news-headline">Q3 outlook and capital returns remain the investor narrative</h2>
+        <h2 class="news-headline"><a href="https://investor.hcahealthcare.com" class="news-link" target="_blank" rel="noopener noreferrer">Q3 outlook and capital returns remain the investor narrative</a></h2>
         <p class="news-blurb">Following Q2, coverage of HCA continues to track revenue growth, EBITDA margins, share repurchase capacity, and full-year guidance updates. Check HCA investor relations for the latest filings and call transcripts.</p>
       </article>
       <!-- FIN_NEWS_END -->
@@ -790,19 +812,23 @@
       <!-- TP_START -->
       <div class="tp-item">
         <div class="tp-num" aria-hidden="true">1</div>
-        <div class="tp-text"><strong>Profits over patients — in HCA's own words.</strong> HCA reported record Q2 2026 profits on its earnings call while simultaneously failing to submit any plan to add nurses, trauma staff, or security at Mission — the same deficiencies that triggered four Immediate Jeopardy citations. Ask publicly: if HCA can reward shareholders, why can't it staff Mission safely?</div>
+        <div class="tp-text"><strong>Profits over patients — in HCA's own words.</strong> HCA reported record Q2 2026 profits on its earnings call while simultaneously failing to submit any plan to add nurses, trauma staff, or security at Mission — the same deficiencies that triggered four Immediate Jeopardy citations. Ask publicly: if HCA can reward shareholders, why can't it staff Mission safely?
+          <div class="tp-source"><a href="https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx" class="tp-source-link" target="_blank" rel="noopener noreferrer">HCA Q2 2026 earnings</a></div></div>
       </div>
       <div class="tp-item">
         <div class="tp-num" aria-hidden="true">2</div>
-        <div class="tp-text"><strong>The AG's trial is the accountability moment WNC has waited for.</strong> The July 28 ruling means a court will hear evidence that HCA broke its 2019 acquisition promises on staffing, services, and investment. This is no longer just a regulatory story — it's a breach-of-contract story with WNC's health on the line.</div>
+        <div class="tp-text"><strong>The AG's trial is the accountability moment WNC has waited for.</strong> The July 28 ruling means a court will hear evidence that HCA broke its 2019 acquisition promises on staffing, services, and investment. This is no longer just a regulatory story — it's a breach-of-contract story with WNC's health on the line.
+          <div class="tp-source"><a href="https://www.bpr.org/health/2026-07-28/judge-allows-nc-attorney-generals-lawsuit-against-hca-over-mission-hospital-to-proceed-to-trial" class="tp-source-link" target="_blank" rel="noopener noreferrer">BPR / NC Business Court</a></div></div>
       </div>
       <div class="tp-item">
         <div class="tp-num" aria-hidden="true">3</div>
-        <div class="tp-text"><strong>"No plans to add staff" is the headline.</strong> The federal monitor's July 2026 report found Mission submitted zero staffing plans. After four Immediate Jeopardy findings, the hospital's own compliance filing documents no commitment to fix the root cause. Every HCA "we are working on it" statement must be measured against this documented inaction.</div>
+        <div class="tp-text"><strong>"No plans to add staff" is the headline.</strong> The federal monitor's July 2026 report found Mission submitted zero staffing plans. After four Immediate Jeopardy findings, the hospital's own compliance filing documents no commitment to fix the root cause. Every HCA "we are working on it" statement must be measured against this documented inaction.
+          <div class="tp-source"><a href="https://dogwoodhealthtrust.org/dogwood-health-trust-and-independent-monitor-releasehca-monitoring-report-for-2025-noting-two-areas-of-potential-non-compliance/" class="tp-source-link" target="_blank" rel="noopener noreferrer">Dogwood / Independent Monitor</a></div></div>
       </div>
       <div class="tp-item">
         <div class="tp-num" aria-hidden="true">4</div>
-        <div class="tp-text"><strong>The CON award was a gift to a noncompliant operator.</strong> NC DHHS awarded 95 new beds to the hospital system with the worst patient experience scores in the CON competition — while it was under active federal safety orders. More beds, same understaffed hospital: that is a regulatory failure that compounds patient risk.</div>
+        <div class="tp-text"><strong>The CON award was a gift to a noncompliant operator.</strong> NC DHHS awarded 95 new beds to the hospital system with the worst patient experience scores in the CON competition — while it was under active federal safety orders. More beds, same understaffed hospital: that is a regulatory failure that compounds patient risk.
+          <div class="tp-source"><a href="https://www.bpr.org/health/2026-04-01/despite-multiple-safety-sanctions-mission-hospital-receives-state-approval-to-add-95-more-beds-in-asheville" class="tp-source-link" target="_blank" rel="noopener noreferrer">BPR / NC DHHS</a></div></div>
       </div>
       <div class="tp-item">
         <div class="tp-num" aria-hidden="true">5</div>

@@ -55,7 +55,8 @@ Return ONLY a valid raw JSON object with exactly this structure, no markdown, no
       tag: "Tag text",
       tagClass: "tag-red or tag-amber or tag-blue or tag-teal",
       headline: "Headline text",
-      blurb: "Two to three sentence summary with Reclaim framing"
+      blurb: "Two to three sentence summary with Reclaim framing",
+      url: "https://real-article-url-when-known (optional; omit if unknown — never invent)"
     }
   ],
   financialNewsItems: [
@@ -65,13 +66,24 @@ Return ONLY a valid raw JSON object with exactly this structure, no markdown, no
       tag: "Tag text",
       tagClass: "tag-red or tag-amber or tag-blue or tag-teal",
       headline: "Headline text",
-      blurb: "Two to three sentence summary focused on financial facts"
+      blurb: "Two to three sentence summary focused on financial facts",
+      url: "https://real-article-url-when-known (optional; omit if unknown — never invent)"
     }
   ],
   talkingPoints: [
-    { text: "Bold lead phrase. Rest of talking point." }
+    {
+      text: "Bold lead phrase. Rest of talking point.",
+      source: "Optional short source name when citing a document/article",
+      sourceUrl: "https://real-source-url-when-known (optional; omit if unknown — never invent)",
+      url: "https://same-as-sourceUrl-or-primary-link (optional alias)"
+    }
   ]
-}`;
+}
+
+URL RULES:
+- Include a real https URL for newsItems[].url / financialNewsItems[].url whenever you know a specific article, press release, court filing, or official page for that story.
+- For talkingPoints, when the point cites a report, earnings release, court ruling, or news article, set source + sourceUrl (or url) to that document.
+- Prefer the primary publisher URL (news outlet, court PDF, company IR, CMS/agency page). Do NOT invent, guess, or fabricate URLs. If unsure, omit the field entirely (plain text, no placeholder links).`;
 
 function resolveHtmlPath() {
   const override = process.env.DASHBOARD_HTML;
@@ -125,11 +137,40 @@ function parseJsonResponse(raw) {
   }
 }
 
+function isHttpUrl(value) {
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  try {
+    const u = new URL(trimmed);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function normalizeOptionalUrl(value) {
+  if (value == null || value === "") return undefined;
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (!isHttpUrl(trimmed)) return undefined;
+  return trimmed;
+}
+
 function validateNewsItem(item, label, i) {
   for (const key of ["source", "date", "tag", "headline", "blurb"]) {
     if (typeof item[key] !== "string" || !item[key].trim()) {
       throw new Error(`${label}[${i}].${key} must be a non-empty string`);
     }
+  }
+  if (item.url != null && item.url !== "") {
+    if (!isHttpUrl(item.url)) {
+      throw new Error(`${label}[${i}].url must be a valid http(s) URL when provided`);
+    }
+    item.url = item.url.trim();
+  } else {
+    delete item.url;
   }
 }
 
@@ -172,6 +213,33 @@ function validatePayload(data) {
   for (const [i, tp] of data.talkingPoints.entries()) {
     if (typeof tp?.text !== "string" || !tp.text.trim()) {
       throw new Error(`talkingPoints[${i}].text must be a non-empty string`);
+    }
+    const sourceUrl = normalizeOptionalUrl(tp.sourceUrl) || normalizeOptionalUrl(tp.url);
+    if (tp.sourceUrl != null && tp.sourceUrl !== "" && !sourceUrl) {
+      throw new Error(
+        `talkingPoints[${i}].sourceUrl must be a valid http(s) URL when provided`,
+      );
+    }
+    if (tp.url != null && tp.url !== "" && !normalizeOptionalUrl(tp.url) && !sourceUrl) {
+      throw new Error(`talkingPoints[${i}].url must be a valid http(s) URL when provided`);
+    }
+    if (sourceUrl) {
+      tp.sourceUrl = sourceUrl;
+    } else {
+      delete tp.sourceUrl;
+    }
+    // Keep optional url as alias of sourceUrl for callers that set only url
+    if (normalizeOptionalUrl(tp.url)) {
+      tp.url = normalizeOptionalUrl(tp.url);
+    } else if (sourceUrl) {
+      tp.url = sourceUrl;
+    } else {
+      delete tp.url;
+    }
+    if (typeof tp.source === "string" && tp.source.trim()) {
+      tp.source = tp.source.trim();
+    } else {
+      delete tp.source;
     }
   }
   return data;
@@ -236,30 +304,55 @@ function formatTalkingPointText(text) {
   return `<strong>${escapeHtml(cleaned)}</strong>`;
 }
 
+function externalLinkAttrs() {
+  return 'target="_blank" rel="noopener noreferrer"';
+}
+
+function renderExternalLink(href, label, className) {
+  const cls = className ? ` class="${className}"` : "";
+  return `<a href="${escapeHtml(href)}"${cls} ${externalLinkAttrs()}>${escapeHtml(label)}</a>`;
+}
+
 function renderNewsItems(items) {
   return items
-    .map(
-      (item) => `      <article class="news-item">
+    .map((item) => {
+      const url = normalizeOptionalUrl(item.url);
+      const sourceHtml = url
+        ? renderExternalLink(url, item.source, "news-source news-link")
+        : `<span class="news-source">${escapeHtml(item.source)}</span>`;
+      const headlineHtml = url
+        ? `<h2 class="news-headline">${renderExternalLink(url, item.headline, "news-link")}</h2>`
+        : `<h2 class="news-headline">${escapeHtml(item.headline)}</h2>`;
+      return `      <article class="news-item">
         <div class="news-meta">
-          <span class="news-source">${escapeHtml(item.source)}</span>
+          ${sourceHtml}
           <span class="news-date">${escapeHtml(item.date)}</span>
           <span class="tag ${resolveTagClass(item)}">${escapeHtml(item.tag)}</span>
         </div>
-        <h2 class="news-headline">${escapeHtml(item.headline)}</h2>
+        ${headlineHtml}
         <p class="news-blurb">${escapeHtml(item.blurb)}</p>
-      </article>`,
-    )
+      </article>`;
+    })
     .join("\n");
+}
+
+function renderTalkingPointSource(tp) {
+  const href = normalizeOptionalUrl(tp.sourceUrl) || normalizeOptionalUrl(tp.url);
+  if (!href) return "";
+  const label =
+    typeof tp.source === "string" && tp.source.trim() ? tp.source.trim() : "Source";
+  return `<div class="tp-source">${renderExternalLink(href, label, "tp-source-link")}</div>`;
 }
 
 function renderTalkingPoints(points) {
   return points
-    .map(
-      (tp, i) => `      <div class="tp-item">
+    .map((tp, i) => {
+      const sourceHtml = renderTalkingPointSource(tp);
+      return `      <div class="tp-item">
         <div class="tp-num" aria-hidden="true">${i + 1}</div>
-        <div class="tp-text">${formatTalkingPointText(tp.text)}</div>
-      </div>`,
-    )
+        <div class="tp-text">${formatTalkingPointText(tp.text)}${sourceHtml ? `\n          ${sourceHtml}` : ""}</div>
+      </div>`;
+    })
     .join("\n");
 }
 
@@ -368,6 +461,8 @@ Return 3–5 newsItems (accountability/care/CMS/lawsuit — newest first),
 3–5 financialNewsItems (earnings/revenue/margins/guidance/buybacks/stock only — newest first),
 and 5–6 talkingPoints.
 For talkingPoints[].text, start with a short punchy title sentence ending in a period, then the supporting sentences.
+When a talking point cites a specific earnings release, court ruling, monitor report, CON decision, or news article, include source (short name) and sourceUrl with the real URL; omit both if unknown.
+For each newsItems[] / financialNewsItems[] entry, include url with the real article/press-release/filing URL when known; omit url if unknown. Never invent URLs.
 For tag, use a short label like Lawsuit, Noncompliance, Earnings, CON, Safety, Monitor, Guidance, Margins, Buyback, or Update. Prefer "Lawsuit" (not "Trial") for AG case items.
 For tagClass, choose tag-red, tag-amber, tag-blue, or tag-teal to match severity/topic.
 Set todayDate to today's date in "Month D, YYYY" format.
