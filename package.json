@@ -14,6 +14,7 @@
     "start": "node dist/server/index.js",
     "ingest:archives": "tsx scripts/ingestArchives.ts",
     "refresh:mission-tracker": "node public/mission-tracker/refresh.mjs",
+    "update:hca": "node scripts/update-dashboard.js",
     "update:hca-watchdog": "node scripts/update-dashboard.js",
     "build:staff-ratios": "python3 scripts/buildStaffRatios.py"
   },

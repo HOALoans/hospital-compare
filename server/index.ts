@@ -356,7 +356,12 @@ app.get("/api/meta/archives", (_req, res) => {
   });
 });
 
-/** HCA Watchdog: Yahoo Finance chart + analyst ratings (avoids CORS / keys in client). */
+/** Legacy path — dashboard lives at /hca/ */
+app.get(["/hca-watchdog", "/hca-watchdog/"], (_req, res) => {
+  res.redirect(301, "/hca/");
+});
+
+/** HCA dashboard: chart, analysts, insiders (avoids CORS / keys in client). */
 app.get("/api/finance/hca/chart", limitFinance, async (req, res) => {
   const rawRange = String(req.query.range ?? "3mo").trim();
   const range = (rawRange in CHART_RANGES ? rawRange : "3mo") as ChartRangeKey;

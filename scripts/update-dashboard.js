@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * Refresh HCA Watchdog dashboard news + talking points via Anthropic.
- * Usage (from repo root): npm run update:hca-watchdog
+ * Refresh HCA / Mission dashboard news + talking points via Anthropic.
+ * Usage (from repo root): npm run update:hca
  * Or: node scripts/update-dashboard.js
  *
- * Live URL: https://parigrado.com/hca-watchdog/
- * HTML path: public/hca-watchdog/index.html
+ * Live URL: https://parigrado.com/hca/
+ * HTML path: public/hca/index.html
  * Hosted via Parigrado/Render (not GitHub Pages).
  * Workflow: .github/workflows/update-dashboard.yml
  *
- * Requires ANTHROPIC_API_KEY. Optional: DASHBOARD_HTML (default public/hca-watchdog/index.html)
+ * Requires ANTHROPIC_API_KEY. Optional: DASHBOARD_HTML (default public/hca/index.html)
  */
 
 import fs from "fs";
@@ -80,7 +80,7 @@ function resolveHtmlPath() {
       ? override
       : path.resolve(ROOT, override);
   }
-  return path.join(ROOT, "public", "hca-watchdog", "index.html");
+  return path.join(ROOT, "public", "hca", "index.html");
 }
 
 function requireApiKey() {
@@ -90,7 +90,7 @@ function requireApiKey() {
       "Error: ANTHROPIC_API_KEY is not set.\n" +
         "Export your key before running, e.g.:\n" +
         "  export ANTHROPIC_API_KEY=sk-ant-...\n" +
-        "  npm run update:hca-watchdog",
+        "  npm run update:hca",
     );
     process.exit(1);
   }
