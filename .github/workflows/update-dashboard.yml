@@ -1,6 +1,7 @@
 # Auto-refresh HCA Watchdog dashboard via Anthropic.
-# Installs from repo root (package.json has @anthropic-ai/sdk) so
-# `node scripts/update-dashboard.js` resolves the dependency correctly.
+# Installs from scripts/ (scripts/package.json has @anthropic-ai/sdk);
+# Node resolves modules from the script file upward, so
+# `node scripts/update-dashboard.js` finds scripts/node_modules.
 name: Update HCA Watchdog dashboard
 
 on:
@@ -22,7 +23,8 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install dependencies
+      - name: Install deps
+        working-directory: scripts
         run: npm install
 
       - name: Update dashboard

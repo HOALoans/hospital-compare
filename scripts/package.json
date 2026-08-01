@@ -1,0 +1,7 @@
+{
+  "name": "hca-dashboard-updater",
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest"
+  }
+}
