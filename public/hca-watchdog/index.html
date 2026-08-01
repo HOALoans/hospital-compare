@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HCA Watchdog — Reclaim Healthcare WNC</title>
+<meta name="description" content="Accountability dashboard tracking HCA Healthcare's management of Mission Hospital in Asheville, NC. Updated daily by Reclaim Healthcare WNC.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f3ef;
+    --surface: #ffffff;
+    --surface-2: #f9f8f6;
+    --border: #e2dfd8;
+    --border-strong: #c8c4bb;
+    --text: #1a1916;
+    --text-2: #4a4843;
+    --text-3: #7a7772;
+    --red: #9b2020;
+    --red-bg: #fdf1f1;
+    --red-border: #f0c0c0;
+    --blue: #1a4a7a;
+    --blue-bg: #eef4fb;
+    --blue-border: #bed4ed;
+    --amber: #7a4a10;
+    --amber-bg: #fdf6ec;
+    --amber-border: #edcf90;
+    --teal: #0e5e4a;
+    --teal-bg: #eef8f4;
+    --teal-border: #9ed9c4;
+    --accent: #c0392b;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-serif: 'Source Serif 4', Georgia, serif;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  /* ── MASTHEAD ── */
+  .masthead {
+    background: #1a1916;
+    color: #fff;
+    padding: 0;
+    border-bottom: 3px solid var(--accent);
+  }
+  .masthead-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 1.25rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .masthead-left {}
+  .masthead-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  .masthead-title {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.2;
+  }
+  .masthead-title span { color: var(--accent); }
+  .masthead-sub {
+    font-size: 13px;
+    color: #aaa;
+    margin-top: 4px;
+  }
+  .masthead-right { text-align: right; }
+  .masthead-date {
+    font-size: 12px;
+    color: #666;
+    font-variant-numeric: tabular-nums;
+  }
+  .masthead-updated {
+    font-size: 11px;
+    color: #555;
+    margin-top: 2px;
+  }
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 3rem;
+  }
+  /* ── STAT BAR ── */
+  .stat-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: var(--font-serif);
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-3);
+    line-height: 1.4;
+    margin-top: 5px;
+  }
+  /* ── SECTIONS ── */
+  .section {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.6rem 1.1rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .section-header svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .section-header-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .section-body { padding: 1.1rem; }
+  .sh-red { background: var(--red-bg); border-bottom-color: var(--red-border); }
+  .sh-red .section-header-label { color: var(--red); }
+  .sh-red svg { color: var(--red); }
+  .sh-blue { background: var(--blue-bg); border-bottom-color: var(--blue-border); }
+  .sh-blue .section-header-label { color: var(--blue); }
+  .sh-blue svg { color: var(--blue); }
+  .sh-amber { background: var(--amber-bg); border-bottom-color: var(--amber-border); }
+  .sh-amber .section-header-label { color: var(--amber); }
+  .sh-amber svg { color: var(--amber); }
+  .sh-teal { background: var(--teal-bg); border-bottom-color: var(--teal-border); }
+  .sh-teal .section-header-label { color: var(--teal); }
+  .sh-teal svg { color: var(--teal); }
+  .sh-gray { background: var(--surface-2); border-bottom-color: var(--border); }
+  .sh-gray .section-header-label { color: var(--text-3); }
+  .sh-gray svg { color: var(--text-3); }
+  /* ── NEWS ITEMS ── */
+  .news-item {
+    padding: 0.85rem 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .news-item:first-child { padding-top: 0; }
+  .news-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .news-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    flex-wrap: wrap;
+  }
+  .news-source {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .news-date { font-size: 11px; color: var(--text-3); }
+  .tag {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 1px 7px;
+    border-radius: 4px;
+  }
+  .tag-red { background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red-border); }
+  .tag-amber { background: var(--amber-bg); color: var(--amber); border: 0.5px solid var(--amber-border); }
+  .tag-blue { background: var(--blue-bg); color: var(--blue); border: 0.5px solid var(--blue-border); }
+  .tag-teal { background: var(--teal-bg); color: var(--teal); border: 0.5px solid var(--teal-border); }
+  .news-headline {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.35;
+  }
+  .news-blurb {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.55;
+  }
+  /* ── TALKING POINTS ── */
+  .tp-item {
+    display: flex;
+    gap: 12px;
+    padding: 0.75rem 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .tp-item:first-child { padding-top: 0; }
+  .tp-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .tp-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--red-bg);
+    border: 0.5px solid var(--red-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--red);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .tp-text { font-size: 13px; color: var(--text); line-height: 1.55; }
+  .tp-text strong { font-weight: 600; color: var(--text); display: block; margin-bottom: 2px; }
+  /* ── ARC NARRATIVE ── */
+  .arc-entry {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1rem;
+    padding: 0.85rem 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .arc-entry:first-child { padding-top: 0; }
+  .arc-entry:last-child { border-bottom: none; padding-bottom: 0; }
+  .arc-period {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--teal);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+    padding-top: 2px;
+  }
+  .arc-text { font-size: 13px; color: var(--text-2); line-height: 1.55; }
+  .arc-text strong { color: var(--text); font-weight: 600; }
+  /* ── SOURCES GRID ── */
+  .sources-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 1.5rem;
+  }
+  .sources-grid a {
+    font-size: 13px;
+    color: var(--blue);
+    text-decoration: none;
+  }
+  .sources-grid a:hover { text-decoration: underline; }
+  /* ── FOOTER ── */
+  .footer {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1rem 1.5rem 2rem;
+    border-top: 0.5px solid var(--border-strong);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .footer-left { font-size: 12px; color: var(--text-3); }
+  .footer-right a {
+    font-size: 12px;
+    color: var(--blue);
+    text-decoration: none;
+  }
+  .footer-right a:hover { text-decoration: underline; }
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .masthead-inner { flex-direction: column; align-items: flex-start; }
+    .masthead-right { text-align: left; }
+    .stat-bar { grid-template-columns: 1fr; }
+    .arc-entry { grid-template-columns: 1fr; gap: 2px; }
+    .sources-grid { grid-template-columns: 1fr; }
+    .masthead-title { font-size: 22px; }
+    .container { padding: 1rem 1rem 2rem; }
+  }
+  @media print {
+    body { background: #fff; }
+    .masthead { background: #111; -webkit-print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<header class="masthead" role="banner">
+  <div class="masthead-inner">
+    <div class="masthead-left">
+      <div class="masthead-eyebrow">Reclaim Healthcare WNC</div>
+      <div class="masthead-title">HCA <span>/</span> Mission Hospital<br>Watchdog Dashboard</div>
+      <div class="masthead-sub">Tracking HCA's accountability to Western North Carolina</div>
+    </div>
+    <div class="masthead-right">
+      <div class="masthead-date" id="today-date">August 1, 2026</div>
+      <div class="masthead-updated">Last updated manually — check sources for latest</div>
+    </div>
+  </div>
+</header>
+<main class="container" role="main">
+  <!-- STAT BAR -->
+  <div class="stat-bar" aria-label="Key statistics">
+    <div class="stat-card">
+      <div class="stat-num">4×</div>
+      <div class="stat-label">Immediate Jeopardy citations since HCA acquired Mission in 2019</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">2★</div>
+      <div class="stat-label">Mission HCAHPS patient experience rating 2020–2024 (lowest of all CON applicants)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">800+</div>
+      <div class="stat-label">Physicians and nurses who have left Mission since HCA's 2019 takeover</div>
+    </div>
+  </div>
+  <!-- TODAY'S NEWS -->
+  <section class="section" aria-labelledby="news-heading">
+    <div class="section-header sh-red">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span class="section-header-label" id="news-heading">Today's news — Aug 1, 2026</span>
+    </div>
+    <div class="section-body">
+      <article class="news-item">
+        <div class="news-meta">
+          <span class="news-source">NC Business Court</span>
+          <span class="news-date">July 28, 2026</span>
+          <span class="tag tag-red">Trial</span>
+        </div>
+        <h2 class="news-headline">AG Jackson wins key pre-trial rulings — HCA/Mission case proceeding to trial</h2>
+        <p class="news-blurb">Judge denied HCA's motion for summary judgment on the core claims that HCA violated its commitments to the WNC community when it purchased Mission in 2019. The state's lawsuit alleges HCA broke promises on staffing, services, and capital investment. A full trial is now on the docket — the most significant legal development in the accountability effort to date.</p>
+      </article>
+      <article class="news-item">
+        <div class="news-meta">
+          <span class="news-source">NC Health News / Dogwood</span>
+          <span class="news-date">July 28, 2026</span>
+          <span class="tag tag-red">Noncompliance</span>
+        </div>
+        <h2 class="news-headline">CMS monitor report: Mission still out of compliance — no plans to add staff submitted</h2>
+        <p class="news-blurb">The court-appointed federal monitor's latest report found Mission Hospital still failing to meet Enhanced Plan of Correction requirements. Critically, the hospital has submitted no plans to add nursing, trauma, or security staff — the core deficiencies that triggered every Immediate Jeopardy finding. The July 26 CMS deadline came and went without Mission achieving substantial compliance.</p>
+      </article>
+      <article class="news-item">
+        <div class="news-meta">
+          <span class="news-source">HCA Healthcare</span>
+          <span class="news-date">July 24, 2026</span>
+          <span class="tag tag-amber">Earnings</span>
+        </div>
+        <h2 class="news-headline">HCA reports strong Q2 2026 results — Mission safety failures invisible in earnings call</h2>
+        <p class="news-blurb">HCA posted robust Q2 revenue and earnings, cementing its Fortune 100 status. CEO and CFO language emphasized "cost discipline," "operational efficiency," and margin expansion. Mission Hospital's repeated safety failures, noncompliance, and pending trial were not mentioned. HCA's ability to report record profits while a hospital in its portfolio faces federal sanctions and a state attorney general lawsuit is the central tension Reclaim must amplify.</p>
+      </article>
+      <article class="news-item">
+        <div class="news-meta">
+          <span class="news-source">BPR / NC DHHS</span>
+          <span class="news-date">April 1, 2026</span>
+          <span class="tag tag-amber">CON</span>
+        </div>
+        <h2 class="news-headline">State awards Mission 95 CON beds — despite active federal safety sanctions</h2>
+        <p class="news-blurb">NC DHHS approved HCA/Mission's application for 95 new hospital beds while the hospital was under active federal compliance orders. Reclaim's data shows Mission scored the lowest HCAHPS patient experience rating (2 stars) of all four CON applicants — far behind Advent Health (4 stars), Novant, and UNC Pardee. Reclaim formally opposed the award and testified at the CON hearing.</p>
+      </article>
+    </div>
+  </section>
+  <!-- TALKING POINTS -->
+  <section class="section" aria-labelledby="tp-heading">
+    <div class="section-header sh-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span class="section-header-label" id="tp-heading">Talking points for media and advocacy</span>
+    </div>
+    <div class="section-body">
+      <div class="tp-item">
+        <div class="tp-num" aria-hidden="true">1</div>
+        <div class="tp-text"><strong>Profits over patients — in HCA's own words.</strong> HCA reported record Q2 2026 profits on its earnings call while simultaneously failing to submit any plan to add nurses, trauma staff, or security at Mission — the same deficiencies that triggered four Immediate Jeopardy citations. Ask publicly: if HCA can reward shareholders, why can't it staff Mission safely?</div>
+      </div>
+      <div class="tp-item">
+        <div class="tp-num" aria-hidden="true">2</div>
+        <div class="tp-text"><strong>The AG's trial is the accountability moment WNC has waited for.</strong> The July 28 ruling means a court will hear evidence that HCA broke its 2019 acquisition promises on staffing, services, and investment. This is no longer just a regulatory story — it's a breach-of-contract story with WNC's health on the line.</div>
+      </div>
+      <div class="tp-item">
+        <div class="tp-num" aria-hidden="true">3</div>
+        <div class="tp-text"><strong>"No plans to add staff" is the headline.</strong> The federal monitor's July 2026 report found Mission submitted zero staffing plans. After four Immediate Jeopardy findings, the hospital's own compliance filing documents no commitment to fix the root cause. Every HCA "we are working on it" statement must be measured against this documented inaction.</div>
+      </div>
+      <div class="tp-item">
+        <div class="tp-num" aria-hidden="true">4</div>
+        <div class="tp-text"><strong>The CON award was a gift to a noncompliant operator.</strong> NC DHHS awarded 95 new beds to the hospital system with the worst patient experience scores in the CON competition — while it was under active federal safety orders. More beds, same understaffed hospital: that is a regulatory failure that compounds patient risk.</div>
+      </div>
+      <div class="tp-item">
+        <div class="tp-num" aria-hidden="true">5</div>
+        <div class="tp-text"><strong>The staffing math is damning.</strong> Mission runs 3.7 FTE per patient bed. The NC average is 5.1. That 1.4 FTE-per-bed gap is not a rounding error — it is the structural cause of every Immediate Jeopardy, every adverse patient event, every nurse who has left since 2019.</div>
+      </div>
+      <div class="tp-item">
+        <div class="tp-num" aria-hidden="true">6</div>
+        <div class="tp-text"><strong>Two stars for five years running.</strong> Mission's HCAHPS patient experience rating has been 2 out of 5 stars every year from 2020 through 2024 — consistently the lowest in the WNC CON field. That is not bad luck. That is a management strategy that treats patient experience as a cost to be minimized.</div>
+      </div>
+    </div>
+  </section>
+  <!-- ARC NARRATIVE -->
+  <section class="section" aria-labelledby="arc-heading">
+    <div class="section-header sh-teal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="section-header-label" id="arc-heading">Arc — running narrative</span>
+    </div>
+    <div class="section-body">
+      <div class="arc-entry">
+        <div class="arc-period">2019<br>Acquisition</div>
+        <div class="arc-text">HCA Healthcare, a <strong>Fortune 100 for-profit hospital corporation</strong>, acquires Mission Health for $1.5 billion, promising to maintain staffing levels, services, and investment in WNC. The NC Attorney General's office extracts legally binding commitments as a condition of approval.</div>
+      </div>
+      <div class="arc-entry">
+        <div class="arc-period">2019–2022<br>The exodus</div>
+        <div class="arc-text">More than <strong>200 physicians and 600 nurses</strong> leave Mission. Staff-to-bed ratios fall from 6.1 FTE to 3.7 FTE — well below the 5.1 NC average. Patient experience scores drop to 2 stars and stay there. Mission receives its <strong>first Immediate Jeopardy citation</strong> in 2021.</div>
+      </div>
+      <div class="arc-entry">
+        <div class="arc-period">2023–2024<br>Sanctions escalate</div>
+        <div class="arc-text">Blue Ridge Regional Hospital (HCA-owned, Spruce Pine) cited for Immediate Jeopardy in 2023. Mission receives a <strong>second and third Immediate Jeopardy citation</strong> in 2024–2025. CMS issues an Enhanced Plan of Correction. Reclaim Healthcare WNC formalizes as a 501(c)(3) coalition of physicians, nurses, elected officials, and community members.</div>
+      </div>
+      <div class="arc-entry">
+        <div class="arc-period">Jan 2026<br>Fourth IJ</div>
+        <div class="arc-text">Mission is placed in Immediate Jeopardy <strong>for the fourth time</strong> — three times in less than two years. CEO tells employees via internal message. National Nurses United responds publicly, calling conditions unsafe. HCA's earnings language simultaneously describes "cost discipline" and margin improvement.</div>
+      </div>
+      <div class="arc-entry">
+        <div class="arc-period">Apr 2026<br>CON awarded</div>
+        <div class="arc-text">NC DHHS awards Mission <strong>95 new hospital beds</strong> — despite active federal compliance orders and the lowest patient experience scores of any CON applicant. Reclaim testifies in opposition, presenting HCAHPS data showing Mission at 2 stars vs. Advent Health at 4 stars every year since 2020.</div>
+      </div>
+      <div class="arc-entry">
+        <div class="arc-period">Jul 24, 2026<br>Q2 Earnings</div>
+        <div class="arc-text">HCA reports strong Q2 2026 results. <strong>Mission's noncompliance is not mentioned on the earnings call.</strong> "Operational efficiency" language contrasts sharply with the concurrent federal monitor finding of zero staffing plans submitted by Mission.</div>
+      </div>
+      <div class="arc-entry">
+        <div class="arc-period">Jul 26, 2026<br>Deadline passes</div>
+        <div class="arc-text">The Enhanced Plan of Correction deadline expires. The federal monitor confirms <strong>Mission has not achieved substantial compliance</strong> and has submitted no plans to add nursing, trauma, or security staff — the same deficiencies driving every prior sanction.</div>
+      </div>
+      <div class="arc-entry">
+        <div class="arc-period">Jul 28, 2026<br>Trial confirmed</div>
+        <div class="arc-text">Judge denies HCA's summary judgment motion. <strong>The NC Attorney General's lawsuit will go to trial.</strong> A court will now assess whether HCA honored its legal commitments to WNC. Reclaim's years of documentation, testimony, and public pressure have contributed directly to this moment.</div>
+      </div>
+      <div class="arc-entry">
+        <div class="arc-period">What's next</div>
+        <div class="arc-text">Trial date TBD in NC Business Court. CMS must determine next steps following Mission's failure to achieve substantial compliance — options include continued monitoring, Medicare/Medicaid payment suspension, or termination. HCA Q3 earnings (expected October 2026) will again test whether HCA addresses Mission publicly in investor communications.</div>
+      </div>
+    </div>
+  </section>
+  <!-- KEY SOURCES -->
+  <section class="section" aria-labelledby="sources-heading">
+    <div class="section-header sh-gray">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      <span class="section-header-label" id="sources-heading">Key sources</span>
+    </div>
+    <div class="section-body">
+      <div class="sources-grid">
+        <a href="https://avlwatchdog.org" target="_blank" rel="noopener">Asheville Watchdog</a>
+        <a href="https://www.bpr.org" target="_blank" rel="noopener">Blue Ridge Public Radio</a>
+        <a href="https://www.northcarolinahealthnews.org" target="_blank" rel="noopener">NC Health News</a>
+        <a href="https://ncdoj.gov" target="_blank" rel="noopener">NC Attorney General / DOJ</a>
+        <a href="https://investor.hcahealthcare.com" target="_blank" rel="noopener">HCA Healthcare investor relations</a>
+        <a href="https://reclaimhealthcarewnc.org" target="_blank" rel="noopener">Reclaim Healthcare WNC</a>
+        <a href="https://www.cms.gov" target="_blank" rel="noopener">CMS (federal regulator)</a>
+        <a href="https://www.nationalnursesunited.org" target="_blank" rel="noopener">National Nurses United</a>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="footer" role="contentinfo">
+  <div class="footer-left">Built and maintained by Reclaim Healthcare WNC · <a href="https://reclaimhealthcarewnc.org" style="color:inherit">reclaimhealthcarewnc.org</a></div>
+  <div class="footer-right"><a href="https://reclaimhealthcarewnc.org/donate" target="_blank" rel="noopener">Support Reclaim →</a></div>
+</footer>
+<script>
+  const d = new Date();
+  const opts = { year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById('today-date').textContent = d.toLocaleDateString('en-US', opts);
+</script>
+</body>
+</html>
