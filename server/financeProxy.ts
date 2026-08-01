@@ -4,8 +4,9 @@
  * Analysts: merge Stock Analysis (TipRanks), MarketBeat, Yahoo upgrade history.
  * TipRanks via Stock Analysis free page typically exposes ~8 named recent ratings;
  * MarketBeat “most recent per brokerage” adds further distinct firms. Display
- * capped at ANALYST_DISPLAY_LIMIT. Nasdaq /api/analyst/.../ratings lists broker
- * names but not per-firm grades (upgradesDowngrades empty) — not used for rows.
+ * capped at ANALYST_DISPLAY_LIMIT (~12; upstream-backed, no padding). Nasdaq
+ * /api/analyst/.../ratings lists broker names but not per-firm grades
+ * (upgradesDowngrades empty) — not used for rows.
  * Insiders: Yahoo quoteSummary (crumb) + OpenInsider Form 4 + Nasdaq; merge/dedupe;
  * display capped at INSIDER_DISPLAY_LIMIT within ~INSIDER_LOOKBACK_DAYS.
  */
@@ -1245,7 +1246,7 @@ export interface AnalystRating {
 }
 
 /** Max distinct-firm rows returned to the HCA dashboard. */
-const ANALYST_DISPLAY_LIMIT = 6;
+const ANALYST_DISPLAY_LIMIT = 12;
 
 type AnalystSourceResult = {
   ratings: AnalystRating[];

@@ -263,9 +263,6 @@
     display: flex;
     flex-direction: column;
     gap: 0;
-  }
-  /* Analysts are capped at 6 — show every row (named rows exceed 280px). */
-  .insider-list {
     max-height: 380px;
     overflow-y: auto;
   }
@@ -1137,7 +1134,7 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Analysts request failed');
 
-        const ratings = (Array.isArray(data.ratings) ? data.ratings : []).slice(0, 6);
+        const ratings = (Array.isArray(data.ratings) ? data.ratings : []).slice(0, 12);
         if (data.consensus) {
           consensusEl.textContent = 'Consensus: ' + data.consensus;
         } else {
