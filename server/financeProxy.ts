@@ -1,7 +1,11 @@
 /**
  * Server-side finance helpers for the HCA Watchdog page.
  * Quote/chart: Yahoo Finance v8 first; Nasdaq.com JSON fallback (no API key).
- * Analysts: Yahoo quoteSummary when crumb works; StockAnalysis.com HTML fallback.
+ * Analysts: merge Stock Analysis (TipRanks), MarketBeat, Yahoo upgrade history.
+ * TipRanks via Stock Analysis free page typically exposes ~8 named recent ratings;
+ * MarketBeat “most recent per brokerage” adds further distinct firms. Display
+ * capped at ANALYST_DISPLAY_LIMIT. Nasdaq /api/analyst/.../ratings lists broker
+ * names but not per-firm grades (upgradesDowngrades empty) — not used for rows.
  */
 
 const YAHOO_UA =
@@ -959,11 +963,157 @@ export interface AnalystRating {
   date: string | null;
 }
 
-async function fetchAnalystsFromYahoo(): Promise<{
+/** Max distinct-firm rows returned to the HCA dashboard. */
+const ANALYST_DISPLAY_LIMIT = 15;
+
+type AnalystSourceResult = {
   ratings: AnalystRating[];
   asOf: string;
   source: string;
-} | null> {
+  consensus: string | null;
+};
+
+function cleanRatingLabel(raw: string): string | null {
+  let rating = raw.replace(/&(?:rarr|arr);/gi, "→").replace(/\s+/g, " ").trim();
+  if (!rating || /^n\/?a$/i.test(rating)) return null;
+  // Take the newest grade from "Overweight → Equal Weight"
+  if (rating.includes("→")) {
+    const parts = rating.split("→").map((p) => p.trim()).filter(Boolean);
+    rating = parts[parts.length - 1] || rating;
+  }
+  // Strip letter-grade suffixes like "Hold (C+)"
+  rating = rating.replace(/\s*\([^)]*\)\s*$/, "").trim();
+  if (!rating || /^n\/?a$/i.test(rating) || /^\d+(\.\d+)?$/.test(rating)) {
+    return null;
+  }
+  return rating;
+}
+
+function isRecognizedRating(rating: string): boolean {
+  const k = rating.toLowerCase().replace(/[^a-z]/g, "");
+  return /strongbuy|buy|outperform|overweight|accumulate|hold|neutral|equalweight|marketperform|mktperform|peerperform|inline|sell|strongsell|underperform|underweight|reduce/.test(
+    k,
+  );
+}
+
+/** Canonical firm key for dedupe across sources (aliases + suffix stripping). */
+function normalizeFirmKey(firm: string): string {
+  const raw = firm.toLowerCase();
+  const rules: Array<[RegExp, string]> = [
+    [/goldman/, "goldman"],
+    [/bernstein/, "bernstein"],
+    [/mizuho/, "mizuho"],
+    [/deutsche/, "deutsche"],
+    [/\bubs\b/, "ubs"],
+    [/truist|bb[& ]?t/, "truist"],
+    [/royal bank of canada|\brbc\b/, "rbc"],
+    [/jp\s*morgan|jpmorgan/, "jpmorgan"],
+    [/bank of america|bofa|b of a/, "bofa"],
+    [/barclays/, "barclays"],
+    [/wells fargo/, "wellsfargo"],
+    [/raymond james/, "raymondjames"],
+    [/oppenheimer/, "oppenheimer"],
+    [/cantor/, "cantor"],
+    [/td cowen|\bcowen\b/, "tdcowen"],
+    [/stephens/, "stephens"],
+    [/leerink/, "leerink"],
+    [/argus/, "argus"],
+    [/key\s*(corp|banc)|keybanc/, "keybanc"],
+    [/\bbaird\b/, "baird"],
+    [/wolfe/, "wolfe"],
+    [/jefferies/, "jefferies"],
+    [/morgan stanley/, "morganstanley"],
+    [/citigroup|\bciti\b/, "citi"],
+    [/loop capital/, "loop"],
+    [/zacks/, "zacks"],
+    [/weiss/, "weiss"],
+    [/guggenheim/, "guggenheim"],
+    [/piper/, "piper"],
+    [/evercore/, "evercore"],
+    [/loop/, "loop"],
+  ];
+  for (const [re, key] of rules) {
+    if (re.test(raw)) return key;
+  }
+  return raw.replace(/[^a-z0-9]/g, "");
+}
+
+function ratingDateMs(date: string | null): number {
+  if (!date) return 0;
+  const t = Date.parse(date);
+  return Number.isFinite(t) ? t : 0;
+}
+
+function preferAnalystRow(a: AnalystRating, b: AnalystRating): AnalystRating {
+  const da = ratingDateMs(a.date);
+  const db = ratingDateMs(b.date);
+  if (da !== db) return da > db ? a : b;
+  // Prefer rows that include an analyst name when dates tie.
+  if (a.analyst && !b.analyst) return a;
+  if (b.analyst && !a.analyst) return b;
+  return a;
+}
+
+function mergeAnalystRatings(
+  batches: Array<{ ratings: AnalystRating[]; source: string; priority: number }>,
+): { ratings: AnalystRating[]; sources: string[] } {
+  // Lower priority number wins when dates are equal and both have/lack names.
+  type Entry = { row: AnalystRating; priority: number; source: string };
+  const byFirm = new Map<string, Entry>();
+  const usedSources = new Set<string>();
+
+  const sorted = [...batches].sort((x, y) => x.priority - y.priority);
+  for (const batch of sorted) {
+    for (const row of batch.ratings) {
+      const firm = row.firm.trim();
+      const rating = cleanRatingLabel(row.rating);
+      if (!firm || !rating || !isRecognizedRating(rating)) continue;
+      const cleaned: AnalystRating = {
+        firm,
+        analyst: row.analyst?.trim() || null,
+        rating,
+        action: row.action?.trim() || null,
+        date: row.date || null,
+      };
+      const key = normalizeFirmKey(firm);
+      if (!key) continue;
+      const prev = byFirm.get(key);
+      if (!prev) {
+        byFirm.set(key, { row: cleaned, priority: batch.priority, source: batch.source });
+        usedSources.add(batch.source);
+        continue;
+      }
+      const da = ratingDateMs(cleaned.date);
+      const db = ratingDateMs(prev.row.date);
+      if (da > db) {
+        byFirm.set(key, { row: cleaned, priority: batch.priority, source: batch.source });
+        usedSources.add(batch.source);
+      } else if (da === db) {
+        // Same day: prefer higher-priority source, then named analyst.
+        if (
+          batch.priority < prev.priority ||
+          (batch.priority === prev.priority &&
+            preferAnalystRow(cleaned, prev.row) === cleaned)
+        ) {
+          byFirm.set(key, { row: cleaned, priority: batch.priority, source: batch.source });
+          usedSources.add(batch.source);
+        }
+      }
+    }
+  }
+
+  const ratings = [...byFirm.values()]
+    .map((e) => e.row)
+    .sort((a, b) => ratingDateMs(b.date) - ratingDateMs(a.date))
+    .slice(0, ANALYST_DISPLAY_LIMIT);
+
+  // Preserve source order by priority for the attribution string.
+  const sourceOrder = sorted.map((b) => b.source);
+  const sources = sourceOrder.filter((s) => usedSources.has(s));
+  return { ratings, sources };
+}
+
+async function fetchAnalystsFromYahoo(): Promise<AnalystSourceResult | null> {
   const session = await getYahooSession();
   if (!session) return null;
 
@@ -996,15 +1146,14 @@ async function fetchAnalystsFromYahoo(): Promise<{
   const history = data.quoteSummary?.result?.[0]?.upgradeDowngradeHistory?.history;
   if (!Array.isArray(history) || history.length === 0) return null;
 
-  // Deduplicate by firm, keep most recent
   const seen = new Set<string>();
   const ratings: AnalystRating[] = [];
   for (const row of history) {
     const firm = String(row.firm || "").trim();
-    const rating = String(row.toGrade || "").trim();
-    if (!firm || !rating) continue;
-    const key = firm.toLowerCase();
-    if (seen.has(key)) continue;
+    const rating = cleanRatingLabel(String(row.toGrade || ""));
+    if (!firm || !rating || !isRecognizedRating(rating)) continue;
+    const key = normalizeFirmKey(firm);
+    if (!key || seen.has(key)) continue;
     seen.add(key);
     ratings.push({
       firm,
@@ -1015,22 +1164,18 @@ async function fetchAnalystsFromYahoo(): Promise<{
         ? new Date(row.epochGradeDate * 1000).toISOString().slice(0, 10)
         : null,
     });
-    if (ratings.length >= 12) break;
+    if (ratings.length >= ANALYST_DISPLAY_LIMIT) break;
   }
   if (ratings.length === 0) return null;
   return {
     ratings,
     asOf: new Date().toISOString(),
     source: "Yahoo Finance",
+    consensus: null,
   };
 }
 
-async function fetchAnalystsFromStockAnalysis(): Promise<{
-  ratings: AnalystRating[];
-  asOf: string;
-  source: string;
-  consensus: string | null;
-} | null> {
+async function fetchAnalystsFromStockAnalysis(): Promise<AnalystSourceResult | null> {
   const res = await fetch("https://stockanalysis.com/stocks/hca/ratings/", {
     headers: {
       "User-Agent": YAHOO_UA,
@@ -1041,6 +1186,7 @@ async function fetchAnalystsFromStockAnalysis(): Promise<{
   const html = await res.text();
 
   const ratings: AnalystRating[] = [];
+  // TipRanks payload embedded in the page (free view ~8 recent named ratings).
   const re =
     /\{action_rt:"([^"]*)",pt_now:[^,}]*,pt_old:[^,}]*,firm:"([^"]*)",analyst:"([^"]*)",slug:"[^"]*",date:"([^"]*)",rating_new:"([^"]*)"/g;
   let m: RegExpExecArray | null;
@@ -1048,12 +1194,12 @@ async function fetchAnalystsFromStockAnalysis(): Promise<{
   while ((m = re.exec(html)) !== null) {
     const firm = m[2]!.trim();
     const analyst = m[3]!.trim();
-    const rating = m[5]!.trim();
+    const rating = cleanRatingLabel(m[5]!.trim());
     const date = m[4]!.trim();
     const action = m[1]!.trim();
-    if (!firm || !rating) continue;
-    const key = `${firm.toLowerCase()}|${analyst.toLowerCase()}`;
-    if (seen.has(key)) continue;
+    if (!firm || !rating || !isRecognizedRating(rating)) continue;
+    const key = normalizeFirmKey(firm);
+    if (!key || seen.has(key)) continue;
     seen.add(key);
     ratings.push({
       firm,
@@ -1062,7 +1208,7 @@ async function fetchAnalystsFromStockAnalysis(): Promise<{
       action: action || null,
       date: date || null,
     });
-    if (ratings.length >= 12) break;
+    if (ratings.length >= ANALYST_DISPLAY_LIMIT) break;
   }
 
   if (ratings.length === 0) return null;
@@ -1080,47 +1226,215 @@ async function fetchAnalystsFromStockAnalysis(): Promise<{
   };
 }
 
+async function fetchAnalystsFromMarketBeat(): Promise<AnalystSourceResult | null> {
+  const res = await fetch("https://www.marketbeat.com/stocks/NYSE/HCA/forecast/", {
+    headers: {
+      "User-Agent": YAHOO_UA,
+      Accept: "text/html,application/xhtml+xml",
+      "Accept-Language": "en-US,en;q=0.9",
+    },
+  });
+  if (!res.ok) return null;
+  const html = await res.text();
+
+  const tableMatch = html.match(/id="history-table"([\s\S]*?)<\/table>/i);
+  if (!tableMatch) return null;
+  const rows = tableMatch[1]!.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || [];
+  const seen = new Set<string>();
+  const ratings: AnalystRating[] = [];
+
+  for (const row of rows) {
+    if (!/data-sort-value="/i.test(row)) continue;
+
+    const dateSort = row.match(/<td[^>]*data-sort-value="(\d{8})/i);
+    let date: string | null = null;
+    if (dateSort) {
+      const s = dateSort[1]!;
+      date = `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
+    }
+
+    const firmClean = row.match(
+      /<td[^>]*data-clean="([^"|]+)(?:\|[^"]*)?"[^>]*>[\s\S]*?ratings\/by-issuer/i,
+    );
+    const firm =
+      firmClean?.[1]?.trim() ||
+      row.match(/ratings\/by-issuer\/[^"]+"[^>]*>\s*([^<]+)/i)?.[1]?.trim() ||
+      "";
+    if (!firm) continue;
+
+    const cleans = [...row.matchAll(/<td[^>]*data-clean="([^"]*)"/gi)].map((x) => x[1] || "");
+    let analyst: string | null = null;
+    if (cleans.length >= 2) {
+      const a = (cleans[1] || "").split("|")[0]?.trim() || "";
+      if (a && !/^subscribe/i.test(a) && !isRecognizedRating(a)) analyst = a;
+    }
+
+    const marker = row.match(/rating-marker[^"]*">\s*([^<]+)/i)?.[1]?.trim();
+    let rating: string | null = marker ? cleanRatingLabel(marker) : null;
+    if (!rating) {
+      for (const c of cleans) {
+        if (!c.includes("|")) continue;
+        const [, neu] = c.split("|", 2);
+        const candidate = cleanRatingLabel((neu || "").trim());
+        if (candidate && isRecognizedRating(candidate)) {
+          rating = candidate;
+          break;
+        }
+        const left = cleanRatingLabel(c.split("|", 1)[0]!.trim());
+        if (left && isRecognizedRating(left)) {
+          rating = left;
+          break;
+        }
+      }
+    }
+    if (!rating || !isRecognizedRating(rating)) continue;
+
+    const actionText =
+      row.match(
+        /<\/td>\s*<td>([^<]*(?:Target|Upgrade|Downgrade|Reiterat|Initiat|Maintain|Coverage)[^<]*)<\/td>/i,
+      )?.[1]?.trim() || null;
+
+    const key = normalizeFirmKey(firm);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    ratings.push({
+      firm,
+      analyst,
+      rating,
+      action: actionText,
+      date,
+    });
+  }
+
+  if (ratings.length === 0) return null;
+
+  const consensus =
+    html.match(/class="rating-title">\s*([^<]+)/i)?.[1]?.trim() || null;
+
+  return {
+    ratings,
+    asOf: new Date().toISOString(),
+    source: "MarketBeat",
+    consensus,
+  };
+}
+
+async function fetchAnalystsFromFinviz(): Promise<AnalystSourceResult | null> {
+  const res = await fetch(`https://finviz.com/quote.ashx?t=${SYMBOL}`, {
+    headers: {
+      "User-Agent": YAHOO_UA,
+      Accept: "text/html,application/xhtml+xml",
+    },
+  });
+  if (!res.ok) return null;
+  const html = await res.text();
+  const rows = html.match(/<tr[^>]*class="styled-row[^"]*"[^>]*>[\s\S]*?<\/tr>/gi) || [];
+  const seen = new Set<string>();
+  const ratings: AnalystRating[] = [];
+
+  for (const row of rows) {
+    if (!/Upgrade|Downgrade|Initiated|Reiterated/i.test(row)) continue;
+    const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map((m) =>
+      m[1]!
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&(?:rarr|arr);/gi, "→")
+        .replace(/\s+/g, " ")
+        .trim(),
+    );
+    if (cells.length < 4) continue;
+    const dateRaw = cells[0] || "";
+    const action = cells[1] || null;
+    const firm = cells[2] || "";
+    const rating = cleanRatingLabel(cells[3] || "");
+    if (!firm || !rating || !isRecognizedRating(rating)) continue;
+
+    let date: string | null = null;
+    const dm = dateRaw.match(/^([A-Za-z]{3})-(\d{2})-(\d{2})$/);
+    if (dm) {
+      const months: Record<string, string> = {
+        Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+        Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+      };
+      const mon = months[dm[1]!];
+      if (mon) date = `20${dm[3]}-${mon}-${dm[2]}`;
+    }
+
+    const key = normalizeFirmKey(firm);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    ratings.push({ firm, analyst: null, rating, action, date });
+    if (ratings.length >= ANALYST_DISPLAY_LIMIT) break;
+  }
+
+  if (ratings.length === 0) return null;
+  return {
+    ratings,
+    asOf: new Date().toISOString(),
+    source: "Finviz",
+    consensus: null,
+  };
+}
+
 export async function fetchHcaAnalysts() {
   if (analystsCache && analystsCache.expires > Date.now()) {
     return analystsCache.body;
   }
 
-  let body: unknown = null;
+  const batches: Array<{ ratings: AnalystRating[]; source: string; priority: number }> = [];
+  let consensus: string | null = null;
+  let asOf = new Date().toISOString();
 
-  // Prefer StockAnalysis: includes firm + analyst name + rating.
-  try {
-    const sa = await fetchAnalystsFromStockAnalysis();
-    if (sa) {
-      body = {
-        symbol: SYMBOL,
-        ratings: sa.ratings,
-        consensus: sa.consensus,
-        asOf: sa.asOf,
-        source: sa.source,
-      };
+  const settled = await Promise.allSettled([
+    fetchAnalystsFromStockAnalysis(),
+    fetchAnalystsFromMarketBeat(),
+    fetchAnalystsFromYahoo(),
+    fetchAnalystsFromFinviz(),
+  ]);
+
+  const priorities = [
+    { sourceLabel: "Stock Analysis (TipRanks)", priority: 1 },
+    { sourceLabel: "MarketBeat", priority: 2 },
+    { sourceLabel: "Yahoo Finance", priority: 3 },
+    { sourceLabel: "Finviz", priority: 4 },
+  ];
+
+  for (let i = 0; i < settled.length; i++) {
+    const result = settled[i]!;
+    const meta = priorities[i]!;
+    if (result.status === "rejected") {
+      console.warn(`[finance] ${meta.sourceLabel} analysts failed:`, result.reason);
+      continue;
     }
-  } catch (err) {
-    console.warn("[finance] StockAnalysis analysts failed:", err);
+    const value = result.value;
+    if (!value || value.ratings.length === 0) continue;
+    batches.push({
+      ratings: value.ratings,
+      source: value.source,
+      priority: meta.priority,
+    });
+    if (!consensus && value.consensus) consensus = value.consensus;
+    // Prefer Stock Analysis asOf when present.
+    if (meta.priority === 1 && value.asOf) asOf = value.asOf;
   }
 
-  if (!body) {
-    try {
-      const yahoo = await fetchAnalystsFromYahoo();
-      if (yahoo) {
-        body = {
-          symbol: SYMBOL,
-          ratings: yahoo.ratings,
-          consensus: null as string | null,
-          asOf: yahoo.asOf,
-          source: yahoo.source,
-        };
-      }
-    } catch (err) {
-      console.warn("[finance] Yahoo analysts failed:", err);
-    }
-  }
+  const merged = mergeAnalystRatings(batches);
+  let body: unknown;
 
-  if (!body) {
+  if (merged.ratings.length > 0) {
+    body = {
+      symbol: SYMBOL,
+      ratings: merged.ratings,
+      consensus,
+      asOf,
+      source: merged.sources.join(" + "),
+      limit: ANALYST_DISPLAY_LIMIT,
+      note:
+        "TipRanks via Stock Analysis free page lists ~8 recent named ratings; " +
+        "additional distinct firms come from MarketBeat (most-recent-per-brokerage), " +
+        "Yahoo upgrade/downgrade history, and Finviz when available. " +
+        `Display capped at ${ANALYST_DISPLAY_LIMIT} firms.`,
+    };
+  } else {
     body = {
       symbol: SYMBOL,
       ratings: [] as AnalystRating[],

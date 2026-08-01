@@ -343,6 +343,14 @@
     border-radius: 4px;
     white-space: nowrap;
     justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .rating-arrow {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
   }
   .rating-buy, .rating-strongbuy, .rating-outperform, .rating-overweight {
     background: var(--up-bg); color: var(--up); border: 0.5px solid #b7dfc5;
@@ -712,7 +720,7 @@
     <section class="section news-col" aria-labelledby="news-heading">
       <div class="section-header sh-red">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <span class="section-header-label" id="news-heading">Today's news — Aug 1, 2026</span>
+        <span class="section-header-label" id="news-heading">Recent news — Aug 1, 2026</span>
       </div>
       <div class="section-body">
       <!-- NEWS_START -->
@@ -749,7 +757,7 @@
     <section class="section news-col" aria-labelledby="fin-news-heading">
       <div class="section-header sh-amber">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-        <span class="section-header-label" id="fin-news-heading">Financial news — Aug 1, 2026</span>
+        <span class="section-header-label" id="fin-news-heading">Recent financial news — Aug 1, 2026</span>
       </div>
       <div class="section-body">
       <!-- FIN_NEWS_START -->
@@ -968,8 +976,22 @@
       const k = String(rating || '').toLowerCase().replace(/[^a-z]/g, '');
       if (/strongbuy|outperform|overweight|buy|accumulate/.test(k)) return 'rating-buy';
       if (/strongsell|underperform|underweight|sell|reduce/.test(k)) return 'rating-sell';
-      if (/hold|neutral|equalweight|marketperform|peerperform|in[-]?line/.test(k)) return 'rating-hold';
+      if (/hold|neutral|equalweight|marketperform|mktperform|peerperform|in[-]?line/.test(k)) return 'rating-hold';
       return 'rating-other';
+    }
+    function ratingDirection(rating) {
+      const cls = ratingClass(rating);
+      if (cls === 'rating-buy') return 'up';
+      if (cls === 'rating-sell') return 'down';
+      if (cls === 'rating-hold') return 'side';
+      return 'other';
+    }
+    function ratingArrowMeta(rating) {
+      const dir = ratingDirection(rating);
+      if (dir === 'up') return { symbol: '↑', tone: 'bullish' };
+      if (dir === 'down') return { symbol: '↓', tone: 'bearish' };
+      if (dir === 'side') return { symbol: '→', tone: 'neutral' };
+      return { symbol: '', tone: '' };
     }
     function fmtDate(iso) {
       if (!iso) return '';
@@ -1151,16 +1173,26 @@
             const date = r.date
               ? '<div class="analyst-date">' + escapeHtml(fmtDate(r.date)) + '</div>'
               : '';
+            const arrow = ratingArrowMeta(r.rating);
+            const ratingText = String(r.rating || '');
+            const aria = arrow.tone
+              ? escapeHtml(ratingText) + ', ' + arrow.tone
+              : escapeHtml(ratingText);
+            const arrowHtml = arrow.symbol
+              ? '<span class="rating-arrow" aria-hidden="true">' + arrow.symbol + '</span>'
+              : '';
             return '<div class="analyst-row">' +
               '<div><div class="analyst-firm">' + escapeHtml(r.firm) + '</div>' +
               analyst + date + '</div>' +
-              '<span class="rating-pill ' + ratingClass(r.rating) + '">' +
-              escapeHtml(r.rating) + '</span></div>';
+              '<span class="rating-pill ' + ratingClass(r.rating) + '"' +
+              ' title="' + aria + '" aria-label="' + aria + '">' +
+              arrowHtml + escapeHtml(ratingText) + '</span></div>';
           }).join('');
         }
 
         const asOf = data.asOf ? fmtDate(data.asOf) : '';
         aStatus.textContent = (data.source ? 'Source: ' + data.source : 'Best-effort ratings') +
+          (ratings.length ? ' · ' + ratings.length + ' firms' : '') +
           (asOf ? ' · as of ' + asOf : '');
       } catch (err) {
         listEl.innerHTML = '<div class="analyst-empty">Analyst ratings temporarily unavailable.</div>';

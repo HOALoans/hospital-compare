@@ -46,8 +46,8 @@ IMPORTANT COLUMN SPLIT:
 Return ONLY a valid raw JSON object with exactly this structure, no markdown, no backticks, no preamble:
 {
   todayDate: "Month D, YYYY",
-  sectionLabel: "Today's news — Month D, YYYY",
-  financialSectionLabel: "Financial news — Month D, YYYY",
+  sectionLabel: "Recent news — Month D, YYYY",
+  financialSectionLabel: "Recent financial news — Month D, YYYY",
   newsItems: [
     {
       source: "Source name",
@@ -164,7 +164,7 @@ function validatePayload(data) {
     typeof data.financialSectionLabel !== "string" ||
     !data.financialSectionLabel.trim()
   ) {
-    data.financialSectionLabel = `Financial news — ${data.todayDate.trim()}`;
+    data.financialSectionLabel = `Recent financial news — ${data.todayDate.trim()}`;
   }
   for (const [i, item] of data.newsItems.entries()) {
     validateNewsItem(item, "newsItems", i);
@@ -323,7 +323,7 @@ function ensureMarkers(html) {
 function updateMastheadAndSection(html, todayDate, sectionLabel, financialSectionLabel) {
   const date = todayDate.trim();
   const label = sectionLabel.trim();
-  const finLabel = (financialSectionLabel || `Financial news — ${date}`).trim();
+  const finLabel = (financialSectionLabel || `Recent financial news — ${date}`).trim();
   const escapedLabel = escapeHtml(label);
   const escapedFinLabel = escapeHtml(finLabel);
   let out = html.replace(
@@ -337,7 +337,7 @@ function updateMastheadAndSection(html, todayDate, sectionLabel, financialSectio
     );
   } else {
     out = out.replace(
-      /(<span class="section-header-label"[^>]*>)([\s\S]*?Today's news[\s\S]*?)(<\/span>)/,
+      /(<span class="section-header-label"[^>]*>)([\s\S]*?(?:Today's|Recent) news[\s\S]*?)(<\/span>)/,
       `$1${escapedLabel}$3`,
     );
   }
@@ -371,8 +371,8 @@ For talkingPoints[].text, start with a short punchy title sentence ending in a p
 For tag, use a short label like Lawsuit, Noncompliance, Earnings, CON, Safety, Monitor, Guidance, Margins, Buyback, or Update. Prefer "Lawsuit" (not "Trial") for AG case items.
 For tagClass, choose tag-red, tag-amber, tag-blue, or tag-teal to match severity/topic.
 Set todayDate to today's date in "Month D, YYYY" format.
-Set sectionLabel to "Today's news — Month D, YYYY" using that same date.
-Set financialSectionLabel to "Financial news — Month D, YYYY" using that same date.
+Set sectionLabel to "Recent news — Month D, YYYY" using that same date.
+Set financialSectionLabel to "Recent financial news — Month D, YYYY" using that same date.
 
 Respond with raw JSON only.`;
 
