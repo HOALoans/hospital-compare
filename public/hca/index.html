@@ -263,7 +263,10 @@
     display: flex;
     flex-direction: column;
     gap: 0;
-    max-height: 280px;
+  }
+  /* Analysts are capped at 6 — show every row (named rows exceed 280px). */
+  .insider-list {
+    max-height: 380px;
     overflow-y: auto;
   }
   .insider-row {
@@ -935,8 +938,9 @@
     }
     function txClass(type) {
       const k = String(type || '').toLowerCase();
-      if (/buy|purchase|acquisit/.test(k) && !/dispos/.test(k)) return 'tx-buy';
-      if (/sell|sale|dispos/.test(k)) return 'tx-sell';
+      if (/sell|sale/.test(k)) return 'tx-sell';
+      if (/buy|purchase|award|grant|acquisit/.test(k)) return 'tx-buy';
+      if (/gift|tax|option|exercise|conversion/.test(k)) return 'tx-other';
       return 'tx-other';
     }
     function renderStats(stats) {
@@ -1162,7 +1166,7 @@
 
         const asOf = data.asOf ? fmtDate(data.asOf) : '';
         aStatus.textContent = (data.source ? 'Source: ' + data.source : 'Best-effort ratings') +
-          (ratings.length ? ' · ' + ratings.length + ' firms' : '') +
+          (ratings.length ? ' · Showing ' + ratings.length + ' recent ratings' : '') +
           (asOf ? ' · as of ' + asOf : '');
       } catch (err) {
         listEl.innerHTML = '<div class="analyst-empty">Analyst ratings temporarily unavailable.</div>';
@@ -1210,6 +1214,7 @@
         const asOf = data.asOf ? fmtDate(data.asOf) : '';
         if (iStatus) {
           iStatus.textContent = (data.source ? 'Source: ' + data.source : 'Best-effort Form 4 activity') +
+            (txs.length ? ' · ' + txs.length + ' trades' : '') +
             (asOf ? ' · as of ' + asOf : '');
         }
       } catch (err) {
