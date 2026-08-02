@@ -471,6 +471,128 @@
     color: var(--text-2);
     line-height: 1.55;
   }
+  .news-brief-payload { display: none; }
+  .news-headline a.news-link { cursor: pointer; }
+  /* ── NEWS BRIEF MODAL ── */
+  .news-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+  }
+  .news-modal[hidden] { display: none; }
+  .news-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(26, 25, 22, 0.45);
+  }
+  .news-modal-panel {
+    position: relative;
+    width: min(520px, 100%);
+    max-height: min(85vh, 720px);
+    overflow-y: auto;
+    background: var(--surface);
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 40px rgba(26, 25, 22, 0.18);
+    padding: 1.35rem 1.35rem 1.2rem;
+  }
+  .news-modal-close {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.7rem;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--text-3);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .news-modal-close:hover { color: var(--text); background: var(--surface-2); }
+  .news-modal-kicker {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 0.35rem;
+    padding-right: 2rem;
+  }
+  .news-modal-title {
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+    margin-bottom: 0.75rem;
+    padding-right: 1.5rem;
+  }
+  .news-modal-brief {
+    font-size: 14px;
+    color: var(--text-2);
+    line-height: 1.55;
+    margin-bottom: 1rem;
+  }
+  .news-modal-angles-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 0.45rem;
+  }
+  .news-modal-points {
+    margin: 0 0 1.15rem;
+    padding-left: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .news-modal-points li {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.45;
+  }
+  .news-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    align-items: center;
+  }
+  .news-modal-read {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--teal);
+    border: 0.5px solid var(--teal);
+    padding: 8px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+  }
+  .news-modal-read:hover { background: #0a4d3c; border-color: #0a4d3c; }
+  .news-modal-dismiss {
+    appearance: none;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-2);
+    background: var(--surface-2);
+    border: 0.5px solid var(--border);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .news-modal-dismiss:hover { border-color: var(--border-strong); color: var(--text); }
+  body.news-modal-open { overflow: hidden; }
   /* ── TALKING POINTS ── */
   .tp-item {
     display: flex;
@@ -632,12 +754,20 @@
     .stock-price { font-size: 28px; }
     .range-btns { justify-content: flex-start; }
     .stock-top { flex-direction: column; }
+    .news-modal { padding: 0.75rem; align-items: flex-end; }
+    .news-modal-panel {
+      width: 100%;
+      max-height: 88vh;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      padding: 1.15rem 1.1rem 1.25rem;
+    }
   }
   @media print {
     body { background: #fff; }
     .masthead { background: #fff; -webkit-print-color-adjust: exact; }
     .arc-summary { display: none; }
     .arc-details .arc-full { display: block !important; }
+    .news-modal { display: none !important; }
   }
 </style>
 </head>
@@ -737,10 +867,27 @@
     <section class="section news-col" aria-labelledby="news-heading">
       <div class="section-header sh-red">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <span class="section-header-label" id="news-heading">Recent news — Aug 1, 2026</span>
+        <span class="section-header-label" id="news-heading">Recent news — August 2, 2026</span>
       </div>
       <div class="section-body">
       <!-- NEWS_START -->
+      <article class="news-item">
+        <div class="news-meta">
+          <a href="https://www.congress.gov/event/119th-congress/house-event/119239" class="news-source news-link" target="_blank" rel="noopener noreferrer">House Ways &amp; Means</a>
+          <span class="news-date">April 28, 2026</span>
+          <span class="tag tag-blue">Congress</span>
+        </div>
+        <h2 class="news-headline"><a href="https://www.congress.gov/event/119th-congress/house-event/119239" class="news-link" target="_blank" rel="noopener noreferrer">HCA CEO Sam Hazen testifies before Congress on affordability — skips Mission accountability</a></h2>
+        <p class="news-blurb">Hazen’s written testimony to the House Ways and Means Committee framed HCA around uncompensated care, Helene response in western North Carolina, and repealing certificate-of-need laws. It did not address Mission’s Immediate Jeopardy citations, staffing collapse, or the NC Attorney General’s lawsuit.</p>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">On April 28, 2026, HCA Healthcare CEO Sam Hazen testified before the House Ways and Means Committee in a hearing with health-system CEOs. His submitted statement emphasizes affordability, coverage, price transparency, workforce training, and HCA’s Helene response in western North Carolina. For WNC advocates, the useful material is what he pushed for (ending CON) and what he omitted (Mission safety sanctions and the AG case).</p>
+          <ul class="news-accountability">
+            <li>Hazen urged elimination of certificate-of-need laws as barriers to competition — while NC had just awarded Mission 95 CON beds amid federal safety sanctions.</li>
+            <li>He highlighted Helene operations in western NC and claimed capital for “patient safety,” without mentioning Mission’s four Immediate Jeopardy citations or staffing failures.</li>
+            <li>Official written testimony is on Congress.gov; use it to contrast HCA’s national PR with Mission’s documented record.</li>
+          </ul>
+        </div>
+      </article>
       <article class="news-item">
         <div class="news-meta">
           <a href="https://www.bpr.org/health/2026-07-28/judge-allows-nc-attorney-generals-lawsuit-against-hca-over-mission-hospital-to-proceed-to-trial" class="news-source news-link" target="_blank" rel="noopener noreferrer">NC Business Court</a>
@@ -749,6 +896,14 @@
         </div>
         <h2 class="news-headline"><a href="https://www.bpr.org/health/2026-07-28/judge-allows-nc-attorney-generals-lawsuit-against-hca-over-mission-hospital-to-proceed-to-trial" class="news-link" target="_blank" rel="noopener noreferrer">AG Jackson wins key pre-trial rulings — HCA/Mission lawsuit moves forward</a></h2>
         <p class="news-blurb">Judge denied HCA's motion for summary judgment on the core claims that HCA violated its commitments to the WNC community when it purchased Mission in 2019. The state's lawsuit alleges HCA broke promises on staffing, services, and capital investment. The lawsuit is now moving forward on the docket — the most significant legal development in the accountability effort to date.</p>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">A North Carolina Business Court judge denied HCA’s bid for summary judgment on core claims that the company violated commitments made when it bought Mission Health in 2019. The Attorney General’s case alleging broken promises on staffing, services, and capital investment will proceed. This is the strongest legal leverage WNC has had since the sale.</p>
+          <ul class="news-accountability">
+            <li>HCA can no longer short-circuit the case before evidence is heard.</li>
+            <li>Staffing, service cuts, and capital commitments are now live lawsuit issues — not just advocacy talking points.</li>
+            <li>Media and legislators can treat the AG case as an active accountability path, not a closed chapter.</li>
+          </ul>
+        </div>
       </article>
       <article class="news-item">
         <div class="news-meta">
@@ -758,6 +913,14 @@
         </div>
         <h2 class="news-headline"><a href="https://www.northcarolinahealthnews.org/2026/07/28/mission-hospital-immediate-jeopardy-hca-sale-contract/" class="news-link" target="_blank" rel="noopener noreferrer">CMS monitor report: Mission still out of compliance — no plans to add staff submitted</a></h2>
         <p class="news-blurb">The court-appointed federal monitor's latest report found Mission Hospital still failing to meet Enhanced Plan of Correction requirements. Critically, the hospital has submitted no plans to add nursing, trauma, or security staff — the core deficiencies that triggered every Immediate Jeopardy finding. The July 26 CMS deadline came and went without Mission achieving substantial compliance.</p>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">The federal monitor reported Mission still out of substantial compliance with its Enhanced Plan of Correction. The hospital submitted no plans to add nursing, trauma, or security staff — the same gaps tied to repeated Immediate Jeopardy findings. The July 26 CMS deadline passed without a fix.</p>
+          <ul class="news-accountability">
+            <li>“No staffing plans submitted” undercuts HCA claims that Mission safety issues are being solved.</li>
+            <li>Noncompliance after four Immediate Jeopardy citations shows a pattern, not a one-off.</li>
+            <li>Use the monitor finding alongside earnings “cost discipline” language to show priorities.</li>
+          </ul>
+        </div>
       </article>
       <article class="news-item">
         <div class="news-meta">
@@ -767,6 +930,14 @@
         </div>
         <h2 class="news-headline"><a href="https://www.bpr.org/health/2026-04-01/despite-multiple-safety-sanctions-mission-hospital-receives-state-approval-to-add-95-more-beds-in-asheville" class="news-link" target="_blank" rel="noopener noreferrer">State awards Mission 95 CON beds — despite active federal safety sanctions</a></h2>
         <p class="news-blurb">NC DHHS approved HCA/Mission's application for 95 new hospital beds while the hospital was under active federal compliance orders. Reclaim's data shows Mission scored the lowest HCAHPS patient experience rating (2 stars) of all four CON applicants — far behind Advent Health (4 stars), Novant, and UNC Pardee. Reclaim formally opposed the award and testified at the CON hearing.</p>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">NC DHHS awarded Mission 95 new CON beds while the hospital faced active federal safety sanctions. Mission’s HCAHPS patient-experience score (2 stars) was the lowest among CON applicants. Reclaim opposed the award and testified against expanding capacity for a noncompliant operator.</p>
+          <ul class="news-accountability">
+            <li>More beds without safe staffing expands risk, not access.</li>
+            <li>CON approval amid Immediate Jeopardy orders is a regulatory failure to cite.</li>
+            <li>Pairs with Hazen’s congressional call to repeal CON: HCA wants the rules rewritten while benefiting from them.</li>
+          </ul>
+        </div>
       </article>
       <!-- NEWS_END -->
       </div>
@@ -774,7 +945,7 @@
     <section class="section news-col" aria-labelledby="fin-news-heading">
       <div class="section-header sh-amber">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-        <span class="section-header-label" id="fin-news-heading">Recent financial news — Aug 1, 2026</span>
+        <span class="section-header-label" id="fin-news-heading">Recent financial news — August 2, 2026</span>
       </div>
       <div class="section-body">
       <!-- FIN_NEWS_START -->
@@ -786,6 +957,14 @@
         </div>
         <h2 class="news-headline"><a href="https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx" class="news-link" target="_blank" rel="noopener noreferrer">HCA reports strong Q2 2026 results — margin and cost discipline in focus</a></h2>
         <p class="news-blurb">HCA posted robust Q2 revenue and earnings. Investor communications emphasized cost discipline, operational efficiency, and margin expansion. Wall Street reaction centered on guidance and same-facility growth; Mission Hospital compliance issues were not a focus of the earnings call.</p>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">HCA reported strong Q2 2026 revenue and earnings, with investor messaging focused on cost discipline, efficiency, and margins. Mission’s compliance failures and staffing shortfalls were not a focus of the earnings narrative. The financial story and the safety story remain on separate tracks in company communications.</p>
+          <ul class="news-accountability">
+            <li>Margin and “cost discipline” language should be read against Mission’s missing staffing plans.</li>
+            <li>Shareholder returns proceeding while WNC care quality stays under federal sanction is the core contrast.</li>
+            <li>Ask why Mission safety risk never appears in investor-facing updates.</li>
+          </ul>
+        </div>
       </article>
       <article class="news-item">
         <div class="news-meta">
@@ -795,6 +974,14 @@
         </div>
         <h2 class="news-headline"><a href="https://investor.hcahealthcare.com" class="news-link" target="_blank" rel="noopener noreferrer">Q3 outlook and capital returns remain the investor narrative</a></h2>
         <p class="news-blurb">Following Q2, coverage of HCA continues to track revenue growth, EBITDA margins, share repurchase capacity, and full-year guidance updates. Check HCA investor relations for the latest filings and call transcripts.</p>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">After Q2, investor attention stays on revenue growth, EBITDA margins, buybacks, and full-year guidance. HCA’s IR pages and call transcripts remain the place to verify what leadership chooses to disclose. Mission Hospital accountability issues rarely surface in that channel.</p>
+          <ul class="news-accountability">
+            <li>Capital returns (buybacks/dividends) compete with claims that Mission cannot afford safe staffing.</li>
+            <li>Track whether Q3 guidance or calls mention Mission, CMS, or the AG lawsuit.</li>
+            <li>Use IR silence as evidence that HCA treats Mission risk as external to the financial story.</li>
+          </ul>
+        </div>
       </article>
       <!-- FIN_NEWS_END -->
       </div>
@@ -811,31 +998,37 @@
       <!-- TP_START -->
       <div class="tp-item">
         <div class="tp-num" aria-hidden="true">1</div>
+        <div class="tp-text"><strong>Hazen told Congress to scrap CON — after Mission won 95 beds under sanction.</strong> In April 28, 2026 Ways and Means testimony, HCA CEO Sam Hazen argued certificate-of-need laws limit competition and drive up prices. That same spring, NC awarded Mission 95 CON beds while the hospital faced active federal safety orders. HCA wants the rules rewritten when convenient — and the beds when they are available.
+          <div class="tp-source"><a href="https://www.congress.gov/119/meeting/house/119239/witnesses/HHRG-119-WM00-Wstate-HazenS-20260428.pdf" class="tp-source-link" target="_blank" rel="noopener noreferrer">Hazen testimony (Congress.gov PDF)</a></div></div>
+      </div>
+      <div class="tp-item">
+        <div class="tp-num" aria-hidden="true">2</div>
+        <div class="tp-text"><strong>Capitol Hill PR vs. Mission’s record.</strong> Hazen’s congressional statement highlighted Helene response in western North Carolina and capital for “patient safety,” while omitting Mission’s four Immediate Jeopardy citations, staffing collapse, federal noncompliance, and the NC Attorney General’s lawsuit. When HCA claims high-quality care nationally, ask about Mission specifically.
+          <div class="tp-source"><a href="/hca/hazen-hca-testimony-2026-04-28.pdf" class="tp-source-link" target="_blank" rel="noopener noreferrer">Hazen testimony (hosted PDF)</a></div></div>
+      </div>
+      <div class="tp-item">
+        <div class="tp-num" aria-hidden="true">3</div>
         <div class="tp-text"><strong>Profits over patients — in HCA's own words.</strong> HCA reported record Q2 2026 profits on its earnings call while simultaneously failing to submit any plan to add nurses, trauma staff, or security at Mission — the same deficiencies that triggered four Immediate Jeopardy citations. Ask publicly: if HCA can reward shareholders, why can't it staff Mission safely?
           <div class="tp-source"><a href="https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx" class="tp-source-link" target="_blank" rel="noopener noreferrer">HCA Q2 2026 earnings</a></div></div>
       </div>
       <div class="tp-item">
-        <div class="tp-num" aria-hidden="true">2</div>
-        <div class="tp-text"><strong>The AG's trial is the accountability moment WNC has waited for.</strong> The July 28 ruling means a court will hear evidence that HCA broke its 2019 acquisition promises on staffing, services, and investment. This is no longer just a regulatory story — it's a breach-of-contract story with WNC's health on the line.
+        <div class="tp-num" aria-hidden="true">4</div>
+        <div class="tp-text"><strong>The AG's lawsuit is the accountability moment WNC has waited for.</strong> The July 28 ruling means a court will hear evidence that HCA broke its 2019 acquisition promises on staffing, services, and investment. This is no longer just a regulatory story — it's a breach-of-contract story with WNC's health on the line.
           <div class="tp-source"><a href="https://www.bpr.org/health/2026-07-28/judge-allows-nc-attorney-generals-lawsuit-against-hca-over-mission-hospital-to-proceed-to-trial" class="tp-source-link" target="_blank" rel="noopener noreferrer">BPR / NC Business Court</a></div></div>
       </div>
       <div class="tp-item">
-        <div class="tp-num" aria-hidden="true">3</div>
+        <div class="tp-num" aria-hidden="true">5</div>
         <div class="tp-text"><strong>"No plans to add staff" is the headline.</strong> The federal monitor's July 2026 report found Mission submitted zero staffing plans. After four Immediate Jeopardy findings, the hospital's own compliance filing documents no commitment to fix the root cause. Every HCA "we are working on it" statement must be measured against this documented inaction.
           <div class="tp-source"><a href="https://dogwoodhealthtrust.org/dogwood-health-trust-and-independent-monitor-releasehca-monitoring-report-for-2025-noting-two-areas-of-potential-non-compliance/" class="tp-source-link" target="_blank" rel="noopener noreferrer">Dogwood / Independent Monitor</a></div></div>
       </div>
       <div class="tp-item">
-        <div class="tp-num" aria-hidden="true">4</div>
+        <div class="tp-num" aria-hidden="true">6</div>
         <div class="tp-text"><strong>The CON award was a gift to a noncompliant operator.</strong> NC DHHS awarded 95 new beds to the hospital system with the worst patient experience scores in the CON competition — while it was under active federal safety orders. More beds, same understaffed hospital: that is a regulatory failure that compounds patient risk.
           <div class="tp-source"><a href="https://www.bpr.org/health/2026-04-01/despite-multiple-safety-sanctions-mission-hospital-receives-state-approval-to-add-95-more-beds-in-asheville" class="tp-source-link" target="_blank" rel="noopener noreferrer">BPR / NC DHHS</a></div></div>
       </div>
       <div class="tp-item">
-        <div class="tp-num" aria-hidden="true">5</div>
+        <div class="tp-num" aria-hidden="true">7</div>
         <div class="tp-text"><strong>The staffing math is damning.</strong> Mission runs 3.7 FTE per patient bed. The NC average is 5.1. That 1.4 FTE-per-bed gap is not a rounding error — it is the structural cause of every Immediate Jeopardy, every adverse patient event, every nurse who has left since 2019.</div>
-      </div>
-      <div class="tp-item">
-        <div class="tp-num" aria-hidden="true">6</div>
-        <div class="tp-text"><strong>Two stars for five years running.</strong> Mission's HCAHPS patient experience rating has been 2 out of 5 stars every year from 2020 through 2024 — consistently the lowest in the WNC CON field. That is not bad luck. That is a management strategy that treats patient experience as a cost to be minimized.</div>
       </div>
       <!-- TP_END -->
     </div>
@@ -874,6 +1067,10 @@
             <div class="arc-text">NC DHHS awards Mission <strong>95 new hospital beds</strong> — despite active federal compliance orders and the lowest patient experience scores of any CON applicant. Reclaim testifies in opposition, presenting HCAHPS data showing Mission at 2 stars vs. Advent Health at 4 stars every year since 2020.</div>
           </div>
           <div class="arc-entry">
+            <div class="arc-period">Apr 28, 2026<br>Hazen testimony</div>
+            <div class="arc-text">HCA CEO Sam Hazen testifies before House Ways and Means. Written testimony pushes <strong>eliminating CON laws</strong> and highlights Helene response in western NC — without addressing Mission’s Immediate Jeopardy citations, staffing collapse, or the AG lawsuit.</div>
+          </div>
+          <div class="arc-entry">
             <div class="arc-period">Jul 24, 2026<br>Q2 Earnings</div>
             <div class="arc-text">HCA reports strong Q2 2026 results. <strong>Mission's noncompliance is not mentioned on the earnings call.</strong> "Operational efficiency" language contrasts sharply with the concurrent federal monitor finding of zero staffing plans submitted by Mission.</div>
           </div>
@@ -909,6 +1106,8 @@
         <a href="https://reclaimhealthcarewnc.org" target="_blank" rel="noopener">Reclaim Healthcare WNC</a>
         <a href="https://www.cms.gov" target="_blank" rel="noopener">CMS (federal regulator)</a>
         <a href="https://www.nationalnursesunited.org" target="_blank" rel="noopener">National Nurses United</a>
+        <a href="https://www.congress.gov/event/119th-congress/house-event/119239" target="_blank" rel="noopener">Hazen congressional hearing (Ways &amp; Means)</a>
+        <a href="/hca/hazen-hca-testimony-2026-04-28.pdf" target="_blank" rel="noopener">Hazen written testimony (PDF)</a>
       </div>
     </div>
   </section>
@@ -917,6 +1116,25 @@
   <div class="footer-left">Built and maintained by Reclaim Healthcare WNC · <a href="https://reclaimhealthcarewnc.org" style="color:inherit">reclaimhealthcarewnc.org</a></div>
   <div class="footer-right"><a href="https://reclaimhealthcarewnc.org/donate" target="_blank" rel="noopener">Support Reclaim →</a></div>
 </footer>
+
+<div id="news-brief-modal" class="news-modal" hidden aria-hidden="true">
+  <div class="news-modal-backdrop" data-news-modal-close></div>
+  <div class="news-modal-panel" role="dialog" aria-modal="true" aria-labelledby="news-modal-title">
+    <button type="button" class="news-modal-close" data-news-modal-close aria-label="Close">&times;</button>
+    <div class="news-modal-kicker" id="news-modal-kicker">Article brief</div>
+    <h2 class="news-modal-title" id="news-modal-title"></h2>
+    <p class="news-modal-brief" id="news-modal-brief"></p>
+    <div id="news-modal-angles-wrap">
+      <div class="news-modal-angles-label">Accountability angles</div>
+      <ul class="news-modal-points" id="news-modal-points"></ul>
+    </div>
+    <div class="news-modal-actions">
+      <a class="news-modal-read" id="news-modal-read" href="#" target="_blank" rel="noopener noreferrer">Read full article ↗</a>
+      <button type="button" class="news-modal-dismiss" data-news-modal-close>Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const d = new Date();
   const opts = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -1271,6 +1489,84 @@
       });
       window.addEventListener('afterprint', function () {
         arc.open = wasOpen;
+      });
+    })();
+
+    (function setupNewsBriefModal() {
+      const modal = document.getElementById('news-brief-modal');
+      const titleEl = document.getElementById('news-modal-title');
+      const briefEl = document.getElementById('news-modal-brief');
+      const pointsEl = document.getElementById('news-modal-points');
+      const anglesWrap = document.getElementById('news-modal-angles-wrap');
+      const kickerEl = document.getElementById('news-modal-kicker');
+      const readEl = document.getElementById('news-modal-read');
+      if (!modal || !titleEl || !briefEl || !pointsEl || !readEl) return;
+
+      let lastFocus = null;
+
+      function closeModal() {
+        modal.hidden = true;
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('news-modal-open');
+        if (lastFocus && typeof lastFocus.focus === 'function') {
+          try { lastFocus.focus(); } catch (_) {}
+        }
+        lastFocus = null;
+      }
+
+      function openModal(item, href) {
+        const headlineLink = item.querySelector('.news-headline a.news-link, .news-headline');
+        const headline = (headlineLink && headlineLink.textContent || '').trim() || 'Article brief';
+        const payload = item.querySelector('.news-brief-payload');
+        const briefNode = payload && payload.querySelector('.news-brief-text');
+        const blurbNode = item.querySelector('.news-blurb');
+        const brief = ((briefNode && briefNode.textContent) || (blurbNode && blurbNode.textContent) || '').trim();
+        const pointNodes = payload ? payload.querySelectorAll('.news-accountability li') : [];
+        const source = item.querySelector('.news-source');
+        const sourceLabel = source ? source.textContent.trim() : '';
+
+        titleEl.textContent = headline;
+        briefEl.textContent = brief;
+        kickerEl.textContent = sourceLabel ? ('Brief · ' + sourceLabel) : 'Article brief';
+        pointsEl.innerHTML = '';
+        if (pointNodes.length) {
+          pointNodes.forEach(function (li) {
+            const out = document.createElement('li');
+            out.textContent = (li.textContent || '').trim();
+            if (out.textContent) pointsEl.appendChild(out);
+          });
+          anglesWrap.hidden = false;
+        } else {
+          anglesWrap.hidden = true;
+        }
+        readEl.href = href;
+        lastFocus = document.activeElement;
+        modal.hidden = false;
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('news-modal-open');
+        const closeBtn = modal.querySelector('.news-modal-close');
+        if (closeBtn) closeBtn.focus();
+      }
+
+      const newsRow = document.querySelector('.news-row');
+      if (newsRow) {
+        newsRow.addEventListener('click', function (e) {
+          const link = e.target.closest('a.news-link');
+          if (!link || !newsRow.contains(link)) return;
+          const item = link.closest('.news-item');
+          if (!item) return;
+          const href = link.getAttribute('href');
+          if (!href) return;
+          e.preventDefault();
+          openModal(item, href);
+        });
+      }
+
+      modal.addEventListener('click', function (e) {
+        if (e.target.closest('[data-news-modal-close]')) closeModal();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !modal.hidden) closeModal();
       });
     })();
 

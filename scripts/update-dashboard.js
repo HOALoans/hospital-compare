@@ -29,7 +29,8 @@ const BACKGROUND_FACTS = `BACKGROUND FACTS (established advocacy context for the
 - Staff ratio dropped from 6.1 FTE/bed to 3.7 FTE (NC average 5.1). (The Parigrado dashboard also publishes HCRIS staffing series; treat these FTE figures as advocacy narrative facts for the Watchdog page.)
 - NC Attorney General Jeff Jackson sued HCA for violating acquisition commitments; a judge denied summary judgment on July 28, 2026, and the lawsuit proceeds.
 - Federal monitor (July 2026): Mission is not in substantial compliance; no staffing plans submitted.
-- NC DHHS awarded Mission 95 CON beds despite active federal safety sanctions.`;
+- NC DHHS awarded Mission 95 CON beds despite active federal safety sanctions.
+- April 28, 2026: HCA CEO Sam Hazen testified before the House Ways and Means Committee (hearing with health system CEOs). Written testimony focused on affordability, uncompensated care, Helene response in western NC, workforce training, and eliminating certificate-of-need (CON) laws. It did not address Mission Immediate Jeopardy citations, staffing collapse, federal noncompliance, or the AG lawsuit. Primary sources: https://www.congress.gov/event/119th-congress/house-event/119239 and https://www.congress.gov/119/meeting/house/119239/witnesses/HHRG-119-WM00-Wstate-HazenS-20260428.pdf (also hosted at /hca/hazen-hca-testimony-2026-04-28.pdf on this site).`;
 
 const SYSTEM_PROMPT = `You are a research assistant for Reclaim Healthcare WNC, a nonprofit holding HCA Healthcare accountable for poor care at Mission Hospital in Asheville NC. Your job is to generate updated content for their public watchdog dashboard.
 
@@ -37,11 +38,16 @@ Mission context: HCA acquired Mission in 2019, has received 4 Immediate Jeopardy
 
 ${BACKGROUND_FACTS}
 
-Generate updated dashboard content based on the most recent news you are aware of. Search for the latest news about HCA Healthcare, Mission Hospital Asheville, NC Attorney General lawsuit against HCA, CMS compliance status, and HCA earnings when tools are available.
+Generate updated dashboard content based on the most recent news you are aware of. Search for the latest news about HCA Healthcare, Mission Hospital Asheville, NC Attorney General lawsuit against HCA, CMS compliance status, HCA earnings, and relevant congressional hearings or CEO testimony (including Sam Hazen / Ways and Means) when tools are available.
 
 IMPORTANT COLUMN SPLIT:
-- newsItems = accountability / care / CMS / lawsuit / staffing / CON / advocacy framing for Mission and WNC. Do NOT put pure earnings/stock items here.
+- newsItems = accountability / care / CMS / lawsuit / staffing / CON / congressional oversight / advocacy framing for Mission and WNC. Do NOT put pure earnings/stock items here.
 - financialNewsItems = purely financial headlines about HCA: earnings, revenue, cost cutting, margins, guidance, buybacks, dividends, stock, analyst price targets, capital allocation. Do NOT put CMS citations, AG lawsuit, staffing, or patient-safety advocacy items here.
+
+CONGRESSIONAL / HAZEN TESTIMONY:
+- When relevant (or when little fresher Mission news exists), include Hazen's April 28, 2026 Ways and Means testimony or related hearing coverage in newsItems and/or a talking point.
+- Do NOT invent quotes. Prefer short accurate paraphrases with attribution. The written testimony is largely defensive PR; usable accountability angles include: (1) Hazen urged eliminating CON laws while Mission had just won 95 CON beds amid sanctions; (2) he highlighted Helene/WNC response and patient-safety capital without addressing Mission IJ citations, staffing, monitor noncompliance, or the AG lawsuit.
+- Link to the Congress.gov hearing page or the official written-testimony PDF when citing this material.
 
 Return ONLY a valid raw JSON object with exactly this structure, no markdown, no backticks, no preamble:
 {
@@ -56,6 +62,8 @@ Return ONLY a valid raw JSON object with exactly this structure, no markdown, no
       tagClass: "tag-red or tag-amber or tag-blue or tag-teal",
       headline: "Headline text",
       blurb: "Two to three sentence summary with Reclaim framing",
+      brief: "2–4 sentence article brief for the click modal (accountability-aware)",
+      accountabilityPoints: ["2–4 short bullets on holding HCA accountable"],
       url: "https://real-article-url-when-known (optional; omit if unknown — never invent)"
     }
   ],
@@ -67,6 +75,8 @@ Return ONLY a valid raw JSON object with exactly this structure, no markdown, no
       tagClass: "tag-red or tag-amber or tag-blue or tag-teal",
       headline: "Headline text",
       blurb: "Two to three sentence summary focused on financial facts",
+      brief: "2–4 sentence article brief for the click modal",
+      accountabilityPoints: ["2–4 bullets — still note HCA accountability angle where relevant, e.g. profits vs staffing"],
       url: "https://real-article-url-when-known (optional; omit if unknown — never invent)"
     }
   ],
@@ -81,9 +91,13 @@ Return ONLY a valid raw JSON object with exactly this structure, no markdown, no
 }
 
 URL RULES:
-- Include a real https URL for newsItems[].url / financialNewsItems[].url whenever you know a specific article, press release, court filing, or official page for that story.
-- For talkingPoints, when the point cites a report, earnings release, court ruling, or news article, set source + sourceUrl (or url) to that document.
-- Prefer the primary publisher URL (news outlet, court PDF, company IR, CMS/agency page). Do NOT invent, guess, or fabricate URLs. If unsure, omit the field entirely (plain text, no placeholder links).`;
+- Include a real https URL for newsItems[].url / financialNewsItems[].url whenever you know a specific article, press release, court filing, congressional hearing page, or official page for that story.
+- For talkingPoints, when the point cites a report, earnings release, court ruling, congressional testimony, or news article, set source + sourceUrl (or url) to that document. Preserve real sourceUrl/url values — never drop a known good link.
+- Prefer the primary publisher URL (news outlet, court PDF, Congress.gov, company IR, CMS/agency page). Do NOT invent, guess, or fabricate URLs. If unsure, omit the field entirely (plain text, no placeholder links).
+
+BRIEF RULES (required for every newsItems[] and financialNewsItems[] entry):
+- brief: 2–4 sentences summarizing the article for a modal shown before the user leaves the page. Accurate; no invented quotes.
+- accountabilityPoints: array of 2–4 short strings — angles useful for holding HCA accountable (Mission quality, staffing, safety, CON, AG lawsuit, profits vs care, congressional framing, etc.). For financial items, still include at least one profits/margins-vs-Mission-staffing or disclosure-silence angle when relevant.`;
 
 function resolveHtmlPath() {
   const override = process.env.DASHBOARD_HTML;
@@ -158,11 +172,38 @@ function normalizeOptionalUrl(value) {
   return trimmed;
 }
 
+function normalizeAccountabilityPoints(value, label, i) {
+  if (value == null) return undefined;
+  if (!Array.isArray(value)) {
+    throw new Error(`${label}[${i}].accountabilityPoints must be an array when provided`);
+  }
+  const points = value
+    .filter((p) => typeof p === "string" && p.trim())
+    .map((p) => p.trim())
+    .slice(0, 6);
+  return points.length ? points : undefined;
+}
+
 function validateNewsItem(item, label, i) {
   for (const key of ["source", "date", "tag", "headline", "blurb"]) {
     if (typeof item[key] !== "string" || !item[key].trim()) {
       throw new Error(`${label}[${i}].${key} must be a non-empty string`);
     }
+  }
+  if (item.brief != null && item.brief !== "") {
+    if (typeof item.brief !== "string" || !item.brief.trim()) {
+      throw new Error(`${label}[${i}].brief must be a non-empty string when provided`);
+    }
+    item.brief = item.brief.trim();
+  } else {
+    // Fall back to blurb so modal payloads survive older model responses
+    item.brief = String(item.blurb).trim();
+  }
+  const points = normalizeAccountabilityPoints(item.accountabilityPoints, label, i);
+  if (points) {
+    item.accountabilityPoints = points;
+  } else {
+    delete item.accountabilityPoints;
   }
   if (item.url != null && item.url !== "") {
     if (!isHttpUrl(item.url)) {
@@ -270,7 +311,11 @@ function inferTagClass(tag) {
   ) {
     return "tag-amber";
   }
-  if (/legal|court|ag|advocacy|media|press|politics|policy/.test(t)) {
+  if (
+    /legal|court|ag|advocacy|media|press|politics|policy|congress|hearing|testimony|capitol/.test(
+      t,
+    )
+  ) {
     return "tag-blue";
   }
   if (/monitor|compliance|update|progress|cms|deadline/.test(t)) {
@@ -313,6 +358,24 @@ function renderExternalLink(href, label, className) {
   return `<a href="${escapeHtml(href)}"${cls} ${externalLinkAttrs()}>${escapeHtml(label)}</a>`;
 }
 
+function renderNewsBriefPayload(item) {
+  const brief =
+    typeof item.brief === "string" && item.brief.trim()
+      ? item.brief.trim()
+      : String(item.blurb || "").trim();
+  const points = Array.isArray(item.accountabilityPoints)
+    ? item.accountabilityPoints.filter((p) => typeof p === "string" && p.trim())
+    : [];
+  const pointsHtml = points.length
+    ? `\n          <ul class="news-accountability">\n${points
+        .map((p) => `            <li>${escapeHtml(p.trim())}</li>`)
+        .join("\n")}\n          </ul>`
+    : "";
+  return `        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">${escapeHtml(brief)}</p>${pointsHtml}
+        </div>`;
+}
+
 function renderNewsItems(items) {
   return items
     .map((item) => {
@@ -331,6 +394,7 @@ function renderNewsItems(items) {
         </div>
         ${headlineHtml}
         <p class="news-blurb">${escapeHtml(item.blurb)}</p>
+${renderNewsBriefPayload(item)}
       </article>`;
     })
     .join("\n");
@@ -457,13 +521,16 @@ async function fetchDashboardData(apiKey) {
   });
   const userPrompt = `Today's date is ${today}.
 
-Return 3–5 newsItems (accountability/care/CMS/lawsuit — newest first),
+Return 3–5 newsItems (accountability/care/CMS/lawsuit/congressional oversight — newest first),
 3–5 financialNewsItems (earnings/revenue/margins/guidance/buybacks/stock only — newest first),
-and 5–6 talkingPoints.
+and 5–7 talkingPoints.
 For talkingPoints[].text, start with a short punchy title sentence ending in a period, then the supporting sentences.
-When a talking point cites a specific earnings release, court ruling, monitor report, CON decision, or news article, include source (short name) and sourceUrl with the real URL; omit both if unknown.
-For each newsItems[] / financialNewsItems[] entry, include url with the real article/press-release/filing URL when known; omit url if unknown. Never invent URLs.
-For tag, use a short label like Lawsuit, Noncompliance, Earnings, CON, Safety, Monitor, Guidance, Margins, Buyback, or Update. Prefer "Lawsuit" (not "Trial") for AG case items.
+When a talking point cites a specific earnings release, court ruling, monitor report, CON decision, congressional testimony (e.g. Sam Hazen Ways and Means), or news article, include source (short name) and sourceUrl with the real URL; omit both if unknown. Preserve url/sourceUrl whenever known.
+For each newsItems[] / financialNewsItems[] entry:
+- include url with the real article/press-release/filing/hearing URL when known; omit url if unknown. Never invent URLs.
+- include brief (2–4 sentences) and accountabilityPoints (2–4 short strings) for the on-page news-brief modal. Financial items should still include an HCA-accountability angle where relevant (profits/margins vs Mission staffing or disclosure silence).
+Consider Sam Hazen / House Ways and Means testimony (April 28, 2026) when relevant for newsItems or talkingPoints; paraphrase carefully, do not invent quotes.
+For tag, use a short label like Lawsuit, Noncompliance, Earnings, CON, Safety, Monitor, Congress, Guidance, Margins, Buyback, or Update. Prefer "Lawsuit" (not "Trial") for AG case items.
 For tagClass, choose tag-red, tag-amber, tag-blue, or tag-teal to match severity/topic.
 Set todayDate to today's date in "Month D, YYYY" format.
 Set sectionLabel to "Recent news — Month D, YYYY" using that same date.
