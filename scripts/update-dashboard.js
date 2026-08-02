@@ -49,6 +49,8 @@ CONGRESSIONAL / HAZEN TESTIMONY:
 - Do NOT invent quotes. Prefer short accurate paraphrases with attribution. The written testimony is largely defensive PR; usable accountability angles include: (1) Hazen urged eliminating CON laws while Mission had just won 95 CON beds amid sanctions; (2) he highlighted Helene/WNC response and patient-safety capital without addressing Mission IJ citations, staffing, monitor noncompliance, or the AG lawsuit.
 - Link to the Congress.gov hearing page or the official written-testimony PDF when citing this material.
 
+ORDERING: Return newsItems and financialNewsItems newest-first (most recent date at index 0, declining age). Use "Month D, YYYY" dates when known.
+
 Return ONLY a valid raw JSON object with exactly this structure, no markdown, no backticks, no preamble:
 {
   todayDate: "Month D, YYYY",
@@ -284,6 +286,49 @@ function validatePayload(data) {
     }
   }
   return data;
+}
+
+/** Parse news dates like "July 28, 2026", "July 2026", or ISO "2026-07-28". Unparseable → 0. */
+function parseNewsDate(value) {
+  if (value == null) return 0;
+  const raw = String(value).trim();
+  if (!raw) return 0;
+
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/);
+  if (iso) {
+    const t = Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    return Number.isNaN(t) ? 0 : t;
+  }
+
+  const monthDayYear = raw.match(
+    /^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),\s*(\d{4})$/i,
+  );
+  if (monthDayYear) {
+    const t = Date.parse(
+      `${monthDayYear[1]} ${monthDayYear[2]}, ${monthDayYear[3]} UTC`,
+    );
+    return Number.isNaN(t) ? 0 : t;
+  }
+
+  const monthYear = raw.match(
+    /^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})$/i,
+  );
+  if (monthYear) {
+    const t = Date.parse(`${monthYear[1]} 1, ${monthYear[2]} UTC`);
+    return Number.isNaN(t) ? 0 : t;
+  }
+
+  const fallback = Date.parse(raw);
+  return Number.isNaN(fallback) ? 0 : fallback;
+}
+
+/** Newest → oldest. Stable for equal/unparseable dates. */
+function sortNewsItemsByDateDesc(items) {
+  if (!Array.isArray(items) || items.length < 2) return items || [];
+  return items
+    .map((item, index) => ({ item, index, t: parseNewsDate(item?.date) }))
+    .sort((a, b) => b.t - a.t || a.index - b.index)
+    .map(({ item }) => item);
 }
 
 function escapeHtml(str) {
@@ -597,6 +642,8 @@ async function main() {
   console.log(`Dashboard: ${htmlPath}`);
 
   const data = await fetchDashboardData(apiKey);
+  data.newsItems = sortNewsItemsByDateDesc(data.newsItems);
+  data.financialNewsItems = sortNewsItemsByDateDesc(data.financialNewsItems);
 
   let html = fs.readFileSync(htmlPath, "utf8");
   html = ensureMarkers(html);
