@@ -1,4 +1,4 @@
-# Auto-refresh HCA Watchdog dashboard via Anthropic.
+# Auto-refresh HCA Watchdog dashboard via Anthropic, then send morning digest.
 name: Update HCA Dashboard
 
 on:
@@ -38,3 +38,14 @@ jobs:
           git add public/hca/index.html
           git diff --staged --quiet || git commit -m "Auto-update: HCA dashboard $(date +'%Y-%m-%d')"
           git push
+
+      # Morning digest: headlines dated today/yesterday (ET) from current HTML.
+      # Skips send when empty or when secrets are missing. See public/hca/README.md:
+      #   RESEND_API_KEY, DIGEST_FROM  (+ optional DIGEST_TO)
+      - name: Send morning email digest
+        working-directory: ./scripts
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          DIGEST_FROM: ${{ secrets.DIGEST_FROM }}
+          DIGEST_TO: ${{ secrets.DIGEST_TO }}
+        run: node send-morning-digest.js

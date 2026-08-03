@@ -40,6 +40,8 @@ ${BACKGROUND_FACTS}
 
 Generate updated dashboard content based on the most recent news you are aware of. Search for the latest news about HCA Healthcare, Mission Hospital Asheville, NC Attorney General lawsuit against HCA, CMS compliance status, HCA earnings, and relevant congressional hearings or CEO testimony (including Sam Hazen / Ways and Means) when tools are available.
 
+KEY OUTLETS TO CHECK (when searching): Asheville Watchdog, Blue Ridge Public Radio (BPR), NC Health News, Becker's Hospital Review (https://www.beckershospitalreview.com/ — HCA / Mission / for-profit hospital coverage), NC DOJ / AG, CMS, HCA investor relations, National Nurses United, and related congressional coverage. Prefer primary publisher URLs.
+
 IMPORTANT COLUMN SPLIT:
 - newsItems = accountability / care / CMS / lawsuit / staffing / CON / congressional oversight / advocacy framing for Mission and WNC. Do NOT put pure earnings/stock items here.
 - financialNewsItems = purely financial headlines about HCA: earnings, revenue, cost cutting, margins, guidance, buybacks, dividends, stock, analyst price targets, capital allocation. Do NOT put CMS citations, AG lawsuit, staffing, or patient-safety advocacy items here.
