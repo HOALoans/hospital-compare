@@ -25,7 +25,7 @@ Weekday mornings (same cron as the dashboard update, ~7am ET) the workflow runs 
 |--------------|---------|
 | `DIGEST_TO` | Recipient override (default hard-coded: `LarryRkirschner@gmail.com`) |
 
-Until `RESEND_API_KEY` and `DIGEST_FROM` are set, the digest step exits cleanly without sending (dashboard update still succeeds). Once secrets are set, send failures fail the workflow step. Local dry run:
+Until `RESEND_API_KEY` and `DIGEST_FROM` are set, the digest step exits cleanly without sending (dashboard update still succeeds). Once secrets are set, send failures mark the digest step failed (visible in Actions) but use `continue-on-error` so they do not block the dashboard update/commit. Local dry run:
 
 ```bash
 DIGEST_DRY_RUN=1 node scripts/send-morning-digest.js

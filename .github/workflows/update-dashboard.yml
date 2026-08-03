@@ -42,7 +42,10 @@ jobs:
       # Morning digest: headlines dated today/yesterday (ET) from current HTML.
       # Skips send when empty or when secrets are missing. See public/hca/README.md:
       #   RESEND_API_KEY, DIGEST_FROM  (+ optional DIGEST_TO)
+      # continue-on-error: digest must not fail the dashboard update/commit.
+      # Bad Resend keys still fail this step visibly in the Actions UI.
       - name: Send morning email digest
+        continue-on-error: true
         working-directory: ./scripts
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}

@@ -129,30 +129,89 @@ function requireApiKey() {
 
 function extractText(content) {
   if (!Array.isArray(content)) return "";
-  return content
+  const texts = content
     .filter((block) => block && block.type === "text" && typeof block.text === "string")
-    .map((block) => block.text)
-    .join("\n");
+    .map((block) => block.text.trim())
+    .filter(Boolean);
+  if (!texts.length) return "";
+  // With web_search, earlier text blocks are often search narration.
+  // Prefer the last block that looks like JSON; otherwise join all.
+  for (let i = texts.length - 1; i >= 0; i--) {
+    const t = texts[i];
+    if (t.includes("{") && (t.includes('"newsItems"') || t.includes("newsItems"))) {
+      return t;
+    }
+  }
+  const withBrace = [...texts].reverse().find((t) => t.includes("{"));
+  return withBrace || texts.join("\n");
+}
+
+/** Extract balanced {...} candidates from mixed prose + JSON. */
+function extractJsonObjectCandidates(text) {
+  const candidates = [];
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "{") continue;
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    for (let j = i; j < text.length; j++) {
+      const ch = text[j];
+      if (inString) {
+        if (escape) escape = false;
+        else if (ch === "\\") escape = true;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+      if (ch === '"') inString = true;
+      else if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          candidates.push(text.slice(i, j + 1));
+          i = j;
+          break;
+        }
+      }
+    }
+  }
+  return candidates;
 }
 
 function parseJsonResponse(raw) {
   let text = (raw || "").trim();
-  // Strip markdown fences if the model wraps JSON anyway
-  const fence = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (!text) {
+    throw new Error("Failed to parse model JSON: empty response");
+  }
+
+  // Strip markdown fences (whole response or embedded)
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
   if (fence) text = fence[1].trim();
-  // Fallback: first {...} object
-  if (!text.startsWith("{")) {
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
-    if (start !== -1 && end > start) text = text.slice(start, end + 1);
+
+  const attempts = [];
+  if (text.startsWith("{")) attempts.push(text);
+  // Prefer last balanced object (final answer after narration)
+  const objects = extractJsonObjectCandidates(text);
+  for (let i = objects.length - 1; i >= 0; i--) attempts.push(objects[i]);
+  // Legacy slice fallback
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start !== -1 && end > start) attempts.push(text.slice(start, end + 1));
+
+  const seen = new Set();
+  let lastErr;
+  for (const candidate of attempts) {
+    if (!candidate || seen.has(candidate)) continue;
+    seen.add(candidate);
+    try {
+      return JSON.parse(candidate);
+    } catch (err) {
+      lastErr = err;
+    }
   }
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    throw new Error(
-      `Failed to parse model JSON: ${err.message}\n--- raw ---\n${raw.slice(0, 2000)}`,
-    );
-  }
+
+  throw new Error(
+    `Failed to parse model JSON: ${lastErr?.message || "no JSON object found"}\n--- raw ---\n${raw.slice(0, 2000)}`,
+  );
 }
 
 function isHttpUrl(value) {
@@ -558,6 +617,53 @@ function updateMastheadAndSection(html, todayDate, sectionLabel, financialSectio
   return out;
 }
 
+async function requestDashboardJson(client, params) {
+  const message = await client.messages.create(params);
+  const raw = extractText(message.content);
+  const stopReason = message.stop_reason;
+  if (stopReason && stopReason !== "end_turn" && stopReason !== "tool_use") {
+    console.warn(`Anthropic stop_reason=${stopReason}`);
+  }
+  if (!raw.trim()) {
+    throw new Error(
+      `Model returned empty text content (stop_reason=${stopReason || "unknown"})`,
+    );
+  }
+
+  try {
+    return validatePayload(parseJsonResponse(raw));
+  } catch (parseErr) {
+    // Web search often spends tokens on narration and never emits JSON
+    // (or hits max_tokens mid-thought). Continue once without tools.
+    console.warn(
+      `JSON parse failed (${parseErr.message.split("\n")[0]}). Requesting JSON-only continuation…`,
+    );
+    const continuation = await client.messages.create({
+      model: params.model,
+      max_tokens: params.max_tokens,
+      system: params.system,
+      messages: [
+        ...params.messages,
+        { role: "assistant", content: message.content },
+        {
+          role: "user",
+          content:
+            "Your previous reply did not contain valid JSON (or was truncated). " +
+            "Using the research you already gathered, respond with ONLY the raw JSON object. " +
+            "No preamble, no markdown fences, no commentary — JSON only.",
+        },
+      ],
+    });
+    const contRaw = extractText(continuation.content);
+    if (!contRaw.trim()) {
+      throw new Error(
+        `Continuation returned empty text (stop_reason=${continuation.stop_reason || "unknown"})`,
+      );
+    }
+    return validatePayload(parseJsonResponse(contRaw));
+  }
+}
+
 async function fetchDashboardData(apiKey) {
   const client = new Anthropic({ apiKey });
   const model = "claude-sonnet-4-6";
@@ -583,11 +689,12 @@ Set todayDate to today's date in "Month D, YYYY" format.
 Set sectionLabel to "Recent news — Month D, YYYY" using that same date.
 Set financialSectionLabel to "Recent financial news — Month D, YYYY" using that same date.
 
-Respond with raw JSON only.`;
+CRITICAL: After any tool use, your FINAL message must be ONLY the raw JSON object — no narration like "Now I have…" or "Let me compile…".`;
 
   const baseParams = {
     model,
-    max_tokens: 5000,
+    // Web search burns output budget on tool rounds; leave headroom for full JSON.
+    max_tokens: 16000,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }],
   };
@@ -608,12 +715,7 @@ Respond with raw JSON only.`;
           ? `Calling Anthropic (${model}) with ${tools[0].type}…`
           : `Calling Anthropic (${model}) without web search tools…`,
       );
-      const message = await client.messages.create(params);
-      const raw = extractText(message.content);
-      if (!raw.trim()) {
-        throw new Error("Model returned empty text content");
-      }
-      return validatePayload(parseJsonResponse(raw));
+      return await requestDashboardJson(client, params);
     } catch (err) {
       lastError = err;
       const msg = err?.message || String(err);
@@ -622,8 +724,18 @@ Respond with raw JSON only.`;
         (/web_search|tool|tools|invalid|unknown|not.?support|400|404/i.test(msg) ||
           err?.status === 400 ||
           err?.status === 404);
-      if (toolRejected) {
-        console.warn(`Web search tool unavailable (${msg}). Trying next option…`);
+      // JSON/validation failures are not tool-rejection — but if web search
+      // returned unusable narration, try the next variant (incl. no tools).
+      const parseOrEmpty =
+        /Failed to parse model JSON|empty text|Continuation returned empty/i.test(
+          msg,
+        );
+      if (toolRejected || (tools && parseOrEmpty)) {
+        console.warn(
+          tools
+            ? `Web search path failed (${msg.split("\n")[0]}). Trying next option…`
+            : msg,
+        );
         continue;
       }
       throw err;
