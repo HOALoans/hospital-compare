@@ -634,8 +634,41 @@ function updateMastheadAndSection(html, todayDate, sectionLabel, financialSectio
   return out;
 }
 
+/** Billing / quota errors must not be retried across tool variants. */
+function isAnthropicBillingError(err) {
+  const msg = err?.message || String(err || "");
+  const nested =
+    err?.error?.error?.message ||
+    err?.error?.message ||
+    (typeof err?.error === "string" ? err.error : "");
+  const combined = `${msg}\n${nested}`;
+  return /credit balance is too low|insufficient.?credit|billing|purchase credits|Plans & Billing|quota.?exceeded|rate.?limit.*billing/i.test(
+    combined,
+  );
+}
+
+function formatAnthropicBillingError(err) {
+  const detail =
+    err?.error?.error?.message ||
+    err?.error?.message ||
+    err?.message ||
+    String(err);
+  return (
+    `Anthropic API billing/credit error — refill credits at https://console.anthropic.com/settings/billing then re-run.\n` +
+    `Detail: ${detail}`
+  );
+}
+
 async function requestDashboardJson(client, params) {
-  const message = await client.messages.create(params);
+  let message;
+  try {
+    message = await client.messages.create(params);
+  } catch (err) {
+    if (isAnthropicBillingError(err)) {
+      throw new Error(formatAnthropicBillingError(err));
+    }
+    throw err;
+  }
   const raw = extractText(message.content);
   const stopReason = message.stop_reason;
   if (stopReason && stopReason !== "end_turn" && stopReason !== "tool_use") {
@@ -655,22 +688,30 @@ async function requestDashboardJson(client, params) {
     console.warn(
       `JSON parse failed (${parseErr.message.split("\n")[0]}). Requesting JSON-only continuation…`,
     );
-    const continuation = await client.messages.create({
-      model: params.model,
-      max_tokens: params.max_tokens,
-      system: params.system,
-      messages: [
-        ...params.messages,
-        { role: "assistant", content: message.content },
-        {
-          role: "user",
-          content:
-            "Your previous reply did not contain valid JSON (or was truncated). " +
-            "Using the research you already gathered, respond with ONLY the raw JSON object. " +
-            "No preamble, no markdown fences, no commentary — JSON only.",
-        },
-      ],
-    });
+    let continuation;
+    try {
+      continuation = await client.messages.create({
+        model: params.model,
+        max_tokens: params.max_tokens,
+        system: params.system,
+        messages: [
+          ...params.messages,
+          { role: "assistant", content: message.content },
+          {
+            role: "user",
+            content:
+              "Your previous reply did not contain valid JSON (or was truncated). " +
+              "Using the research you already gathered, respond with ONLY the raw JSON object. " +
+              "No preamble, no markdown fences, no commentary — JSON only.",
+          },
+        ],
+      });
+    } catch (err) {
+      if (isAnthropicBillingError(err)) {
+        throw new Error(formatAnthropicBillingError(err));
+      }
+      throw err;
+    }
     const contRaw = extractText(continuation.content);
     if (!contRaw.trim()) {
       throw new Error(
@@ -736,12 +777,21 @@ CRITICAL: After any tool use, your FINAL message must be ONLY the raw JSON objec
       return await requestDashboardJson(client, params);
     } catch (err) {
       lastError = err;
+      // Billing/quota: fail immediately. Do not retry other tool variants —
+      // a prior broad status===400 / /400/ match treated credit errors as
+      // "tool rejected" and burned extra failed API calls.
+      if (isAnthropicBillingError(err)) {
+        throw err instanceof Error && /billing\/credit error/i.test(err.message)
+          ? err
+          : new Error(formatAnthropicBillingError(err));
+      }
       const msg = err?.message || String(err);
       const toolRejected =
         tools &&
-        (/web_search|tool|tools|invalid|unknown|not.?support|400|404/i.test(msg) ||
-          err?.status === 400 ||
-          err?.status === 404);
+        (/web_search|tool|tools|invalid|unknown|not.?support|404/i.test(msg) ||
+          err?.status === 404 ||
+          // 400 is often "unknown tool type" — but exclude billing (handled above)
+          (err?.status === 400 && /tool|tools|web_search/i.test(msg)));
       // JSON/validation failures are not tool-rejection — but if web search
       // returned unusable narration, try the next variant (incl. no tools).
       const parseOrEmpty =
