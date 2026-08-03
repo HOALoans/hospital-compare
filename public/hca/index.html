@@ -471,6 +471,32 @@
     color: var(--text-2);
     line-height: 1.55;
   }
+  .news-positioning {
+    margin-top: 0.45rem;
+  }
+  .news-positioning-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 0.25rem;
+  }
+  .news-col[aria-labelledby="news-heading"] .news-positioning-label {
+    color: var(--red);
+  }
+  .news-accountability {
+    margin: 0;
+    padding-left: 1.05rem;
+    list-style: disc;
+  }
+  .news-accountability li {
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.4;
+    margin-bottom: 0.18rem;
+  }
+  .news-accountability li:last-child { margin-bottom: 0; }
   .news-brief-payload { display: none; }
   .news-headline a.news-link { cursor: pointer; }
   /* ── NEWS BRIEF MODAL ── */
@@ -879,14 +905,17 @@
         </div>
         <h2 class="news-headline"><a href="https://ncdoj.gov/ag-jackson-wins-key-arguments-as-hca-mission-hospital-case-proceeds-to-trial/" class="news-link" target="_blank" rel="noopener noreferrer">Judge Denies HCA&#39;s Motion to Dismiss — AG Jackson&#39;s Lawsuit Proceeds</a></h2>
         <p class="news-blurb">NC Business Court Judge Julianna Theall Earp denied HCA&#39;s motion for summary judgment on July 28, ruling that all claims in AG Jeff Jackson&#39;s lawsuit will proceed. The court agreed that HCA&#39;s purchase agreement requires it to actually provide — not merely make available — emergency and cancer services at Mission. AG Jackson said HCA &#39;threw every argument against the wall&#39; to get the case dismissed.</p>
-        <div class="news-brief-payload" hidden>
-          <p class="news-brief-text">North Carolina Business Court Judge Julianna Theall Earp issued a 55-page ruling on July 28, 2026, largely denying HCA&#39;s motion for summary judgment and allowing all claims in AG Jeff Jackson&#39;s lawsuit to proceed. The court agreed with the AG that HCA&#39;s Asset Purchase Agreement obligates it to actually provide emergency and cancer services at Mission Hospital — not merely maintain infrastructure. The judge found one narrow issue — whether Mission was required to embed an ENT surgeon in the emergency department as part of Level 2 trauma obligations — in HCA&#39;s favor. The ruling is a significant legal defeat for HCA and validates years of advocacy by community organizations and former Mission staff.</p>
+        <div class="news-positioning">
+          <div class="news-positioning-label">How to position this</div>
           <ul class="news-accountability">
             <li>Court rules HCA must actually provide — not merely offer — emergency and cancer services under its 2019 purchase contract</li>
             <li>AG Jackson&#39;s full case proceeds; HCA could not escape accountability on summary judgment</li>
             <li>Ruling validates community complaints that HCA has systematically reduced services since acquiring Mission in 2019</li>
             <li>Lawsuit focuses on the same commitments HCA made when acquiring a nonprofit hospital — commitments it has repeatedly failed to honor</li>
           </ul>
+        </div>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">North Carolina Business Court Judge Julianna Theall Earp issued a 55-page ruling on July 28, 2026, largely denying HCA&#39;s motion for summary judgment and allowing all claims in AG Jeff Jackson&#39;s lawsuit to proceed. The court agreed with the AG that HCA&#39;s Asset Purchase Agreement obligates it to actually provide emergency and cancer services at Mission Hospital — not merely maintain infrastructure. The judge found one narrow issue — whether Mission was required to embed an ENT surgeon in the emergency department as part of Level 2 trauma obligations — in HCA&#39;s favor. The ruling is a significant legal defeat for HCA and validates years of advocacy by community organizations and former Mission staff.</p>
         </div>
       </article>
       <article class="news-item">
@@ -897,14 +926,17 @@
         </div>
         <h2 class="news-headline"><a href="https://avlwatchdog.org/dogwood-notifies-nc-attorney-general-that-hca-is-in-potential-noncompliance-with-mission-hospital-sale-contract/" class="news-link" target="_blank" rel="noopener noreferrer">Federal Monitor Flags HCA in &#39;Potential Noncompliance&#39; — Notifies AG as Medicare/Medicaid Deadline Passes</a></h2>
         <p class="news-blurb">The independent monitor overseeing HCA&#39;s compliance with Mission Hospital&#39;s 2019 sale agreement formally notified the NC Attorney General&#39;s office of two areas of &#39;potential noncompliance&#39; as a critical July 26 federal deadline arrived. Mission was required by that date to demonstrate substantial compliance with its Enhanced Plan of Correction or face termination from Medicare and Medicaid. The monitor&#39;s findings — covering discontinued and degraded services and repeated threats to patient safety — arrive as the AG&#39;s lawsuit reaches a pivotal legal stage.</p>
-        <div class="news-brief-payload" hidden>
-          <p class="news-brief-text">The independent monitor responsible for overseeing HCA&#39;s 2019 Asset Purchase Agreement with Mission Health found two areas of potential noncompliance and formally referred them to the NC Attorney General&#39;s office in July 2026. The findings included the continued diminishment of services and repeated Immediate Jeopardy findings that the monitor said signaled threats to patient safety inconsistent with HCA&#39;s acquisition commitments. Mission simultaneously faced a July 26 federal deadline to show CMS it had achieved substantial compliance with its Enhanced Plan of Correction or risk Medicare and Medicaid termination. The convergence of the monitor&#39;s referral and the federal compliance deadline represents the most serious regulatory pressure Mission has faced since the 2019 acquisition.</p>
+        <div class="news-positioning">
+          <div class="news-positioning-label">How to position this</div>
           <ul class="news-accountability">
             <li>Independent monitor formally referred HCA to the AG for potential violations of its own purchase commitments — not just regulatory infractions</li>
             <li>Federal deadline (July 26) for Mission to demonstrate Medicare/Medicaid compliance arrived at the same moment as the monitor&#39;s noncompliance finding</li>
             <li>Discontinued and degraded services — including rehabilitation at CarePartners — cited as contract breaches, not just regulatory lapses</li>
             <li>Monitor&#39;s escalation directly feeds the AG&#39;s lawsuit, strengthening the case that HCA broke binding promises to WNC communities</li>
           </ul>
+        </div>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">The independent monitor responsible for overseeing HCA&#39;s 2019 Asset Purchase Agreement with Mission Health found two areas of potential noncompliance and formally referred them to the NC Attorney General&#39;s office in July 2026. The findings included the continued diminishment of services and repeated Immediate Jeopardy findings that the monitor said signaled threats to patient safety inconsistent with HCA&#39;s acquisition commitments. Mission simultaneously faced a July 26 federal deadline to show CMS it had achieved substantial compliance with its Enhanced Plan of Correction or risk Medicare and Medicaid termination. The convergence of the monitor&#39;s referral and the federal compliance deadline represents the most serious regulatory pressure Mission has faced since the 2019 acquisition.</p>
         </div>
       </article>
       <article class="news-item">
@@ -915,14 +947,17 @@
         </div>
         <h2 class="news-headline"><a href="https://www.northcarolinahealthnews.org/2026/05/16/in-quest-for-more-beds-mission-plans-to-keep-staff-lean-con-application-shows/" class="news-link" target="_blank" rel="noopener noreferrer">Mission&#39;s CON Application Reveals Plan to Keep Staff Lean Despite 95 New Beds</a></h2>
         <p class="news-blurb">Even as Mission Hospital won conditional state approval to add 95 acute-care beds — expanding patient capacity by nearly 13% by 2031 — its own CON application projects staff growth of only 3.7% over seven years. The application, signed by CEO Greg Lowe, shows no planned additions in trauma care, security, or nursing administration. HCA CEO Sam Hazen separately acknowledged a &#39;significant workforce deficit&#39; at Mission on an earnings call.</p>
-        <div class="news-brief-payload" hidden>
-          <p class="news-brief-text">Mission Hospital&#39;s Certificate of Need application, reviewed by NC Health News and the Asheville Watchdog, projects a 13% expansion in patient capacity but only a 3.7% growth in staff over seven years. Key departments — trauma care, security, and nursing administration — show no planned staffing increases in the application signed by CEO Greg Lowe. The figures contradict HCA CEO Sam Hazen&#39;s own acknowledgment during a Q1 2026 earnings call of a &#39;significant workforce deficit&#39; at Mission. Critics warn the approval rewards a hospital already under federal safety sanctions while setting the stage for even more dangerously understaffed wards.</p>
+        <div class="news-positioning">
+          <div class="news-positioning-label">How to position this</div>
           <ul class="news-accountability">
             <li>CON application reveals HCA plans to expand beds 3.5x faster than it plans to hire staff — a structural understaffing formula baked in from day one</li>
             <li>Trauma, security, and nursing administration excluded from any staffing increases in the expansion plan</li>
             <li>HCA CEO Hazen publicly admitted a &#39;significant workforce deficit&#39; at Mission even while the company sought more beds from the state</li>
             <li>State awarded 95 beds under CON despite active federal safety sanctions — a decision critics call regulatory failure</li>
           </ul>
+        </div>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">Mission Hospital&#39;s Certificate of Need application, reviewed by NC Health News and the Asheville Watchdog, projects a 13% expansion in patient capacity but only a 3.7% growth in staff over seven years. Key departments — trauma care, security, and nursing administration — show no planned staffing increases in the application signed by CEO Greg Lowe. The figures contradict HCA CEO Sam Hazen&#39;s own acknowledgment during a Q1 2026 earnings call of a &#39;significant workforce deficit&#39; at Mission. Critics warn the approval rewards a hospital already under federal safety sanctions while setting the stage for even more dangerously understaffed wards.</p>
         </div>
       </article>
       <article class="news-item">
@@ -933,14 +968,17 @@
         </div>
         <h2 class="news-headline"><a href="https://waysandmeans.house.gov/event/full-committee-hearing-with-health-system-ceos/" class="news-link" target="_blank" rel="noopener noreferrer">HCA CEO Hazen Testifies Before Congress — Silent on Mission IJ Citations, Staffing Collapse, and AG Lawsuit</a></h2>
         <p class="news-blurb">HCA CEO Sam Hazen testified before the House Ways and Means Committee on April 28, 2026, promoting HCA&#39;s affordability efforts, Hurricane Helene response in western NC, and a call to eliminate Certificate of Need laws. His written testimony made no mention of Mission Hospital&#39;s four Immediate Jeopardy citations, the federal monitor&#39;s noncompliance finding, the collapse in staffing ratios, or the NC Attorney General&#39;s active lawsuit. Notably, Hazen urged Congress to repeal CON laws at the same time HCA had just won 95 CON beds amid active federal safety sanctions at Mission.</p>
-        <div class="news-brief-payload" hidden>
-          <p class="news-brief-text">HCA CEO Sam Hazen appeared before the House Ways and Means Committee on April 28, 2026, in a full-committee hearing with major health system CEOs. His written testimony focused on healthcare affordability, HCA&#39;s uncompensated care figures, its workforce training programs, and the response to Hurricane Helene in western North Carolina. Hazen also urged Congress to eliminate Certificate of Need laws — even as HCA had just been conditionally awarded 95 new CON beds at Mission despite active Immediate Jeopardy sanctions. The testimony contained no acknowledgment of Mission&#39;s four IJ citations, the staffing ratio collapse from 6.1 to 3.7 FTE per bed, the federal monitor&#39;s noncompliance finding, or the NC AG&#39;s lawsuit alleging HCA violated its acquisition commitments.</p>
+        <div class="news-positioning">
+          <div class="news-positioning-label">How to position this</div>
           <ul class="news-accountability">
             <li>Hazen urged CON elimination before Congress while HCA simultaneously won 95 CON beds at a federally sanctioned hospital — a contradiction never raised in testimony</li>
             <li>Written testimony promoted Helene/WNC response and patient-safety investments without mentioning four Immediate Jeopardy citations at Mission since 2021</li>
             <li>Complete silence on NC AG lawsuit, federal monitor noncompliance, and staffing collapse — Congress received a curated PR narrative, not accountability</li>
             <li>Opportunity for bipartisan oversight: no lawmaker publicly challenged Hazen on Mission&#39;s safety record or the AG case during the hearing</li>
           </ul>
+        </div>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">HCA CEO Sam Hazen appeared before the House Ways and Means Committee on April 28, 2026, in a full-committee hearing with major health system CEOs. His written testimony focused on healthcare affordability, HCA&#39;s uncompensated care figures, its workforce training programs, and the response to Hurricane Helene in western North Carolina. Hazen also urged Congress to eliminate Certificate of Need laws — even as HCA had just been conditionally awarded 95 new CON beds at Mission despite active Immediate Jeopardy sanctions. The testimony contained no acknowledgment of Mission&#39;s four IJ citations, the staffing ratio collapse from 6.1 to 3.7 FTE per bed, the federal monitor&#39;s noncompliance finding, or the NC AG&#39;s lawsuit alleging HCA violated its acquisition commitments.</p>
         </div>
       </article>
       <article class="news-item">
@@ -951,14 +989,17 @@
         </div>
         <h2 class="news-headline"><a href="https://www.northcarolinahealthnews.org/2026/04/04/mission-hospital-merry-go-round-sparks-call-for-regulatory-change/" class="news-link" target="_blank" rel="noopener noreferrer">Mission Hospital&#39;s CMS &#39;Merry-Go-Round&#39;: Four Immediate Jeopardy Citations in Five Years, Still No Systemic Fix</a></h2>
         <p class="news-blurb">With four Immediate Jeopardy citations since HCA&#39;s 2019 acquisition, Mission Hospital is trapped in a cycle of short-term fixes and recurring federal violations, according to reporting by Carolina Public Press and NC Health News. State Sen. Julie Mayfield called for structural regulatory reform, warning that the enforcement cycle enables HCA to treat each citation as a standalone event rather than evidence of systemic failure. Mission&#39;s nursing union chair said staff continue to flag unsafe nurse-to-patient ratios as the root cause.</p>
-        <div class="news-brief-payload" hidden>
-          <p class="news-brief-text">Carolina Public Press and NC Health News documented how Mission Hospital&#39;s four Immediate Jeopardy citations in five years — the most serious federal safety finding — reflect a recurring pattern of noncompliance rather than isolated incidents. State Sen. Julie Mayfield, representing Buncombe County, called out the enforcement &#39;merry-go-round&#39; in which HCA repeatedly submits plans of correction, receives temporary relief, and then triggers new violations. Mission&#39;s nursing union leaders said systemic understaffing — not individual errors — is the driver, and that each citation has ended with what one union leader called &#39;bandaid solutions.&#39; Legislators and advocates are pushing for regulatory changes that would give CMS more tools to compel structural reform rather than paper compliance.</p>
+        <div class="news-positioning">
+          <div class="news-positioning-label">How to position this</div>
           <ul class="news-accountability">
             <li>Four IJ citations in five years is a pattern, not a series of accidents — CMS&#39;s own January 2026 rejection letter cited &#39;systemic and recurring patterns of harm&#39;</li>
             <li>Union nurses identify chronic understaffing — not training failures — as the root cause of repeat citations</li>
             <li>Regulatory &#39;merry-go-round&#39; lets HCA avoid accountability by treating each citation as discrete; advocates want structural enforcement reform</li>
             <li>Mission is the only NC hospital with a nurses&#39; union — formed in 2020, one year after HCA&#39;s acquisition — a direct response to deteriorating conditions</li>
           </ul>
+        </div>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">Carolina Public Press and NC Health News documented how Mission Hospital&#39;s four Immediate Jeopardy citations in five years — the most serious federal safety finding — reflect a recurring pattern of noncompliance rather than isolated incidents. State Sen. Julie Mayfield, representing Buncombe County, called out the enforcement &#39;merry-go-round&#39; in which HCA repeatedly submits plans of correction, receives temporary relief, and then triggers new violations. Mission&#39;s nursing union leaders said systemic understaffing — not individual errors — is the driver, and that each citation has ended with what one union leader called &#39;bandaid solutions.&#39; Legislators and advocates are pushing for regulatory changes that would give CMS more tools to compel structural reform rather than paper compliance.</p>
         </div>
       </article>
       <!-- NEWS_END -->
@@ -979,14 +1020,17 @@
         </div>
         <h2 class="news-headline"><a href="https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Inc--2nd-Quarter-2026-Earnings-Conference-Call/default.aspx" class="news-link" target="_blank" rel="noopener noreferrer">HCA Reports Q2 2026 Revenue of $20.2B — Beats Estimates but Slashes Full-Year Earnings Guidance</a></h2>
         <p class="news-blurb">HCA Healthcare reported Q2 2026 revenue of $20.23 billion, up 8.7% year-over-year, with net income of $1.699 billion and diluted EPS of $7.62. Despite the top-line beat, HCA cut its full-year net income guidance to $6.3–$6.7 billion from a prior range of $6.5–$7.0 billion, citing a $400 million payer-mix headwind as ACA exchange enrollees lost coverage and converted nearly one-for-one to uninsured patients. Adjusted EBITDA guidance was also trimmed to $15.4–$16.1 billion.</p>
-        <div class="news-brief-payload" hidden>
-          <p class="news-brief-text">HCA Healthcare announced Q2 2026 results on July 24, reporting $20.23 billion in revenue — an 8.7% increase year-over-year — and diluted EPS of $7.62, topping analyst estimates. Net income of $1.699 billion was up modestly from $1.653 billion in Q2 2025. However, HCA revised its full-year 2026 guidance downward, narrowing net income guidance to $6.3–$6.7 billion and EBITDA guidance to $15.4–$16.1 billion, driven by a $1.0–$1.2 billion expected exchange-coverage headwind for the full year. Free cash flow dropped sharply in Q2, raising questions about the sustainability of the company&#39;s aggressive shareholder-return programs.</p>
+        <div class="news-positioning">
+          <div class="news-positioning-label">How to position this</div>
           <ul class="news-accountability">
             <li>Even with guidance cuts, HCA expects $6.3–$6.7B in net income in 2026 — while Mission Hospital cannot fund adequate staffing to meet federal safety standards</li>
             <li>Q2 free cash flow cratered roughly 62% vs. estimates, yet HCA continues its $10B buyback program and quarterly dividends</li>
             <li>Medicaid supplemental payment windfall of ~$400M in Q2 — largely from Florida — helped offset ACA losses; Mission&#39;s WNC community sees none of this benefit in staffing</li>
             <li>HCA&#39;s guidance cut was attributed to coverage losses, not safety investments; no capital reallocation toward Mission&#39;s documented staffing crisis was mentioned</li>
           </ul>
+        </div>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">HCA Healthcare announced Q2 2026 results on July 24, reporting $20.23 billion in revenue — an 8.7% increase year-over-year — and diluted EPS of $7.62, topping analyst estimates. Net income of $1.699 billion was up modestly from $1.653 billion in Q2 2025. However, HCA revised its full-year 2026 guidance downward, narrowing net income guidance to $6.3–$6.7 billion and EBITDA guidance to $15.4–$16.1 billion, driven by a $1.0–$1.2 billion expected exchange-coverage headwind for the full year. Free cash flow dropped sharply in Q2, raising questions about the sustainability of the company&#39;s aggressive shareholder-return programs.</p>
         </div>
       </article>
       <article class="news-item">
@@ -997,14 +1041,17 @@
         </div>
         <h2 class="news-headline"><a href="https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Previews-Second-Quarter-2026-Results/default.aspx" class="news-link" target="_blank" rel="noopener noreferrer">HCA Previews Q2 Early — Revises 2026 Revenue Guidance to $77–$79.5B Amid ACA Coverage Losses</a></h2>
         <p class="news-blurb">Ten days before its official earnings call, HCA released preliminary Q2 results and revised its 2026 annual revenue guidance to $77.0–$79.5 billion, narrowed from $76.5–$80.0 billion. The early disclosure flagged a $400 million payer-mix headwind from ACA exchange coverage losses, with uninsured conversions running higher than originally modeled. The company also noted a roughly equal $400 million offset from Medicaid Supplemental Payment Programs, primarily tied to Florida state-directed payments.</p>
-        <div class="news-brief-payload" hidden>
-          <p class="news-brief-text">HCA filed an 8-K on July 14, 2026, pre-announcing Q2 results and revising full-year 2026 guidance. Revenue was preliminarily set at approximately $20.23 billion for the quarter, and full-year revenue guidance was adjusted to $77.0–$79.5 billion. The revision acknowledged that ACA exchange coverage losses were converting to uninsured at a rate &#39;closer to one-for-one&#39; — substantially worse than the 80–85% assumption built into original guidance. A $400 million Medicaid supplemental benefit, concentrated in Florida, helped cushion the blow but raised questions about geographic equity in HCA&#39;s financial model.</p>
+        <div class="news-positioning">
+          <div class="news-positioning-label">How to position this</div>
           <ul class="news-accountability">
             <li>HCA&#39;s financial complexity — hedging exchange losses with Florida Medicaid windfalls — illustrates how profits are extracted nationally while local hospitals like Mission face unresolved staffing crises</li>
             <li>Early guidance cut signals HCA&#39;s financial model is under strain, yet no staffing reinvestment for Mission has been announced</li>
             <li>ACA coverage losses disproportionately affect safety-net patients — the same population Mission serves in WNC — further pressuring an already-understaffed hospital</li>
             <li>Guidance revision filed with the SEC but no parallel disclosure to WNC community about what coverage losses mean for Mission capacity</li>
           </ul>
+        </div>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">HCA filed an 8-K on July 14, 2026, pre-announcing Q2 results and revising full-year 2026 guidance. Revenue was preliminarily set at approximately $20.23 billion for the quarter, and full-year revenue guidance was adjusted to $77.0–$79.5 billion. The revision acknowledged that ACA exchange coverage losses were converting to uninsured at a rate &#39;closer to one-for-one&#39; — substantially worse than the 80–85% assumption built into original guidance. A $400 million Medicaid supplemental benefit, concentrated in Florida, helped cushion the blow but raised questions about geographic equity in HCA&#39;s financial model.</p>
         </div>
       </article>
       <article class="news-item">
@@ -1015,14 +1062,17 @@
         </div>
         <h2 class="news-headline"><a href="https://www.healthcaredive.com/news/hca-cuts-2026-earnings-ACA-coverage-losses/825147/" class="news-link" target="_blank" rel="noopener noreferrer">HCA Slashes 2026 Earnings Outlook — ACA Exchange Losses Now Projected at $1B–$1.2B for Full Year</a></h2>
         <p class="news-blurb">Healthcare Dive reported that HCA now projects a $1.0–$1.2 billion ACA exchange headwind for full-year 2026 — nearly double what was built into original guidance — as uninsured conversion rates ran far worse than expected. The company had lost $150 million in Q1 and $400 million in Q2 from payer-mix shifts as exchange enrollees lost coverage. Despite the margin pressure, HCA maintained its buyback program and did not announce any reallocation of capital toward understaffed facilities.</p>
-        <div class="news-brief-payload" hidden>
-          <p class="news-brief-text">Healthcare Dive coverage of HCA&#39;s July 2026 guidance revision detailed how the company&#39;s exposure to ACA exchange coverage losses nearly doubled from its original forecast, now totaling an estimated $1.0–$1.2 billion drag on 2026 results. CFO Mike Marks told investors that uninsured conversion rates from exchange enrollees were running &#39;closer to one-for-one&#39; rather than the 80–85% originally modeled. The earnings cut came as HCA simultaneously maintained its $10 billion buyback program, signaling continued prioritization of shareholder returns over absorbing the safety-net cost of uninsured patients. For Mission Hospital, which serves WNC&#39;s most rural and uninsured communities, the dynamic underscores the structural tension between HCA&#39;s investor obligations and local care commitments.</p>
+        <div class="news-positioning">
+          <div class="news-positioning-label">How to position this</div>
           <ul class="news-accountability">
             <li>ACA exchange losses convert directly to more uninsured patients — the burden falls on communities and safety-net hospitals like Mission, not HCA shareholders</li>
             <li>HCA maintained buybacks and dividends even as its own CFO signaled worsening payer mix — a capital allocation choice, not a financial necessity</li>
             <li>Margin pressure from coverage losses was entirely unaddressed in Hazen&#39;s April 2026 Ways and Means testimony, which focused on uncompensated care virtue-signaling</li>
             <li>WNC communities face the dual burden of a federally sanctioned, understaffed Mission Hospital and rising uninsured rates driven by federal exchange disruptions</li>
           </ul>
+        </div>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">Healthcare Dive coverage of HCA&#39;s July 2026 guidance revision detailed how the company&#39;s exposure to ACA exchange coverage losses nearly doubled from its original forecast, now totaling an estimated $1.0–$1.2 billion drag on 2026 results. CFO Mike Marks told investors that uninsured conversion rates from exchange enrollees were running &#39;closer to one-for-one&#39; rather than the 80–85% originally modeled. The earnings cut came as HCA simultaneously maintained its $10 billion buyback program, signaling continued prioritization of shareholder returns over absorbing the safety-net cost of uninsured patients. For Mission Hospital, which serves WNC&#39;s most rural and uninsured communities, the dynamic underscores the structural tension between HCA&#39;s investor obligations and local care commitments.</p>
         </div>
       </article>
       <article class="news-item">
@@ -1033,14 +1083,17 @@
         </div>
         <h2 class="news-headline"><a href="https://www.stocktitan.net/sec-filings/HCA/8-k-hca-healthcare-inc-reports-material-event-7847ef2dffb0.html" class="news-link" target="_blank" rel="noopener noreferrer">HCA Authorizes New $10B Share Buyback and Raises Quarterly Dividend to $0.78</a></h2>
         <p class="news-blurb">HCA&#39;s Board of Directors authorized a fresh $10 billion share repurchase program in January 2026 — its largest ever — alongside a quarterly cash dividend of $0.78 per share, marking HCA&#39;s nineteenth consecutive quarter of dividend growth. The buyback and dividend announcement came alongside Q4 2025 results showing full-year net income of $6.784 billion on revenue of $75.60 billion. The capital return program dwarfs any known investment in Mission Hospital&#39;s staffing recovery or safety remediation.</p>
-        <div class="news-brief-payload" hidden>
-          <p class="news-brief-text">At its January 27, 2026 earnings announcement, HCA Healthcare revealed a $10 billion share repurchase authorization — one of the largest in the company&#39;s history — and declared a $0.78 quarterly dividend, its nineteenth consecutive quarterly dividend increase. Full-year 2025 revenue was $75.60 billion with net income of $6.784 billion. The capital return program was announced concurrent with Mission Hospital operating under federal safety sanctions and a nursing union that has repeatedly flagged dangerous understaffing; no comparable investment in Mission&#39;s staffing was disclosed alongside the buyback.</p>
+        <div class="news-positioning">
+          <div class="news-positioning-label">How to position this</div>
           <ul class="news-accountability">
             <li>$10B buyback authorized while Mission Hospital was under active Immediate Jeopardy sanctions and CMS had rejected its Plan of Correction days earlier</li>
             <li>Nineteen consecutive quarters of dividend growth contrasts with a staffing ratio at Mission that fell from 6.1 to 3.7 FTE per bed since HCA&#39;s acquisition</li>
             <li>HCA&#39;s shareholder return programs are fully disclosed to Wall Street; its failure to fund adequate Mission staffing is not disclosed with equal prominence</li>
             <li>The $10B buyback alone would fund years of staffing remediation at Mission — the choice to return it to shareholders instead is a deliberate capital allocation decision</li>
           </ul>
+        </div>
+        <div class="news-brief-payload" hidden>
+          <p class="news-brief-text">At its January 27, 2026 earnings announcement, HCA Healthcare revealed a $10 billion share repurchase authorization — one of the largest in the company&#39;s history — and declared a $0.78 quarterly dividend, its nineteenth consecutive quarterly dividend increase. Full-year 2025 revenue was $75.60 billion with net income of $6.784 billion. The capital return program was announced concurrent with Mission Hospital operating under federal safety sanctions and a nursing union that has repeatedly flagged dangerous understaffing; no comparable investment in Mission&#39;s staffing was disclosed alongside the buyback.</p>
         </div>
       </article>
       <!-- FIN_NEWS_END -->
@@ -1187,7 +1240,7 @@
     <h2 class="news-modal-title" id="news-modal-title"></h2>
     <p class="news-modal-brief" id="news-modal-brief"></p>
     <div id="news-modal-angles-wrap">
-      <div class="news-modal-angles-label">Accountability angles</div>
+      <div class="news-modal-angles-label">How to position this</div>
       <ul class="news-modal-points" id="news-modal-points"></ul>
     </div>
     <div class="news-modal-actions">
@@ -1562,6 +1615,7 @@
       const anglesWrap = document.getElementById('news-modal-angles-wrap');
       const kickerEl = document.getElementById('news-modal-kicker');
       const readEl = document.getElementById('news-modal-read');
+      const anglesLabel = document.querySelector('.news-modal-angles-label');
       if (!modal || !titleEl || !briefEl || !pointsEl || !readEl) return;
 
       let lastFocus = null;
@@ -1583,7 +1637,7 @@
         const briefNode = payload && payload.querySelector('.news-brief-text');
         const blurbNode = item.querySelector('.news-blurb');
         const brief = ((briefNode && briefNode.textContent) || (blurbNode && blurbNode.textContent) || '').trim();
-        const pointNodes = payload ? payload.querySelectorAll('.news-accountability li') : [];
+        const pointNodes = item.querySelectorAll('.news-accountability li');
         const source = item.querySelector('.news-source');
         const sourceLabel = source ? source.textContent.trim() : '';
 
@@ -1597,6 +1651,7 @@
             out.textContent = (li.textContent || '').trim();
             if (out.textContent) pointsEl.appendChild(out);
           });
+          if (anglesLabel) anglesLabel.textContent = 'How to position this';
           anglesWrap.hidden = false;
         } else {
           anglesWrap.hidden = true;

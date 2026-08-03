@@ -67,7 +67,7 @@ Return ONLY a valid raw JSON object with exactly this structure, no markdown, no
       headline: "Headline text",
       blurb: "Two to three sentence summary with Reclaim framing",
       brief: "2–4 sentence article brief for the click modal (accountability-aware)",
-      accountabilityPoints: ["2–4 short bullets on holding HCA accountable"],
+      accountabilityPoints: ["2–4 short Reclaim positioning bullets for advocates"],
       url: "https://real-article-url-when-known (optional; omit if unknown — never invent)"
     }
   ],
@@ -80,7 +80,7 @@ Return ONLY a valid raw JSON object with exactly this structure, no markdown, no
       headline: "Headline text",
       blurb: "Two to three sentence summary focused on financial facts",
       brief: "2–4 sentence article brief for the click modal",
-      accountabilityPoints: ["2–4 bullets — still note HCA accountability angle where relevant, e.g. profits vs staffing"],
+      accountabilityPoints: ["2–4 short positioning bullets connecting earnings/margins/buybacks to Mission accountability"],
       url: "https://real-article-url-when-known (optional; omit if unknown — never invent)"
     }
   ],
@@ -101,7 +101,7 @@ URL RULES:
 
 BRIEF RULES (required for every newsItems[] and financialNewsItems[] entry):
 - brief: 2–4 sentences summarizing the article for a modal shown before the user leaves the page. Accurate; no invented quotes.
-- accountabilityPoints: array of 2–4 short strings — angles useful for holding HCA accountable (Mission quality, staffing, safety, CON, AG lawsuit, profits vs care, congressional framing, etc.). For financial items, still include at least one profits/margins-vs-Mission-staffing or disclosure-silence angle when relevant.`;
+- accountabilityPoints: REQUIRED array of 2–4 short strings — Reclaim positioning / talking points shown under each card blurb and in the click-modal. Frame for advocates holding HCA accountable (Mission quality, staffing, safety, CON, AG lawsuit, profits vs care, congressional framing, etc.). For financialNewsItems, every bullet should connect earnings/revenue/cost-cutting/margins/guidance/buybacks/stock news to Mission accountability (e.g. profits vs staffing, capital returns vs missing staffing plans, IR silence on CMS/AG).`;
 
 function resolveHtmlPath() {
   const override = process.env.DASHBOARD_HTML;
@@ -262,12 +262,18 @@ function validateNewsItem(item, label, i) {
     // Fall back to blurb so modal payloads survive older model responses
     item.brief = String(item.blurb).trim();
   }
-  const points = normalizeAccountabilityPoints(item.accountabilityPoints, label, i);
-  if (points) {
-    item.accountabilityPoints = points;
-  } else {
-    delete item.accountabilityPoints;
+  // Accept positioningPoints as an alias; canonicalize to accountabilityPoints
+  if (item.accountabilityPoints == null && item.positioningPoints != null) {
+    item.accountabilityPoints = item.positioningPoints;
   }
+  delete item.positioningPoints;
+  const points = normalizeAccountabilityPoints(item.accountabilityPoints, label, i);
+  if (!points || points.length < 2) {
+    throw new Error(
+      `${label}[${i}].accountabilityPoints must be an array of 2–4 short positioning bullets`,
+    );
+  }
+  item.accountabilityPoints = points.slice(0, 4);
   if (item.url != null && item.url !== "") {
     if (!isHttpUrl(item.url)) {
       throw new Error(`${label}[${i}].url must be a valid http(s) URL when provided`);
@@ -464,21 +470,31 @@ function renderExternalLink(href, label, className) {
   return `<a href="${escapeHtml(href)}"${cls} ${externalLinkAttrs()}>${escapeHtml(label)}</a>`;
 }
 
+function getAccountabilityPoints(item) {
+  return Array.isArray(item.accountabilityPoints)
+    ? item.accountabilityPoints.filter((p) => typeof p === "string" && p.trim()).slice(0, 4)
+    : [];
+}
+
+function renderAccountabilityList(points) {
+  if (!points.length) return "";
+  return `        <div class="news-positioning">
+          <div class="news-positioning-label">How to position this</div>
+          <ul class="news-accountability">
+${points.map((p) => `            <li>${escapeHtml(p.trim())}</li>`).join("\n")}
+          </ul>
+        </div>`;
+}
+
 function renderNewsBriefPayload(item) {
   const brief =
     typeof item.brief === "string" && item.brief.trim()
       ? item.brief.trim()
       : String(item.blurb || "").trim();
-  const points = Array.isArray(item.accountabilityPoints)
-    ? item.accountabilityPoints.filter((p) => typeof p === "string" && p.trim())
-    : [];
-  const pointsHtml = points.length
-    ? `\n          <ul class="news-accountability">\n${points
-        .map((p) => `            <li>${escapeHtml(p.trim())}</li>`)
-        .join("\n")}\n          </ul>`
-    : "";
+  // Points are rendered visibly under the blurb; modal reads those same <li>s.
+  // Keep brief-only in the hidden payload.
   return `        <div class="news-brief-payload" hidden>
-          <p class="news-brief-text">${escapeHtml(brief)}</p>${pointsHtml}
+          <p class="news-brief-text">${escapeHtml(brief)}</p>
         </div>`;
 }
 
@@ -492,6 +508,7 @@ function renderNewsItems(items) {
       const headlineHtml = url
         ? `<h2 class="news-headline">${renderExternalLink(url, item.headline, "news-link")}</h2>`
         : `<h2 class="news-headline">${escapeHtml(item.headline)}</h2>`;
+      const pointsHtml = renderAccountabilityList(getAccountabilityPoints(item));
       return `      <article class="news-item">
         <div class="news-meta">
           ${sourceHtml}
@@ -500,7 +517,7 @@ function renderNewsItems(items) {
         </div>
         ${headlineHtml}
         <p class="news-blurb">${escapeHtml(item.blurb)}</p>
-${renderNewsBriefPayload(item)}
+${pointsHtml ? `${pointsHtml}\n` : ""}${renderNewsBriefPayload(item)}
       </article>`;
     })
     .join("\n");
@@ -681,7 +698,8 @@ For talkingPoints[].text, start with a short punchy title sentence ending in a p
 When a talking point cites a specific earnings release, court ruling, monitor report, CON decision, congressional testimony (e.g. Sam Hazen Ways and Means), or news article, include source (short name) and sourceUrl with the real URL; omit both if unknown. Preserve url/sourceUrl whenever known.
 For each newsItems[] / financialNewsItems[] entry:
 - include url with the real article/press-release/filing/hearing URL when known; omit url if unknown. Never invent URLs.
-- include brief (2–4 sentences) and accountabilityPoints (2–4 short strings) for the on-page news-brief modal. Financial items should still include an HCA-accountability angle where relevant (profits/margins vs Mission staffing or disclosure silence).
+- include brief (2–4 sentences) for the on-page news-brief modal.
+- REQUIRED: accountabilityPoints — 2–4 short Reclaim positioning / talking-point bullets shown under each card blurb and in the click-modal. Write them for advocates (how to frame the story to hold HCA accountable). For financialNewsItems, connect earnings/revenue/cost-cutting/margins/guidance/buybacks/stock to Mission accountability (profits vs staffing, capital returns vs missing staffing plans, IR silence on CMS/AG).
 Consider Sam Hazen / House Ways and Means testimony (April 28, 2026) when relevant for newsItems or talkingPoints; paraphrase carefully, do not invent quotes.
 For tag, use a short label like Lawsuit, Noncompliance, Earnings, CON, Safety, Monitor, Congress, Guidance, Margins, Buyback, or Update. Prefer "Lawsuit" (not "Trial") for AG case items.
 For tagClass, choose tag-red, tag-amber, tag-blue, or tag-teal to match severity/topic.
