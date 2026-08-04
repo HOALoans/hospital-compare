@@ -172,16 +172,21 @@ export function CompareHospitalPicker({ baseHospitalId, selected, onChange }: Pr
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
                 style={{ backgroundColor: individualHospitalColor(i) }}
               />
-              <span className="line-clamp-2 max-w-[14rem] font-medium leading-snug text-slate-800" title={h.name}>
-                {h.name}
+              <span className="min-w-0">
+                <span className="line-clamp-2 max-w-[12rem] font-medium leading-snug text-slate-800 sm:max-w-[14rem]" title={h.name}>
+                  {h.name}
+                </span>
+                <span className="mt-0.5 block text-[10px] text-slate-400 sm:hidden">
+                  {h.city}, {h.state}
+                </span>
               </span>
-              <span className="shrink-0 text-slate-400">
+              <span className="hidden shrink-0 text-slate-400 sm:inline">
                 {h.city}, {h.state}
               </span>
               <button
                 type="button"
                 onClick={() => removeHospital(h.facilityId)}
-                className="rounded-full p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 no-print"
+                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 no-print"
                 aria-label={`Remove ${h.name}`}
               >
                 <X className="h-3.5 w-3.5" />

@@ -136,9 +136,9 @@ export function ComparisonSummary({
       </div>
 
       {(hasCompare || compareHospitals.length > 0) && (
-        <p className="mt-3 text-sm text-slate-600">
+        <p className="mt-3 break-words text-sm text-slate-600">
           Compared with:{" "}
-          <span className="font-medium text-slate-800">
+          <span className="break-words font-medium text-slate-800">
             {(comparison.compareHospitals ?? [])
               .map((ch) => ch.hospital.name)
               .join(" · ") || compareHospitals.map((h) => h.name).join(" · ")}

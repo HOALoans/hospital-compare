@@ -29,12 +29,17 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
   background: var(--color-surface);
   color: #1e293b;
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
 }
 
 .font-display {

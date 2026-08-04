@@ -19,45 +19,46 @@ export function HomePage({ onStartCompare }: Props) {
 
   return (
     <div className="space-y-10">
-      <section className="relative overflow-hidden rounded-2xl border-2 border-brand-primary/40 bg-gradient-to-br from-brand-primary/5 via-white to-brand-secondary/10 p-8 shadow-xl shadow-brand-primary/5 ring-1 ring-brand-primary/20 sm:p-12">
+      <section className="relative overflow-hidden rounded-2xl border-2 border-brand-primary/40 bg-gradient-to-br from-brand-primary/5 via-white to-brand-secondary/10 p-6 shadow-xl shadow-brand-primary/5 ring-1 ring-brand-primary/20 sm:p-8 lg:p-12">
         <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-brand-primary/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-brand-secondary/15 blur-3xl" />
         <div className="relative mx-auto max-w-3xl text-center">
-          <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-primary text-white shadow-lg">
-            <Activity className="h-7 w-7" />
+          <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-primary text-white shadow-lg sm:mb-6 sm:h-14 sm:w-14">
+            <Activity className="h-6 w-6 sm:h-7 sm:w-7" />
           </div>
-          <h2 className="font-display text-4xl leading-tight text-slate-900 sm:text-5xl">
+          <h2 className="text-balance font-display text-3xl leading-tight text-slate-900 sm:text-4xl lg:text-5xl">
             {partner.welcomeHeadline}
           </h2>
-          <p className="mt-4 text-lg text-slate-600">{subheadline}</p>
+          <p className="mt-4 text-base text-slate-600 sm:text-lg">{subheadline}</p>
           {isPartnerMode && partner.heroDescription ? (
             <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-slate-700 sm:text-lg">
-              <span className="rounded-xl border border-brand-primary/20 bg-brand-primary/5 px-5 py-4 block text-left shadow-sm">
+              <span className="block rounded-xl border border-brand-primary/20 bg-brand-primary/5 px-4 py-3 text-left shadow-sm sm:px-5 sm:py-4">
                 {partner.heroDescription}
               </span>
             </p>
           ) : null}
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-8 flex w-full flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
             <button
               type="button"
               onClick={onStartCompare}
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:bg-brand-primary/90"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:bg-brand-primary/90"
             >
               Compare a hospital
               <ArrowRight className="h-5 w-5" />
             </button>
             <a
               href="/mission-tracker/"
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-brand-primary bg-white px-6 py-3.5 text-base font-semibold text-brand-primary transition hover:bg-brand-primary/5"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-brand-primary bg-white px-6 py-3.5 text-base font-semibold text-brand-primary transition hover:bg-brand-primary/5"
             >
-              Hospital Health Dashboard
+              <span className="sm:hidden">Health Dashboard</span>
+              <span className="hidden sm:inline">Hospital Health Dashboard</span>
               <ArrowRight className="h-5 w-5" />
             </a>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-800">
             <Scale className="h-5 w-5" />

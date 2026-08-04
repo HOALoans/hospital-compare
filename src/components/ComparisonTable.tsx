@@ -370,18 +370,18 @@ function MeasureRow({
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
-        className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-slate-50 sm:px-4"
+        className="flex w-full items-center gap-2 px-3 py-3 text-left transition hover:bg-slate-50 sm:gap-3 sm:px-4"
       >
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-slate-400 transition ${expanded ? "rotate-180" : ""}`}
         />
-        <div className="min-w-0 flex-1 basis-[12rem]">
+        <div className="min-w-0 flex-1 basis-[10rem] sm:basis-[12rem]">
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
             {groupLabel}
           </p>
           <p className="text-sm font-semibold text-slate-900">{measure.label}</p>
           {(benchmarks.length > 0 || compareHospitals.length > 0) && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 md:hidden">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 lg:hidden">
               {benchmarks.map((benchmark) => (
                 <span
                   key={benchmark.key}
@@ -427,11 +427,11 @@ function MeasureRow({
           )}
         </div>
         {(benchmarks.length > 0 || compareHospitals.length > 0) && (
-          <div className="hidden min-w-0 flex-1 flex-wrap items-center justify-end gap-x-4 gap-y-1 self-stretch border-l border-slate-100 pl-3 md:flex">
+          <div className="hidden min-w-0 flex-1 flex-wrap items-center justify-end gap-x-3 gap-y-1 self-stretch border-l border-slate-100 pl-3 lg:flex">
             {benchmarks.map((benchmark) => (
               <span
                 key={benchmark.key}
-                className="flex w-[8.5rem] items-baseline gap-1.5 text-xs"
+                className="flex min-w-[6.5rem] max-w-[8.5rem] flex-1 basis-[7rem] items-baseline gap-1.5 text-xs"
                 title={benchmark.label}
               >
                 <span
@@ -456,7 +456,7 @@ function MeasureRow({
             {compareHospitals.map((ch, i) => (
               <span
                 key={ch.groupKey}
-                className="flex w-[8.5rem] items-baseline gap-1.5 text-xs"
+                className="flex min-w-[6.5rem] max-w-[8.5rem] flex-1 basis-[7rem] items-baseline gap-1.5 text-xs"
                 title={ch.hospital.name}
               >
                 <span
@@ -476,9 +476,9 @@ function MeasureRow({
             ))}
           </div>
         )}
-        <div className="w-20 shrink-0 self-stretch border-l border-slate-100 pl-3 text-right sm:w-28">
+        <div className="w-16 shrink-0 self-stretch border-l border-slate-100 pl-2 text-right sm:w-28 sm:pl-3">
           <div
-            className="text-base font-bold tabular-nums"
+            className="text-sm font-bold tabular-nums sm:text-base"
             style={{ color: CHART.baseHospital }}
           >
             {formatMeasureValue(value, def.valueType)}
@@ -491,7 +491,7 @@ function MeasureRow({
           </div>
         </div>
         <div
-          className={`hidden w-28 shrink-0 items-center justify-end gap-1 self-stretch border-l border-slate-100 pl-3 text-xs font-semibold sm:flex ${
+          className={`hidden w-28 shrink-0 items-center justify-end gap-1 self-stretch border-l border-slate-100 pl-3 text-xs font-semibold md:flex ${
             gap == null
               ? "text-slate-400"
               : gap > 0.05
@@ -691,22 +691,22 @@ export function ComparisonTable({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="hidden items-stretch gap-3 border-b border-slate-100 px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:flex">
           <span className="w-4" />
           <span className="min-w-0 flex-1 basis-[12rem] self-center">Measure</span>
           {(benchmarks.length > 0 || compareHospitals.length > 0) && (
-            <span className="hidden min-w-0 flex-1 self-center border-l border-slate-100 pl-3 text-right md:block">
+            <span className="hidden min-w-0 flex-1 self-center border-l border-slate-100 pl-3 text-right lg:block">
               Selected benchmarks
             </span>
           )}
           <span
-            className="w-20 self-center truncate border-l border-slate-100 pl-3 text-right sm:w-28"
+            className="w-16 self-center truncate border-l border-slate-100 pl-2 text-right sm:w-28 sm:pl-3"
             title={comparison.hospital.name}
           >
             {shortHospitalName(comparison.hospital.name, 18)}
           </span>
-          <span className="w-28 self-center border-l border-slate-100 pl-3 text-right">
+          <span className="hidden w-28 self-center border-l border-slate-100 pl-3 text-right md:block">
             Gap vs state
           </span>
         </div>

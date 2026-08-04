@@ -443,105 +443,116 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-slate-200 bg-white no-print">
-        <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
+        <div className="mx-auto flex max-w-screen-2xl flex-col gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
           {view === "admin" ? (
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white">
                 <Activity className="h-5 w-5" />
               </div>
-              <div>
-                <h1 className="font-display text-2xl leading-tight text-slate-900">Parigrado</h1>
-                <p className="text-sm text-slate-500">Partner program admin</p>
+              <div className="min-w-0">
+                <h1 className="font-display text-xl leading-tight text-slate-900 sm:text-2xl">Parigrado</h1>
+                <p className="truncate text-sm text-slate-500">Partner program admin</p>
               </div>
             </div>
           ) : (
             <button
               type="button"
               onClick={goHome}
-              className="flex items-center gap-3 text-left transition hover:opacity-90"
+              className="flex min-w-0 items-center gap-3 text-left transition hover:opacity-90"
             >
               {partner.logoUrl ? (
                 <img
                   src={partner.logoUrl}
                   alt={partner.logoAlt ?? partner.displayName}
-                  className="h-10 max-w-[10rem] object-contain"
+                  className="h-10 max-w-[8rem] shrink-0 object-contain sm:max-w-[10rem]"
                 />
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-primary text-white">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-white">
                   <Activity className="h-5 w-5" />
                 </div>
               )}
-              <div>
-                <h1 className="font-display text-2xl leading-tight text-slate-900">
+              <div className="min-w-0">
+                <h1 className="truncate font-display text-xl leading-tight text-slate-900 sm:text-2xl">
                   {partner.displayName}
                 </h1>
-                <p className="text-sm text-slate-500">
+                <p className="truncate text-sm text-slate-500">
                   {partner.tagline ?? SITE_TAGLINE}
                 </p>
               </div>
             </button>
           )}
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             {view !== "admin" && (
-            <nav className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+            <nav
+              aria-label="Primary"
+              className="flex max-w-full items-center gap-1 overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-1 [-webkit-overflow-scrolling:touch]"
+            >
               <button
                 type="button"
                 onClick={goHome}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                aria-label="Home"
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium transition sm:px-3 sm:py-1.5 ${
                   view === "home"
                     ? "bg-white text-brand-primary shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <Home className="h-4 w-4" />
-                Home
+                <Home className="h-4 w-4 shrink-0" />
+                <span>Home</span>
               </button>
               <button
                 type="button"
                 onClick={goToCompare}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                aria-label="Compare"
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium transition sm:px-3 sm:py-1.5 ${
                   view === "compare"
                     ? "bg-white text-brand-primary shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <Building2 className="h-4 w-4" />
-                Compare
+                <Building2 className="h-4 w-4 shrink-0" />
+                <span>Compare</span>
               </button>
               <button
                 type="button"
                 onClick={goMethodology}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                aria-label="Methodology"
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium transition sm:px-3 sm:py-1.5 ${
                   view === "methodology"
                     ? "bg-white text-brand-primary shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <BookOpen className="h-4 w-4" />
-                Methodology
+                <BookOpen className="h-4 w-4 shrink-0" />
+                <span className="hidden md:inline">Methodology</span>
+                <span className="md:hidden">Method</span>
               </button>
               <a
                 href="/mission-tracker/"
-                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+                aria-label="Hospital Health Dashboard"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:px-3 sm:py-1.5"
               >
-                <Activity className="h-4 w-4" />
-                Health Dashboard
+                <Activity className="h-4 w-4 shrink-0" />
+                <span className="hidden lg:inline">Health Dashboard</span>
+                <span className="lg:hidden">Dashboard</span>
               </a>
             </nav>
             )}
             {view !== "admin" && !ready && (
-              <div className="flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                {directoryReady
-                  ? "Loading quality scores from CMS…"
-                  : "Loading CMS hospital directory…"}
+              <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                <span className="truncate">
+                  {directoryReady
+                    ? "Loading quality scores from CMS…"
+                    : "Loading CMS hospital directory…"}
+                </span>
               </div>
             )}
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-screen-2xl space-y-8 px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-screen-2xl space-y-6 px-4 py-6 sm:space-y-8 sm:px-6 sm:py-8">
         {view === "admin" && <PartnerAdminPage onExit={goHome} />}
 
         {view === "home" && <HomePage onStartCompare={goToCompare} />}
@@ -642,13 +653,15 @@ export default function App() {
                   trendMeasureId={trendMeasure}
                 />
                 <div id="comparison-report" className="space-y-6 print:hidden">
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div className="flex items-start gap-4">
+                  <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
                         <HospitalLogo hospital={selected} size={48} showProfileLink />
-                        <div>
-                          <h2 className="font-display text-3xl text-slate-900">{selected.name}</h2>
-                          <p className="mt-1 text-slate-600">
+                        <div className="min-w-0 flex-1">
+                          <h2 className="break-words font-display text-2xl text-slate-900 sm:text-3xl">
+                            {selected.name}
+                          </h2>
+                          <p className="mt-1 break-words text-sm text-slate-600 sm:text-base">
                             {selected.city}, {selected.state} {selected.zip} · {selected.county}{" "}
                             County
                           </p>
@@ -665,9 +678,9 @@ export default function App() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex w-full min-w-0 flex-col gap-3 lg:w-auto lg:items-end">
                         {selected.overallRating && (
-                          <div className="rounded-xl border border-orange-200 bg-orange-50/50 px-5 py-3 text-center">
+                          <div className="w-fit rounded-xl border border-orange-200 bg-orange-50/50 px-5 py-3 text-center">
                             <div className="text-3xl font-bold" style={{ color: CHART.baseHospital }}>
                               {selected.overallRating}
                             </div>
@@ -682,7 +695,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => setShowSavePanel((v) => !v)}
-                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                            className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
                           >
                             <Bookmark className="h-4 w-4" />
                             Save
@@ -690,7 +703,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={exportCsv}
-                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                            className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
                           >
                             <Download className="h-4 w-4" />
                             CSV
@@ -699,13 +712,13 @@ export default function App() {
                             type="button"
                             onClick={printReport}
                             title='In the print dialog: More settings → uncheck "Headers and footers"'
-                            className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-primary/90"
+                            className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand-primary px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-primary/90"
                           >
                             <Printer className="h-4 w-4" />
                             PDF
                           </button>
                         </div>
-                        <p className="mt-2 text-[11px] text-slate-500">
+                        <p className="hidden text-[11px] text-slate-500 sm:block">
                           PDF tip: in the print dialog open{" "}
                           <span className="font-medium text-slate-700">More settings</span> and
                           uncheck{" "}

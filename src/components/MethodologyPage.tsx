@@ -18,8 +18,8 @@ export function MethodologyPage({ onBack, onStartCompare }: Props) {
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h2 className="font-display text-3xl text-slate-900">How we compute comparisons</h2>
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+        <h2 className="font-display text-2xl text-slate-900 sm:text-3xl">How we compute comparisons</h2>
         <p className="mt-3 text-slate-600">
           {SITE_NAME} uses only public CMS Hospital Compare data. Peer averages are simple
           unweighted means across hospitals in each group that report a score for that measure.
