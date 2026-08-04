@@ -659,15 +659,79 @@ function formatAnthropicBillingError(err) {
   );
 }
 
+/** SDK default is 10 minutes — web_search agentic turns often exceed that. */
+const ANTHROPIC_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
+/** App-level retries after a timeout (SDK maxRetries kept low to avoid stacking). */
+const ANTHROPIC_TIMEOUT_RETRIES = 2;
+const ANTHROPIC_TIMEOUT_RETRY_BASE_MS = 5000;
+
+function isAnthropicTimeoutError(err) {
+  if (!err) return false;
+  if (
+    err.name === "APIConnectionTimeoutError" ||
+    err.constructor?.name === "APIConnectionTimeoutError"
+  ) {
+    return true;
+  }
+  const msg = err.message || String(err);
+  return /APIConnectionTimeoutError|Request timed out|ETIMEDOUT|timeout/i.test(msg);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function rethrowBillingOr(err) {
+  if (isAnthropicBillingError(err)) {
+    throw err instanceof Error && /billing\/credit error/i.test(err.message)
+      ? err
+      : new Error(formatAnthropicBillingError(err));
+  }
+  throw err;
+}
+
+/**
+ * Call Anthropic with timeout-only retries + exponential backoff.
+ * Billing/credit errors fail immediately (no retry).
+ */
+async function withAnthropicTimeoutRetry(fn, label = "Anthropic request") {
+  let lastErr;
+  const maxAttempts = ANTHROPIC_TIMEOUT_RETRIES + 1;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (isAnthropicBillingError(err)) {
+        rethrowBillingOr(err);
+      }
+      if (!isAnthropicTimeoutError(err) || attempt >= maxAttempts) {
+        throw err;
+      }
+      lastErr = err;
+      const delay = ANTHROPIC_TIMEOUT_RETRY_BASE_MS * 2 ** (attempt - 1);
+      console.warn(
+        `${label} timed out (attempt ${attempt}/${maxAttempts}): ${err.message || err}. ` +
+          `Retrying in ${delay}ms…`,
+      );
+      await sleep(delay);
+    }
+  }
+  throw lastErr || new Error(`${label} failed after timeouts`);
+}
+
+async function createMessage(client, params, label) {
+  return withAnthropicTimeoutRetry(
+    () => client.messages.create(params),
+    label,
+  );
+}
+
 async function requestDashboardJson(client, params) {
   let message;
   try {
-    message = await client.messages.create(params);
+    message = await createMessage(client, params, "Anthropic messages.create");
   } catch (err) {
-    if (isAnthropicBillingError(err)) {
-      throw new Error(formatAnthropicBillingError(err));
-    }
-    throw err;
+    rethrowBillingOr(err);
   }
   const raw = extractText(message.content);
   const stopReason = message.stop_reason;
@@ -690,27 +754,28 @@ async function requestDashboardJson(client, params) {
     );
     let continuation;
     try {
-      continuation = await client.messages.create({
-        model: params.model,
-        max_tokens: params.max_tokens,
-        system: params.system,
-        messages: [
-          ...params.messages,
-          { role: "assistant", content: message.content },
-          {
-            role: "user",
-            content:
-              "Your previous reply did not contain valid JSON (or was truncated). " +
-              "Using the research you already gathered, respond with ONLY the raw JSON object. " +
-              "No preamble, no markdown fences, no commentary — JSON only.",
-          },
-        ],
-      });
+      continuation = await createMessage(
+        client,
+        {
+          model: params.model,
+          max_tokens: params.max_tokens,
+          system: params.system,
+          messages: [
+            ...params.messages,
+            { role: "assistant", content: message.content },
+            {
+              role: "user",
+              content:
+                "Your previous reply did not contain valid JSON (or was truncated). " +
+                "Using the research you already gathered, respond with ONLY the raw JSON object. " +
+                "No preamble, no markdown fences, no commentary — JSON only.",
+            },
+          ],
+        },
+        "Anthropic JSON continuation",
+      );
     } catch (err) {
-      if (isAnthropicBillingError(err)) {
-        throw new Error(formatAnthropicBillingError(err));
-      }
-      throw err;
+      rethrowBillingOr(err);
     }
     const contRaw = extractText(continuation.content);
     if (!contRaw.trim()) {
@@ -723,7 +788,14 @@ async function requestDashboardJson(client, params) {
 }
 
 async function fetchDashboardData(apiKey) {
-  const client = new Anthropic({ apiKey });
+  // Default SDK timeout is 10 minutes; web_search multi-turn calls exceed that
+  // (Aug 4 run 30918362133 → APIConnectionTimeoutError ~15m). Give headroom and
+  // disable SDK retries so app-level timeout retries do not stack into hours.
+  const client = new Anthropic({
+    apiKey,
+    timeout: ANTHROPIC_TIMEOUT_MS,
+    maxRetries: 0,
+  });
   const model = "claude-sonnet-4-6";
   const today = new Date().toLocaleDateString("en-US", {
     year: "numeric",
