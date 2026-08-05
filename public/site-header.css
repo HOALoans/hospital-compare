@@ -1,0 +1,242 @@
+/* Shared Parigrado site header — mirrors src/App.tsx React header */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap");
+
+:root {
+  --brand-primary: #4f46e5;
+  --brand-secondary: #ea580c;
+  --pg-surface: #f4f6fb;
+}
+
+.pg-header {
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+  font-family: "DM Sans", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.pg-header-inner {
+  max-width: 1536px; /* screen-2xl */
+  margin: 0 auto;
+  padding: 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .pg-header-inner {
+    padding: 1.25rem 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pg-header-inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+}
+
+.pg-brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.15s ease;
+}
+
+.pg-brand:hover {
+  opacity: 0.9;
+}
+
+.pg-brand-mark {
+  display: flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: var(--brand-primary);
+  color: #fff;
+}
+
+.pg-brand-mark svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.pg-brand-logo {
+  height: 2.5rem;
+  max-width: 8rem;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+@media (min-width: 640px) {
+  .pg-brand-logo {
+    max-width: 10rem;
+  }
+}
+
+.pg-brand-text {
+  min-width: 0;
+}
+
+.pg-brand-name {
+  display: block;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 640px) {
+  .pg-brand-name {
+    font-size: 1.5rem;
+  }
+}
+
+.pg-brand-tagline {
+  display: block;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-header-nav-wrap {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .pg-header-nav-wrap {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pg-header-nav-wrap {
+    margin-left: auto;
+  }
+}
+
+.pg-nav {
+  display: flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.25rem;
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0.25rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pg-nav-tab {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  text-decoration: none;
+  color: #475569;
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+@media (min-width: 640px) {
+  .pg-nav-tab {
+    padding: 0.375rem 0.75rem;
+  }
+}
+
+.pg-nav-tab:hover {
+  color: #0f172a;
+}
+
+.pg-nav-tab.is-active {
+  background: #fff;
+  color: var(--brand-primary);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.pg-nav-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* Responsive label spans — match App.tsx sm / lg / xl breakpoints */
+.pg-label-full,
+.pg-label-mid,
+.pg-label-short {
+  display: none;
+}
+
+.pg-label-short {
+  display: inline;
+}
+
+@media (min-width: 640px) {
+  .pg-label-short {
+    display: none;
+  }
+  .pg-label-mid {
+    display: inline;
+  }
+}
+
+@media (min-width: 1280px) {
+  .pg-label-mid {
+    display: none;
+  }
+  .pg-label-full {
+    display: inline;
+  }
+}
+
+/* HCA: short below lg, full at lg+ */
+.pg-nav-tab[data-nav="hca"] .pg-label-short {
+  display: inline;
+}
+.pg-nav-tab[data-nav="hca"] .pg-label-mid,
+.pg-nav-tab[data-nav="hca"] .pg-label-full {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .pg-nav-tab[data-nav="hca"] .pg-label-short {
+    display: none;
+  }
+  .pg-nav-tab[data-nav="hca"] .pg-label-full {
+    display: inline;
+  }
+}
+
+/* Home always shows full label */
+.pg-nav-tab[data-nav="home"] .pg-label-full {
+  display: inline;
+}
+.pg-nav-tab[data-nav="home"] .pg-label-mid,
+.pg-nav-tab[data-nav="home"] .pg-label-short {
+  display: none;
+}

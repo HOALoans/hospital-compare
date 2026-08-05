@@ -528,7 +528,7 @@ export default function App() {
               </a>
               {!hideHcaNav && (
                 <a
-                  href="/hca/"
+                  href={`/hca/${partnerQuery}`}
                   aria-label="HCA News and Talking Point Dashboard"
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:px-3 sm:py-1.5"
                 >

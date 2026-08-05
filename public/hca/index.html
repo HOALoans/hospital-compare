@@ -5,20 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
 (function () {
+  var params = new URLSearchParams(location.search);
+  var partner = (params.get("partner") || "").trim().toLowerCase();
+  var hide =
+    partner === "aarp" ||
+    partner === "aarp-open";
   try {
-    if (sessionStorage.getItem("parigrado:hide-hca-nav") === "1") {
-      location.replace("/");
-      return;
-    }
+    hide = hide || sessionStorage.getItem("parigrado:hide-hca-nav") === "1";
   } catch (e) {}
-  if (/(?:^|;\s*)parigrado_hide_hca=1(?:;|$)/.test(document.cookie)) {
-    location.replace("/");
+  if (!hide && /(?:^|;\s*)parigrado_hide_hca=1(?:;|$)/.test(document.cookie)) {
+    hide = true;
+  }
+  if (hide) {
+    var home = "/";
+    if (partner) home += "?partner=" + encodeURIComponent(partner);
+    location.replace(home);
   }
 })();
 </script>
 <title>HCA News and Talking Point Dashboard — Reclaim Healthcare WNC</title>
 <meta name="description" content="Accountability dashboard tracking HCA Healthcare's management of Mission Hospital in Asheville, NC. Updated daily by Reclaim Healthcare WNC.">
 <meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="/site-header.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -65,14 +73,13 @@
     min-height: 100vh;
     overflow-x: clip;
   }
-  /* ── MASTHEAD ── */
-  .masthead {
+  /* ── PAGE TITLE (below shared site header) ── */
+  .page-banner {
     background: var(--bg);
     color: var(--text);
-    padding: 0;
     border-bottom: 3px solid var(--teal);
   }
-  .masthead-inner {
+  .page-banner-inner {
     max-width: 1200px;
     margin: 0 auto;
     padding: 1.25rem 1.5rem 1.25rem;
@@ -82,46 +89,11 @@
     gap: 1rem 1.5rem;
     flex-wrap: wrap;
   }
-  .masthead-left { min-width: 0; flex: 1 1 16rem; }
-  .masthead-right {
+  .page-banner-left { min-width: 0; flex: 1 1 16rem; }
+  .page-banner-right {
     text-align: right;
     flex: 0 1 auto;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.65rem;
-  }
-  .site-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 0.35rem;
-    margin: 0;
-    padding: 0.25rem;
-    border: 0.5px solid var(--border);
-    border-radius: 8px;
-    background: #efece6;
-    width: fit-content;
-    max-width: 100%;
-  }
-  .site-tab {
-    display: inline-flex;
-    align-items: center;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-2);
-    text-decoration: none;
-    border-radius: 6px;
-    padding: 8px 12px;
-    line-height: 1.2;
-    min-height: 36px;
-  }
-  .site-tab:hover { color: var(--text); background: rgba(255,255,255,0.7); }
-  .site-tab.is-active {
-    color: var(--teal);
-    background: #fff;
-    box-shadow: 0 1px 2px rgba(26,25,22,0.08);
   }
   .masthead-eyebrow {
     font-size: 11px;
@@ -834,7 +806,7 @@
   /* Narrow tablet: stack news; market stays 3-up until phone */
   @media (max-width: 900px) {
     .news-row { grid-template-columns: 1fr; gap: 1rem; }
-    .masthead-inner,
+    .page-banner-inner,
     .container,
     .footer { padding-left: 1.15rem; padding-right: 1.15rem; }
     .section-body { padding: 0.95rem; }
@@ -853,14 +825,13 @@
   }
   /* Phone */
   @media (max-width: 600px) {
-    .masthead-inner {
+    .page-banner-inner {
       flex-direction: column;
       align-items: flex-start;
       padding: 1.1rem 1rem 1rem;
     }
-    .masthead-right { text-align: left; }
+    .page-banner-right { text-align: left; }
     .masthead-title { font-size: 22px; }
-    .masthead-back { min-height: 40px; padding: 9px 12px; }
     .container { padding: 1rem 1rem 2rem; }
     .footer {
       flex-direction: column;
@@ -902,7 +873,8 @@
   }
   @media print {
     body { background: #fff; }
-    .masthead { background: #fff; -webkit-print-color-adjust: exact; }
+    .page-banner { background: #fff; -webkit-print-color-adjust: exact; }
+    .pg-header { display: none; }
     .arc-summary { display: none; }
     .arc-details .arc-full { display: block !important; }
     .news-modal { display: none !important; }
@@ -910,26 +882,19 @@
 </style>
 </head>
 <body>
-<header class="masthead" role="banner">
-  <div class="masthead-inner">
-    <div class="masthead-left">
+<script src="/site-header.js" data-active="hca"></script>
+<div class="page-banner">
+  <div class="page-banner-inner">
+    <div class="page-banner-left">
       <div class="masthead-eyebrow">Reclaim Healthcare WNC</div>
       <div class="masthead-title">HCA News and Talking Point Dashboard</div>
     </div>
-    <div class="masthead-right">
-      <nav class="site-tabs" aria-label="Parigrado">
-        <a class="site-tab" href="/">Home</a>
-        <a class="site-tab" href="/?view=compare">Compare Multiple Hospitals</a>
-        <a class="site-tab" href="/mission-tracker/">Single Hospital Health</a>
-        <a class="site-tab is-active" href="/hca/" aria-current="page">HCA News &amp; Talking Points</a>
-      </nav>
-      <div>
-        <div class="masthead-date" id="today-date">August 5, 2026</div>
-        <div class="masthead-updated">Last updated automatically — check sources for latest</div>
-      </div>
+    <div class="page-banner-right">
+      <div class="masthead-date" id="today-date">August 5, 2026</div>
+      <div class="masthead-updated">Last updated automatically — check sources for latest</div>
     </div>
   </div>
-</header>
+</div>
 <main class="container" role="main">
   <!-- MARKET: stock + analysts + insiders -->
   <div class="market-row">
