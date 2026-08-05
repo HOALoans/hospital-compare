@@ -361,6 +361,14 @@ app.get(["/hca-watchdog", "/hca-watchdog/"], (_req, res) => {
   res.redirect(301, "/hca/");
 });
 
+/** Short AARP partner URLs (branded Parigrado layout; HCA News hidden). */
+app.get(["/aarp", "/aarp/"], (_req, res) => {
+  res.redirect(302, "/?partner=aarp");
+});
+app.get(["/aarp-open", "/aarp-open/"], (_req, res) => {
+  res.redirect(302, "/?partner=aarp-open");
+});
+
 /** HCA dashboard: chart, analysts, insiders (avoids CORS / keys in client). */
 app.get("/api/finance/hca/chart", limitFinance, async (req, res) => {
   const rawRange = String(req.query.range ?? "3mo").trim();

@@ -17,6 +17,8 @@ export type PartnerBranding = {
    * can be shared as a private partner preview / demo rather than a public page.
    */
   gated?: boolean;
+  /** Hide the HCA News & Talking Points nav tab (and related CTAs) for this partner. */
+  hideHcaNav?: boolean;
 };
 
 /** Built-in Parigrado branding — always served from code, never stored in JSON. */
@@ -55,14 +57,33 @@ export const SEED_PARTNERS: Record<string, PartnerBranding> = {
     logoAlt: "AARP (partnership concept — not an official AARP product)",
     primaryColor: "#EC1300",
     secondaryColor: "#26374A",
-    welcomeHeadline: "Choose the right hospital with confidence",
+    welcomeHeadline: "Know how your hospital really compares",
     welcomeSubheadline:
-      "Compare any hospital's quality, safety, and patient-experience scores against local, state, and national peers — using the same public federal data, never paid rankings.",
+      "Compare hospital quality to peers using public CMS & CDC data — never paid rankings.",
     heroDescription:
-      "A member-first hospital quality guide for the 50+ community. Parigrado turns the government's own CMS and CDC data into a clear, side-by-side comparison so members and their families can make informed care decisions — with no advertising, sponsorships, or pay-to-rank lists influencing what they see.",
+      "A member-first hospital quality guide for the 50+ community. Same Parigrado layout and tools — Compare Multiple Hospitals and Single Hospital Health — fully branded for AARP members, with no advertising or pay-to-rank lists.",
     tagline: "Hospital quality for members 50+",
     showPoweredBy: true,
     gated: true,
+    hideHcaNav: true,
+  },
+  /** Ungated AARP-branded share link (same layout/branding; no HCA News tab). */
+  "aarp-open": {
+    id: "aarp-open",
+    displayName: "AARP",
+    logoUrl: "/aarp-wordmark.svg",
+    logoAlt: "AARP (partnership concept — not an official AARP product)",
+    primaryColor: "#EC1300",
+    secondaryColor: "#26374A",
+    welcomeHeadline: "Know how your hospital really compares",
+    welcomeSubheadline:
+      "Compare hospital quality to peers using public CMS & CDC data — never paid rankings.",
+    heroDescription:
+      "A member-first hospital quality guide for the 50+ community. Same Parigrado layout and tools — Compare Multiple Hospitals and Single Hospital Health — fully branded for AARP members, with no advertising or pay-to-rank lists.",
+    tagline: "Hospital quality for members 50+",
+    showPoweredBy: true,
+    gated: false,
+    hideHcaNav: true,
   },
 };
 

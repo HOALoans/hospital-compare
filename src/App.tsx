@@ -54,6 +54,8 @@ function peerToggleColor(groupKey: string): string {
 
 export default function App() {
   const { partner, partnerId } = usePartner();
+  const partnerQuery = partnerId ? `?partner=${encodeURIComponent(partnerId)}` : "";
+  const hideHcaNav = Boolean(partner.hideHcaNav);
   // Capture the URL state ONCE on first mount. Recomputing this every render
   // is unsafe because the URL-sync effect below rewrites window.location before
   // the deep-link restore effect runs — which would drop the hospital param and
@@ -515,7 +517,7 @@ export default function App() {
                 <span className="sm:hidden">Compare</span>
               </button>
               <a
-                href="/mission-tracker/"
+                href={`/mission-tracker/${partnerQuery}`}
                 aria-label="Single Hospital Health Dashboard"
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:px-3 sm:py-1.5"
               >
@@ -524,15 +526,17 @@ export default function App() {
                 <span className="hidden sm:inline xl:hidden">Hospital Health</span>
                 <span className="sm:hidden">Hospital</span>
               </a>
-              <a
-                href="/hca/"
-                aria-label="HCA News and Talking Point Dashboard"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:px-3 sm:py-1.5"
-              >
-                <Newspaper className="h-4 w-4 shrink-0" />
-                <span className="hidden lg:inline">HCA News &amp; Talking Points</span>
-                <span className="lg:hidden">HCA News</span>
-              </a>
+              {!hideHcaNav && (
+                <a
+                  href="/hca/"
+                  aria-label="HCA News and Talking Point Dashboard"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:px-3 sm:py-1.5"
+                >
+                  <Newspaper className="h-4 w-4 shrink-0" />
+                  <span className="hidden lg:inline">HCA News &amp; Talking Points</span>
+                  <span className="lg:hidden">HCA News</span>
+                </a>
+              )}
             </nav>
             {view !== "admin" && !ready && (
               <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs text-amber-800">

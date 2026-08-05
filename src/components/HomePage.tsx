@@ -16,8 +16,11 @@ interface Props {
 }
 
 export function HomePage({ onStartCompare, onOpenMethodology }: Props) {
-  const { partner, isPartnerMode } = usePartner();
+  const { partner, partnerId, isPartnerMode } = usePartner();
   const subheadline = partner.welcomeSubheadline ?? SITE_TAGLINE;
+  const hospitalHealthHref = partnerId
+    ? `/mission-tracker/?partner=${encodeURIComponent(partnerId)}`
+    : "/mission-tracker/";
 
   return (
     <div className="space-y-10">
@@ -49,7 +52,7 @@ export function HomePage({ onStartCompare, onOpenMethodology }: Props) {
               <ArrowRight className="h-5 w-5" />
             </button>
             <a
-              href="/mission-tracker/"
+              href={hospitalHealthHref}
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-brand-primary bg-white px-6 py-3.5 text-base font-semibold text-brand-primary transition hover:bg-brand-primary/5"
             >
               <span className="sm:hidden">Hospital Health</span>

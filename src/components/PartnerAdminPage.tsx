@@ -43,6 +43,7 @@ type FormState = {
   tagline: string;
   showPoweredBy: boolean;
   gated: boolean;
+  hideHcaNav: boolean;
 };
 
 const EMPTY_FORM: FormState = {
@@ -56,6 +57,7 @@ const EMPTY_FORM: FormState = {
   tagline: "",
   showPoweredBy: true,
   gated: false,
+  hideHcaNav: false,
 };
 
 function partnerToForm(partner: PartnerBranding): FormState {
@@ -70,6 +72,7 @@ function partnerToForm(partner: PartnerBranding): FormState {
     tagline: partner.tagline ?? "",
     showPoweredBy: partner.showPoweredBy ?? false,
     gated: partner.gated ?? false,
+    hideHcaNav: partner.hideHcaNav ?? false,
   };
 }
 
@@ -99,6 +102,7 @@ function formPayload(form: FormState) {
     tagline: form.tagline.trim() || undefined,
     showPoweredBy: form.showPoweredBy,
     gated: form.gated,
+    hideHcaNav: form.hideHcaNav,
   };
 }
 
@@ -848,6 +852,17 @@ export function PartnerAdminPage({ onExit }: Props) {
                     className="rounded border-slate-300 text-indigo-600"
                   />
                   Gate behind demo access code (private preview)
+                </label>
+              </div>
+              <div className="flex items-end">
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.hideHcaNav}
+                    onChange={(e) => setForm((f) => ({ ...f, hideHcaNav: e.target.checked }))}
+                    className="rounded border-slate-300 text-indigo-600"
+                  />
+                  Hide HCA News &amp; Talking Points tab
                 </label>
               </div>
               <div>

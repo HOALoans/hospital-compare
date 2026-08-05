@@ -29,6 +29,7 @@ const BACKGROUND_FACTS = `BACKGROUND FACTS (established advocacy context for the
 - Staff ratio dropped from 6.1 FTE/bed to 3.7 FTE (NC average 5.1). (The Parigrado dashboard also publishes HCRIS staffing series; treat these FTE figures as advocacy narrative facts for the Watchdog page.)
 - NC Attorney General Jeff Jackson sued HCA for violating acquisition commitments; a judge denied summary judgment on July 28, 2026, and the lawsuit proceeds.
 - Federal monitor (July 2026): Mission is not in substantial compliance; no staffing plans submitted.
+- August 4, 2026: Dogwood Health Trust and Affiliated Monitors hosted a community Q&A webinar on the 2025 HCA Mission monitoring report (90+ attendees). Source: https://dogwoodhealthtrust.org/independent-monitor-dogwood-host-community-qa-webinar-on-2025-monitoring-report/
 - NC DHHS awarded Mission 95 CON beds despite active federal safety sanctions.
 - April 28, 2026: HCA CEO Sam Hazen testified before the House Ways and Means Committee (hearing with health system CEOs). Written testimony focused on affordability, uncompensated care, Helene response in western NC, workforce training, and eliminating certificate-of-need (CON) laws. It did not address Mission Immediate Jeopardy citations, staffing collapse, federal noncompliance, or the AG lawsuit. Primary sources: https://www.congress.gov/event/119th-congress/house-event/119239 and https://www.congress.gov/119/meeting/house/119239/witnesses/HHRG-119-WM00-Wstate-HazenS-20260428.pdf (also hosted at /hca/hazen-hca-testimony-2026-04-28.pdf on this site).`;
 
@@ -40,7 +41,7 @@ ${BACKGROUND_FACTS}
 
 Generate updated dashboard content based on the most recent news you are aware of. Search for the latest news about HCA Healthcare, Mission Hospital Asheville, NC Attorney General lawsuit against HCA, CMS compliance status, HCA earnings, and relevant congressional hearings or CEO testimony (including Sam Hazen / Ways and Means) when tools are available.
 
-KEY OUTLETS TO CHECK (when searching): Asheville Watchdog, Blue Ridge Public Radio (BPR), NC Health News, Becker's Hospital Review (https://www.beckershospitalreview.com/ — HCA / Mission / for-profit hospital coverage), NC DOJ / AG, CMS, HCA investor relations, National Nurses United, and related congressional coverage. Prefer primary publisher URLs.
+KEY OUTLETS TO CHECK (when searching): Asheville Watchdog, Blue Ridge Public Radio (BPR), NC Health News, Becker's Hospital Review (https://www.beckershospitalreview.com/ — HCA / Mission / for-profit hospital coverage), Dogwood Health Trust (https://dogwoodhealthtrust.org/ — Independent Monitor reports, community webinars, Mission sale compliance), NC DOJ / AG, CMS, HCA investor relations, National Nurses United, and related congressional coverage. Prefer primary publisher URLs. Always consider Dogwood / Affiliated Monitors Independent Monitor updates when fresh.
 
 IMPORTANT COLUMN SPLIT:
 - newsItems = accountability / care / CMS / lawsuit / staffing / CON / congressional oversight / advocacy framing for Mission and WNC. Do NOT put pure earnings/stock items here.

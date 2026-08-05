@@ -81,7 +81,19 @@ export function initPartnerStore(): void {
 
 export function getPartner(id: string | null | undefined): PartnerBranding {
   if (!id || id === "default") return { ...DEFAULT_PARTNER };
-  return customPartners[id] ? { ...customPartners[id] } : { ...DEFAULT_PARTNER };
+  const seed = SEED_PARTNERS[id];
+  const custom = customPartners[id];
+  if (custom) {
+    // Seed fills new flags (e.g. hideHcaNav) without wiping admin-edited copy.
+    return {
+      ...(seed ?? {}),
+      ...custom,
+      id: custom.id,
+      hideHcaNav: custom.hideHcaNav ?? seed?.hideHcaNav ?? false,
+      gated: custom.gated ?? seed?.gated ?? false,
+    };
+  }
+  return seed ? { ...seed } : { ...DEFAULT_PARTNER };
 }
 
 export function getAllPartners(): PartnerBranding[] {
@@ -108,6 +120,7 @@ export type PartnerInput = {
   showPoweredBy?: boolean;
   logoAlt?: string;
   gated?: boolean;
+  hideHcaNav?: boolean;
 };
 
 function validatePartnerInput(
@@ -152,6 +165,7 @@ function validatePartnerInput(
       tagline: input.tagline?.trim() || undefined,
       showPoweredBy: Boolean(input.showPoweredBy),
       gated: Boolean(input.gated),
+      hideHcaNav: Boolean(input.hideHcaNav),
     },
   };
 }
