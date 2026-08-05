@@ -10,7 +10,7 @@ Static news/talking-points dashboard for Reclaim Healthcare WNC.
 
 ## Morning email digest
 
-Weekday mornings (same cron as the dashboard update, ~7am ET) the workflow runs `scripts/send-morning-digest.js` after the update. It emails headlines dated **today or yesterday** (America/New_York) from advocacy + financial news on the dashboard, plus a link to https://parigrado.com/hca/. If there are no matching headlines, it skips sending.
+Weekday mornings (same cron as the dashboard update, 12:00 UTC ≈ 8am Eastern during EDT) the workflow runs `scripts/send-morning-digest.js` after the update. It emails headlines dated **today or yesterday** (America/New_York) from advocacy + financial news on the dashboard, plus a link to https://parigrado.com/hca/. If there are no matching headlines, it skips sending. The digest step still runs if the Anthropic dashboard update fails (it uses the HTML already on `main`).
 
 ### Required GitHub Actions secrets
 

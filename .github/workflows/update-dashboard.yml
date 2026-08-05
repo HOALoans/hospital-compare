@@ -3,7 +3,8 @@ name: Update HCA Dashboard
 
 on:
   schedule:
-    # Weekdays ~7am Eastern / 12:00 UTC
+    # Weekdays 12:00 UTC ≈ 8am Eastern (EDT) / 7am Eastern (EST).
+    # GitHub cron is UTC-only and often starts several minutes late.
     - cron: "0 12 * * 1-5"
   workflow_dispatch:
 
@@ -42,9 +43,11 @@ jobs:
       # Morning digest: headlines dated today/yesterday (ET) from current HTML.
       # Skips send when empty or when secrets are missing. See public/hca/README.md:
       #   RESEND_API_KEY, DIGEST_FROM  (+ optional DIGEST_TO)
-      # continue-on-error: digest must not fail the dashboard update/commit.
+      # if: always() — still email from checked-out HTML when Anthropic update fails.
+      # continue-on-error: digest must not fail the job after a successful update/commit.
       # Bad Resend keys still fail this step visibly in the Actions UI.
       - name: Send morning email digest
+        if: ${{ always() && !cancelled() }}
         continue-on-error: true
         working-directory: ./scripts
         env:
