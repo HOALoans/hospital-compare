@@ -62,9 +62,9 @@
   .masthead-inner {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 1.5rem 1.5rem 1.25rem;
+    padding: 1.25rem 1.5rem 1.25rem;
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 1rem 1.5rem;
     flex-wrap: wrap;
@@ -74,12 +74,17 @@
     text-align: right;
     flex: 0 1 auto;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.65rem;
   }
   .site-tabs {
     display: flex;
     flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 0.35rem;
-    margin-bottom: 0.85rem;
+    margin: 0;
     padding: 0.25rem;
     border: 0.5px solid var(--border);
     border-radius: 8px;
@@ -895,17 +900,20 @@
 <header class="masthead" role="banner">
   <div class="masthead-inner">
     <div class="masthead-left">
-      <nav class="site-tabs" aria-label="Parigrado">
-        <a class="site-tab" href="/">Home</a>
-        <a class="site-tab is-active" href="/hca/" aria-current="page">HCA News &amp; Talking Points</a>
-        <a class="site-tab" href="/mission-tracker/">Single Hospital Health</a>
-      </nav>
       <div class="masthead-eyebrow">Reclaim Healthcare WNC</div>
       <div class="masthead-title">HCA News and Talking Point Dashboard</div>
     </div>
     <div class="masthead-right">
-      <div class="masthead-date" id="today-date">August 4, 2026</div>
-      <div class="masthead-updated">Last updated automatically — check sources for latest</div>
+      <nav class="site-tabs" aria-label="Parigrado">
+        <a class="site-tab" href="/">Home</a>
+        <a class="site-tab" href="/?view=compare">Compare Multiple Hospitals</a>
+        <a class="site-tab" href="/mission-tracker/">Single Hospital Health</a>
+        <a class="site-tab is-active" href="/hca/" aria-current="page">HCA News &amp; Talking Points</a>
+      </nav>
+      <div>
+        <div class="masthead-date" id="today-date">August 4, 2026</div>
+        <div class="masthead-updated">Last updated automatically — check sources for latest</div>
+      </div>
     </div>
   </div>
 </header>

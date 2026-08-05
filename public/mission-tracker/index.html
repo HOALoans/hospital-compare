@@ -111,11 +111,27 @@
   .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
   .dot.ij { background: #dc2626; }
   .dot.clear { background: #ecfdf5; border: 1px solid #a7f3d0; }
+  .page-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px 16px;
+    margin-bottom: 12px;
+  }
+  .page-top-left { min-width: 0; flex: 1 1 16rem; }
+  .page-top-right {
+    display: flex;
+    justify-content: flex-end;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
   .site-tabs {
     display: flex;
     flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 0.35rem;
-    margin-bottom: 12px;
+    margin: 0;
     padding: 0.25rem;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
@@ -206,13 +222,20 @@
 </head>
 <body>
 <div class="page">
-<nav class="site-tabs" aria-label="Parigrado">
-  <a class="site-tab" href="/">Home</a>
-  <a class="site-tab" href="/hca/">HCA News &amp; Talking Points</a>
-  <a class="site-tab is-active" href="/mission-tracker/" aria-current="page">Single Hospital Health</a>
-</nav>
-<h1 id="pageTitle">Single Hospital Health Dashboard</h1>
-<div class="sub">CCN <span id="ccnLabel">—</span> · Last refreshed <span id="lastRefresh"></span> · CMS Care Compare · HCRIS staff-to-bed</div>
+<div class="page-top">
+  <div class="page-top-left">
+    <h1 id="pageTitle">Single Hospital Health Dashboard</h1>
+    <div class="sub">CCN <span id="ccnLabel">—</span> · Last refreshed <span id="lastRefresh"></span> · CMS Care Compare · HCRIS staff-to-bed</div>
+  </div>
+  <div class="page-top-right">
+    <nav class="site-tabs" aria-label="Parigrado">
+      <a class="site-tab" href="/">Home</a>
+      <a class="site-tab" href="/?view=compare">Compare Multiple Hospitals</a>
+      <a class="site-tab is-active" href="/mission-tracker/" aria-current="page">Single Hospital Health</a>
+      <a class="site-tab" href="/hca/">HCA News &amp; Talking Points</a>
+    </nav>
+  </div>
+</div>
 <div class="err" id="loadErr"></div>
 
 <div class="toolbar">

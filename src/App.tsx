@@ -481,8 +481,7 @@ export default function App() {
               </div>
             </button>
           )}
-          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-            {view !== "admin" && (
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 lg:ml-auto">
             <nav
               aria-label="Primary"
               className="flex max-w-full items-center gap-1 overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-1 [-webkit-overflow-scrolling:touch]"
@@ -503,7 +502,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={goToCompare}
-                aria-label="Compare"
+                aria-label="Compare Multiple Hospitals"
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium transition sm:px-3 sm:py-1.5 ${
                   view === "compare"
                     ? "bg-white text-brand-primary shadow-sm"
@@ -511,7 +510,9 @@ export default function App() {
                 }`}
               >
                 <Building2 className="h-4 w-4 shrink-0" />
-                <span>Compare</span>
+                <span className="hidden xl:inline">Compare Multiple Hospitals</span>
+                <span className="hidden sm:inline xl:hidden">Compare Hospitals</span>
+                <span className="sm:hidden">Compare</span>
               </button>
               <a
                 href="/mission-tracker/"
@@ -533,7 +534,6 @@ export default function App() {
                 <span className="lg:hidden">HCA News</span>
               </a>
             </nav>
-            )}
             {view !== "admin" && !ready && (
               <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
                 <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
