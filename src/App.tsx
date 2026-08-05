@@ -573,7 +573,7 @@ export default function App() {
                   <div>
                     <h2 className="text-xl font-semibold text-slate-900">Find your hospital</h2>
                     <p className="mt-1 text-sm text-slate-600">
-                      Search by name, city, or ZIP to see quality scores vs county, state, and national peers.
+                      Search by name, city, or ZIP, then choose which benchmarks to compare (county, state, national, and more).
                     </p>
                   </div>
                 </div>
@@ -770,6 +770,9 @@ export default function App() {
                   )}
 
                   <section className="space-y-3 no-print">
+                    <p className="text-sm text-slate-600">
+                      Select benchmarks to include in the comparison. None are selected by default.
+                    </p>
                     <div className="flex flex-wrap items-center gap-2">
                       {comparison.peers
                         .filter((peer) => CORE_PEER_KEYS.has(peer.groupKey))

@@ -12,8 +12,8 @@ export interface CompareUrlState {
   savedCode?: string;
 }
 
-/** Simple defaults: core benchmarks only. Advanced ownership/ZIP peers stay off. */
-const DEFAULT_PEERS = ["national", "state-all", "county-all"];
+/** No benchmarks on by default — user opts into National / State / County (and advanced peers). */
+const DEFAULT_PEERS: string[] = [];
 
 export function parseUrlState(
   search: string,

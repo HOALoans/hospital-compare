@@ -45,7 +45,7 @@ export function HomePage({ onStartCompare, onOpenMethodology }: Props) {
               onClick={onStartCompare}
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:bg-brand-primary/90"
             >
-              Compare a hospital
+              Compare Multiple Hospitals
               <ArrowRight className="h-5 w-5" />
             </button>
             <a
@@ -131,7 +131,7 @@ export function HomePage({ onStartCompare, onOpenMethodology }: Props) {
             onClick={onStartCompare}
             className="inline-flex shrink-0 items-center gap-2 rounded-lg border-2 border-brand-primary bg-white px-5 py-2.5 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
           >
-            Start comparing
+            Compare Multiple Hospitals
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>

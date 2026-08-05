@@ -86,7 +86,7 @@ export function MethodologyPage({ onBack, onStartCompare }: Props) {
           onClick={onStartCompare}
           className="mt-4 rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800"
         >
-          Compare a hospital
+          Compare Multiple Hospitals
         </button>
       </section>
     </div>
