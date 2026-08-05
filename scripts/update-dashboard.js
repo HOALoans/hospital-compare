@@ -660,11 +660,15 @@ function formatAnthropicBillingError(err) {
   );
 }
 
-/** SDK default is 10 minutes — web_search agentic turns often exceed that. */
-const ANTHROPIC_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
-/** App-level retries after a timeout (SDK maxRetries kept low to avoid stacking). */
-const ANTHROPIC_TIMEOUT_RETRIES = 2;
-const ANTHROPIC_TIMEOUT_RETRY_BASE_MS = 5000;
+/** Wall-clock bound for a single streaming request (SSE keeps the connection alive). */
+const ANTHROPIC_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+/**
+ * App-level retries after a timeout on the *same* tool variant.
+ * Keep low so we fail over to the next variant (or no-tools) before the GHA job burns ~15m.
+ * SDK maxRetries is 0 so these do not stack with SDK retries.
+ */
+const ANTHROPIC_TIMEOUT_RETRIES = 1;
+const ANTHROPIC_TIMEOUT_RETRY_BASE_MS = 3000;
 
 function isAnthropicTimeoutError(err) {
   if (!err) return false;
@@ -720,11 +724,17 @@ async function withAnthropicTimeoutRetry(fn, label = "Anthropic request") {
   throw lastErr || new Error(`${label} failed after timeouts`);
 }
 
+/**
+ * Prefer streaming: non-streaming web_search often sits idle with no bytes for
+ * several minutes, and GitHub Actions / intermediate proxies close the TCP
+ * connection around ~5 minutes (seen as APIConnectionTimeoutError). SSE events
+ * keep the socket alive through multi-turn tool use.
+ */
 async function createMessage(client, params, label) {
-  return withAnthropicTimeoutRetry(
-    () => client.messages.create(params),
-    label,
-  );
+  return withAnthropicTimeoutRetry(async () => {
+    const stream = client.messages.stream(params);
+    return stream.finalMessage();
+  }, label);
 }
 
 async function requestDashboardJson(client, params) {
@@ -789,9 +799,10 @@ async function requestDashboardJson(client, params) {
 }
 
 async function fetchDashboardData(apiKey) {
-  // Default SDK timeout is 10 minutes; web_search multi-turn calls exceed that
-  // (Aug 4 run 30918362133 → APIConnectionTimeoutError ~15m). Give headroom and
-  // disable SDK retries so app-level timeout retries do not stack into hours.
+  // Streaming + generous timeout: scheduled runs (Aug 4 #30918362133, Aug 5
+  // #31014010755) hit APIConnectionTimeoutError ~5m into non-streaming
+  // web_search — idle sockets get closed before the full JSON arrives.
+  // Disable SDK retries so app-level timeout retries do not stack into hours.
   const client = new Anthropic({
     apiKey,
     timeout: ANTHROPIC_TIMEOUT_MS,
@@ -844,8 +855,8 @@ CRITICAL: After any tool use, your FINAL message must be ONLY the raw JSON objec
       const params = tools ? { ...baseParams, tools } : baseParams;
       console.log(
         tools
-          ? `Calling Anthropic (${model}) with ${tools[0].type}…`
-          : `Calling Anthropic (${model}) without web search tools…`,
+          ? `Calling Anthropic (${model}) via stream with ${tools[0].type}…`
+          : `Calling Anthropic (${model}) via stream without web search tools…`,
       );
       return await requestDashboardJson(client, params);
     } catch (err) {
@@ -859,6 +870,14 @@ CRITICAL: After any tool use, your FINAL message must be ONLY the raw JSON objec
           : new Error(formatAnthropicBillingError(err));
       }
       const msg = err?.message || String(err);
+      // Timeouts on a web_search variant: fail over (older tool type, then no tools)
+      // instead of failing the whole job after stacking retries on one path.
+      if (tools && isAnthropicTimeoutError(err)) {
+        console.warn(
+          `Timed out with ${tools[0].type} (${msg.split("\n")[0]}). Trying next option…`,
+        );
+        continue;
+      }
       const toolRejected =
         tools &&
         (/web_search|tool|tools|invalid|unknown|not.?support|404/i.test(msg) ||

@@ -11,6 +11,9 @@ on:
 jobs:
   update-dashboard:
     runs-on: ubuntu-latest
+    # Streaming web_search + timeout failover can take longer than the default
+    # when Anthropic is slow; keep headroom above the script's per-request bound.
+    timeout-minutes: 45
     permissions:
       contents: write
     steps:
