@@ -2,6 +2,7 @@ import {
   Activity,
   ArrowRight,
   BarChart3,
+  BookOpen,
   Database,
   Scale,
   ShieldCheck,
@@ -11,9 +12,10 @@ import { usePartner } from "@/context/PartnerContext";
 
 interface Props {
   onStartCompare: () => void;
+  onOpenMethodology: () => void;
 }
 
-export function HomePage({ onStartCompare }: Props) {
+export function HomePage({ onStartCompare, onOpenMethodology }: Props) {
   const { partner, isPartnerMode } = usePartner();
   const subheadline = partner.welcomeSubheadline ?? SITE_TAGLINE;
 
@@ -50,8 +52,8 @@ export function HomePage({ onStartCompare }: Props) {
               href="/mission-tracker/"
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-brand-primary bg-white px-6 py-3.5 text-base font-semibold text-brand-primary transition hover:bg-brand-primary/5"
             >
-              <span className="sm:hidden">Health Dashboard</span>
-              <span className="hidden sm:inline">Hospital Health Dashboard</span>
+              <span className="sm:hidden">Hospital Health</span>
+              <span className="hidden sm:inline">Single Hospital Health Dashboard</span>
               <ArrowRight className="h-5 w-5" />
             </a>
           </div>
@@ -135,27 +137,52 @@ export function HomePage({ onStartCompare }: Props) {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-white to-indigo-50/40 p-6 shadow-sm sm:p-8">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-700 text-white shadow-sm">
-            <Scale className="h-6 w-6" />
+      <section className="grid gap-4 md:grid-cols-2 md:gap-6">
+        <div className="rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-white to-indigo-50/40 p-6 shadow-sm sm:p-8">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-700 text-white shadow-sm">
+              <Scale className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">Why &ldquo;Parigrado&rdquo;?</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                The name blends the Italian and Latin roots{" "}
+                <span className="font-semibold text-indigo-700">pari</span> (equal, on par) and{" "}
+                <span className="font-semibold text-orange-700">grado</span> (grade, degree) — because
+                our mission is to grade hospitals on an equal, unbiased footing, using the same public
+                federal metrics for everyone.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-3 py-1 font-medium text-indigo-800">
+                  pari · equal
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-800">
+                  grado · grade
+                </span>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">Why &ldquo;Parigrado&rdquo;?</h3>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
-              The name blends the Italian and Latin roots{" "}
-              <span className="font-semibold text-indigo-700">pari</span> (equal, on par) and{" "}
-              <span className="font-semibold text-orange-700">grado</span> (grade, degree) — because
-              our mission is to grade hospitals on an equal, unbiased footing, using the same public
-              federal metrics for everyone.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-3 py-1 font-medium text-indigo-800">
-                pari · equal
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-800">
-                grado · grade
-              </span>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm sm:p-8">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-white shadow-sm">
+              <BookOpen className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">Methodology</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                See how peer averages, county and state groups, and ownership splits are computed from
+                public CMS Hospital Compare data — with no paid rankings or sponsorships.
+              </p>
+              <button
+                type="button"
+                onClick={onOpenMethodology}
+                className="mt-4 inline-flex items-center gap-2 rounded-lg border border-brand-primary/30 bg-white px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
+              >
+                Read methodology
+                <ArrowRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>

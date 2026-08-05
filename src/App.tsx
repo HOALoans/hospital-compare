@@ -3,13 +3,13 @@ import {
   Activity,
   BarChart3,
   Bookmark,
-  BookOpen,
   Building2,
   Check,
   ChevronDown,
   Download,
   Home,
   Loader2,
+  Newspaper,
   Printer,
 } from "lucide-react";
 import type { ComparisonResult, HospitalSummary, HospitalTrend } from "@shared/types";
@@ -513,28 +513,24 @@ export default function App() {
                 <Building2 className="h-4 w-4 shrink-0" />
                 <span>Compare</span>
               </button>
-              <button
-                type="button"
-                onClick={goMethodology}
-                aria-label="Methodology"
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium transition sm:px-3 sm:py-1.5 ${
-                  view === "methodology"
-                    ? "bg-white text-brand-primary shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <BookOpen className="h-4 w-4 shrink-0" />
-                <span className="hidden md:inline">Methodology</span>
-                <span className="md:hidden">Method</span>
-              </button>
               <a
                 href="/mission-tracker/"
-                aria-label="Hospital Health Dashboard"
+                aria-label="Single Hospital Health Dashboard"
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:px-3 sm:py-1.5"
               >
                 <Activity className="h-4 w-4 shrink-0" />
-                <span className="hidden lg:inline">Health Dashboard</span>
-                <span className="lg:hidden">Dashboard</span>
+                <span className="hidden xl:inline">Single Hospital Health Dashboard</span>
+                <span className="hidden sm:inline xl:hidden">Hospital Health</span>
+                <span className="sm:hidden">Hospital</span>
+              </a>
+              <a
+                href="/hca/"
+                aria-label="HCA News and Talking Point Dashboard"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:px-3 sm:py-1.5"
+              >
+                <Newspaper className="h-4 w-4 shrink-0" />
+                <span className="hidden lg:inline">HCA News &amp; Talking Points</span>
+                <span className="lg:hidden">HCA News</span>
               </a>
             </nav>
             )}
@@ -555,7 +551,9 @@ export default function App() {
       <main className="mx-auto max-w-screen-2xl space-y-6 px-4 py-6 sm:space-y-8 sm:px-6 sm:py-8">
         {view === "admin" && <PartnerAdminPage onExit={goHome} />}
 
-        {view === "home" && <HomePage onStartCompare={goToCompare} />}
+        {view === "home" && (
+          <HomePage onStartCompare={goToCompare} onOpenMethodology={goMethodology} />
+        )}
 
         {view === "methodology" && (
           <MethodologyPage onBack={goHome} onStartCompare={goToCompare} />

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HCA Dashboard — Reclaim Healthcare WNC</title>
+<title>HCA News and Talking Point Dashboard — Reclaim Healthcare WNC</title>
 <meta name="description" content="Accountability dashboard tracking HCA Healthcare's management of Mission Hospital in Asheville, NC. Updated daily by Reclaim Healthcare WNC.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -75,25 +75,35 @@
     flex: 0 1 auto;
     min-width: 0;
   }
-  .masthead-back {
+  .site-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.85rem;
+    padding: 0.25rem;
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    background: #efece6;
+    width: fit-content;
+    max-width: 100%;
+  }
+  .site-tab {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
     font-size: 12px;
     font-weight: 600;
-    color: var(--teal);
+    color: var(--text-2);
     text-decoration: none;
-    border: 0.5px solid var(--teal-border);
-    background: var(--teal-bg);
-    padding: 8px 12px;
     border-radius: 6px;
-    margin-bottom: 0.75rem;
+    padding: 8px 12px;
     line-height: 1.2;
     min-height: 36px;
   }
-  .masthead-back:hover {
-    border-color: var(--teal);
-    background: #e0f3eb;
+  .site-tab:hover { color: var(--text); background: rgba(255,255,255,0.7); }
+  .site-tab.is-active {
+    color: var(--teal);
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(26,25,22,0.08);
   }
   .masthead-eyebrow {
     font-size: 11px;
@@ -885,9 +895,13 @@
 <header class="masthead" role="banner">
   <div class="masthead-inner">
     <div class="masthead-left">
-      <a class="masthead-back" href="/">← Back to Parigrado home</a>
+      <nav class="site-tabs" aria-label="Parigrado">
+        <a class="site-tab" href="/">Home</a>
+        <a class="site-tab is-active" href="/hca/" aria-current="page">HCA News &amp; Talking Points</a>
+        <a class="site-tab" href="/mission-tracker/">Single Hospital Health</a>
+      </nav>
       <div class="masthead-eyebrow">Reclaim Healthcare WNC</div>
-      <div class="masthead-title">HCA Dashboard</div>
+      <div class="masthead-title">HCA News and Talking Point Dashboard</div>
     </div>
     <div class="masthead-right">
       <div class="masthead-date" id="today-date">August 4, 2026</div>

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Hospital Health Dashboard · Parigrado</title>
+<title>Single Hospital Health Dashboard · Parigrado</title>
 <script src="vendor/chart.umd.js?v=20260718e"></script>
 <style>
   :root {
@@ -111,8 +111,36 @@
   .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
   .dot.ij { background: #dc2626; }
   .dot.clear { background: #ecfdf5; border: 1px solid #a7f3d0; }
-  .toplink { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: #2563eb; text-decoration: none; margin-bottom: 10px; }
-  .toplink:hover { text-decoration: underline; }
+  .site-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 12px;
+    padding: 0.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f1f5f9;
+    width: fit-content;
+    max-width: 100%;
+  }
+  .site-tab {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    line-height: 1.2;
+    min-height: 36px;
+  }
+  .site-tab:hover { color: #0f172a; background: rgba(255,255,255,0.8); }
+  .site-tab.is-active {
+    color: #0f766e;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.08);
+  }
   .searchbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(96px, 120px) minmax(110px, 140px);
@@ -178,8 +206,12 @@
 </head>
 <body>
 <div class="page">
-<a class="toplink" href="/">← Back to Parigrado home</a>
-<h1 id="pageTitle">Hospital Health Dashboard</h1>
+<nav class="site-tabs" aria-label="Parigrado">
+  <a class="site-tab" href="/">Home</a>
+  <a class="site-tab" href="/hca/">HCA News &amp; Talking Points</a>
+  <a class="site-tab is-active" href="/mission-tracker/" aria-current="page">Single Hospital Health</a>
+</nav>
+<h1 id="pageTitle">Single Hospital Health Dashboard</h1>
 <div class="sub">CCN <span id="ccnLabel">—</span> · Last refreshed <span id="lastRefresh"></span> · CMS Care Compare · HCRIS staff-to-bed</div>
 <div class="err" id="loadErr"></div>
 
@@ -336,7 +368,7 @@
 </div>
 
 <footer>
-  <a href="/">Parigrado home</a> · Hospital Health Dashboard ·
+  <a href="/">Parigrado home</a> · Single Hospital Health Dashboard ·
   Sources: <a href="https://data.cms.gov/provider-data/">CMS Provider Data Catalog</a>,
   Medicare cost reports (HCRIS) for staff-to-bed ·
   Travel nurse counts are from news/Watchdog staffing reports when shown.
@@ -596,7 +628,7 @@ async function loadDashboard(ccn, { fromCache = false } = {}) {
   const displayName = overlay?.name || meta.name;
   const displayCity = overlay?.city || meta.city || "";
   const displayState = overlay?.state || meta.state || "";
-  $("pageTitle").textContent = `${displayName}${displayCity ? " (" + displayCity + (displayState ? ", " + displayState : "") + ")" : ""} — Hospital Health Dashboard`;
+  $("pageTitle").textContent = `${displayName}${displayCity ? " (" + displayCity + (displayState ? ", " + displayState : "") + ")" : ""} — Single Hospital Health Dashboard`;
   // Keep the selected hospital visible in the search box (Mission and others)
   $("hospitalSearch").value = displayName;
   if (displayState) $("stateFilter").value = displayState;
