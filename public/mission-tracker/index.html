@@ -229,11 +229,52 @@
   </div>
   <div class="page-top-right">
     <nav class="site-tabs" aria-label="Parigrado">
-      <a class="site-tab" href="/">Home</a>
-      <a class="site-tab" href="/?view=compare">Compare Multiple Hospitals</a>
-      <a class="site-tab is-active" href="/mission-tracker/" aria-current="page">Single Hospital Health</a>
-      <a class="site-tab" href="/hca/">HCA News &amp; Talking Points</a>
+      <a class="site-tab" data-nav="home" href="/">Home</a>
+      <a class="site-tab" data-nav="compare" href="/?view=compare">Compare Multiple Hospitals</a>
+      <a class="site-tab is-active" data-nav="mission" href="/mission-tracker/" aria-current="page">Single Hospital Health</a>
+      <a class="site-tab" data-nav="hca" href="/hca/">HCA News &amp; Talking Points</a>
     </nav>
+    <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var partner = (params.get("partner") || "").trim();
+      var partnerLower = partner.toLowerCase();
+      var hide =
+        partnerLower === "aarp" ||
+        partnerLower === "aarp-open";
+      try {
+        hide = hide || sessionStorage.getItem("parigrado:hide-hca-nav") === "1";
+      } catch (e) {}
+      if (!hide && /(?:^|;\s*)parigrado_hide_hca=1(?:;|$)/.test(document.cookie)) {
+        hide = true;
+      }
+      if (partnerLower === "aarp" || partnerLower === "aarp-open") {
+        try { sessionStorage.setItem("parigrado:hide-hca-nav", "1"); } catch (e) {}
+        document.cookie = "parigrado_hide_hca=1; Path=/; SameSite=Lax; Max-Age=86400";
+      }
+      function withPartner(href) {
+        if (!partner) return href;
+        var parts = href.split("#");
+        var base = parts[0];
+        var hash = parts[1] ? "#" + parts[1] : "";
+        var sep = base.indexOf("?") >= 0 ? "&" : "?";
+        return base + sep + "partner=" + encodeURIComponent(partner) + hash;
+      }
+      var nav =
+        (document.currentScript && document.currentScript.previousElementSibling) ||
+        document.querySelector("nav.site-tabs");
+      if (!nav) return;
+      var hca = nav.querySelector('[data-nav="hca"]');
+      if (hca && hide) hca.remove();
+      nav.querySelectorAll("a[data-nav]").forEach(function (el) {
+        el.setAttribute("href", withPartner(el.getAttribute("href") || "/"));
+      });
+      document.addEventListener("DOMContentLoaded", function () {
+        var footerHome = document.querySelector("footer a[href='/']");
+        if (footerHome) footerHome.setAttribute("href", withPartner("/"));
+      });
+    })();
+    </script>
   </div>
 </div>
 <div class="err" id="loadErr"></div>

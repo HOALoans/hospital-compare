@@ -3,6 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+(function () {
+  try {
+    if (sessionStorage.getItem("parigrado:hide-hca-nav") === "1") {
+      location.replace("/");
+      return;
+    }
+  } catch (e) {}
+  if (/(?:^|;\s*)parigrado_hide_hca=1(?:;|$)/.test(document.cookie)) {
+    location.replace("/");
+  }
+})();
+</script>
 <title>HCA News and Talking Point Dashboard — Reclaim Healthcare WNC</title>
 <meta name="description" content="Accountability dashboard tracking HCA Healthcare's management of Mission Hospital in Asheville, NC. Updated daily by Reclaim Healthcare WNC.">
 <meta name="robots" content="noindex, nofollow">

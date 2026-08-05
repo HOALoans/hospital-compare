@@ -96,6 +96,22 @@ export function PartnerProvider({ children }: { children: ReactNode }) {
     );
   }, [partner]);
 
+  // Persist hide-HCA preference so /hca/ and static pages stay blocked for this session.
+  useEffect(() => {
+    const hide = Boolean(partner.hideHcaNav);
+    try {
+      if (hide) {
+        window.sessionStorage.setItem("parigrado:hide-hca-nav", "1");
+        document.cookie = "parigrado_hide_hca=1; Path=/; SameSite=Lax; Max-Age=86400";
+      } else if (!partnerId || partnerId === "default") {
+        window.sessionStorage.removeItem("parigrado:hide-hca-nav");
+        document.cookie = "parigrado_hide_hca=; Path=/; SameSite=Lax; Max-Age=0";
+      }
+    } catch {
+      /* ignore storage failures */
+    }
+  }, [partner.hideHcaNav, partnerId]);
+
   const value = useMemo(
     () => ({ partner, partnerId, isPartnerMode, partnerLoading }),
     [partner, partnerId, isPartnerMode, partnerLoading],

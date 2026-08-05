@@ -356,8 +356,17 @@ app.get("/api/meta/archives", (_req, res) => {
   });
 });
 
-/** Legacy path — dashboard lives at /hca/ */
-app.get(["/hca-watchdog", "/hca-watchdog/"], (_req, res) => {
+function cookieHasHideHca(req: express.Request): boolean {
+  const raw = req.headers.cookie ?? "";
+  return /(?:^|;\s*)parigrado_hide_hca=1(?:;|$)/.test(raw);
+}
+
+/** Legacy path — dashboard lives at /hca/ (respect AARP hide-HCA cookie). */
+app.get(["/hca-watchdog", "/hca-watchdog/"], (req, res) => {
+  if (cookieHasHideHca(req)) {
+    res.redirect(302, "/");
+    return;
+  }
   res.redirect(301, "/hca/");
 });
 
@@ -449,6 +458,15 @@ app.post("/api/cms/query/:dataset", limitCms, async (req, res) => {
     console.error("[cms-proxy]", dataset, err);
     res.status(502).json({ error: "Failed to reach CMS Provider Data API" });
   }
+});
+
+/** Block /hca for hideHcaNav partners (cookie set by React PartnerContext). */
+app.get(["/hca", "/hca/", "/hca/index.html"], (req, res, next) => {
+  if (cookieHasHideHca(req)) {
+    res.redirect(302, "/");
+    return;
+  }
+  next();
 });
 
 const clientDist = path.join(__dirname, "../client");
