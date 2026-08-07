@@ -9,6 +9,12 @@ import type { PartnerBranding } from "@shared/partnerConfig";
  */
 const DEMO_ACCESS_CODES: Record<string, string> = {
   aarp: "aarp2026",
+  "florida-blue": "floridablue2026",
+};
+
+const EMAIL_PLACEHOLDERS: Record<string, string> = {
+  aarp: "you@aarp.org",
+  "florida-blue": "you@floridablue.com",
 };
 
 /** Fallback code accepted for any gated partner without a specific entry. */
@@ -62,6 +68,8 @@ export function PartnerGate({ partner, onUnlock }: Props) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const accent = partner.primaryColor;
+  const name = partner.displayName;
+  const emailPlaceholder = EMAIL_PLACEHOLDERS[partner.id] ?? "you@company.com";
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -84,12 +92,13 @@ export function PartnerGate({ partner, onUnlock }: Props) {
               style={{ backgroundColor: accent }}
             >
               {partner.logoUrl ? (
-                <img
-                  src={partner.logoUrl}
-                  alt={partner.logoAlt ?? partner.displayName}
-                  className="h-12 max-w-[12rem] object-contain drop-shadow-sm"
-                  style={{ filter: "brightness(0) invert(1)" }}
-                />
+                <div className="rounded-lg bg-white px-4 py-2 shadow-sm">
+                  <img
+                    src={partner.logoUrl}
+                    alt={partner.logoAlt ?? partner.displayName}
+                    className="h-10 max-w-[12rem] object-contain"
+                  />
+                </div>
               ) : (
                 <span className="font-display text-3xl font-black tracking-tight text-white">
                   {partner.displayName}
@@ -115,7 +124,7 @@ export function PartnerGate({ partner, onUnlock }: Props) {
               </div>
 
               <p className="text-sm leading-relaxed text-slate-600">
-                This is a private preview prepared for the AARP partnership team. Enter your
+                This is a private preview prepared for the {name} partnership team. Enter your
                 email and the access code you were given to open the branded demo.
               </p>
 
@@ -128,7 +137,7 @@ export function PartnerGate({ partner, onUnlock }: Props) {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@aarp.org"
+                  placeholder={emailPlaceholder}
                   required
                   autoComplete="email"
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2"
@@ -170,9 +179,9 @@ export function PartnerGate({ partner, onUnlock }: Props) {
               <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-relaxed text-slate-500">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
                 <span>
-                  Partnership concept only — <strong>not an official AARP product</strong>.
+                  Partnership concept only — <strong>not an official {name} product</strong>.
                   Quality data comes from public CMS &amp; CDC datasets. Branding shown is a
-                  placeholder; a production build would use licensed AARP brand assets.
+                  placeholder; a production build would use licensed {name} brand assets.
                 </span>
               </div>
             </form>

@@ -37,7 +37,11 @@
 
   function shouldHideHca(partnerId) {
     var lower = (partnerId || "").toLowerCase();
-    var hide = lower === "aarp" || lower === "aarp-open";
+    var hide =
+      lower === "aarp" ||
+      lower === "aarp-open" ||
+      lower === "florida-blue" ||
+      lower === "florida-blue-open";
     try {
       hide = hide || sessionStorage.getItem("parigrado:hide-hca-nav") === "1";
     } catch (e) {}
@@ -49,7 +53,12 @@
 
   function persistHideHca(partnerId) {
     var lower = (partnerId || "").toLowerCase();
-    if (lower === "aarp" || lower === "aarp-open") {
+    if (
+      lower === "aarp" ||
+      lower === "aarp-open" ||
+      lower === "florida-blue" ||
+      lower === "florida-blue-open"
+    ) {
       try {
         sessionStorage.setItem("parigrado:hide-hca-nav", "1");
       } catch (e) {}

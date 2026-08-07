@@ -54,21 +54,40 @@ function seedIfEmpty(): void {
 
 /**
  * Add any built-in seed partners that are missing from the store without
- * clobbering existing (possibly admin-edited) records. This lets new seed
- * partners — e.g. the AARP demo — appear on deployments whose partners.json
- * already contains earlier seeds.
+ * clobbering existing (possibly admin-edited) copy. Sync gate/nav flags and
+ * logo from seed so concept partners (AARP, Florida Blue) stay aligned when
+ * those fields change in code. Other fields (headlines, colors) keep admin edits.
  */
 function ensureSeedPartners(): void {
-  let added = false;
+  let changed = false;
   for (const [id, partner] of Object.entries(SEED_PARTNERS)) {
     if (!(id in customPartners)) {
       customPartners[id] = { ...partner, id };
-      added = true;
+      changed = true;
+      continue;
+    }
+    const existing = customPartners[id];
+    const next: PartnerBranding = {
+      ...existing,
+      id,
+      gated: partner.gated ?? false,
+      hideHcaNav: partner.hideHcaNav ?? false,
+      logoUrl: partner.logoUrl ?? existing.logoUrl,
+      logoAlt: partner.logoAlt ?? existing.logoAlt,
+    };
+    if (
+      existing.gated !== next.gated ||
+      existing.hideHcaNav !== next.hideHcaNav ||
+      existing.logoUrl !== next.logoUrl ||
+      existing.logoAlt !== next.logoAlt
+    ) {
+      customPartners[id] = next;
+      changed = true;
     }
   }
-  if (added) {
+  if (changed) {
     persistCustomPartners();
-    console.log("[partners] Added missing seed partners to data/partners.json");
+    console.log("[partners] Synced seed partners to data/partners.json");
   }
 }
 

@@ -85,10 +85,7 @@ export const SEED_PARTNERS: Record<string, PartnerBranding> = {
     gated: false,
     hideHcaNav: true,
   },
-  /**
-   * Florida Blue partnership concept — public (no access code).
-   * Not an official Florida Blue / BCBS product until licensed under a co-brand agreement.
-   */
+  // Partnership CONCEPT preview for Florida Blue — not an official Florida Blue product.
   "florida-blue": {
     id: "florida-blue",
     displayName: "Florida Blue",
@@ -103,8 +100,26 @@ export const SEED_PARTNERS: Record<string, PartnerBranding> = {
       "A member-first hospital quality guide for Florida Blue members and their families. Same Parigrado layout and tools — Compare Multiple Hospitals and Single Hospital Health — branded for Florida Blue, with no advertising or pay-to-rank lists.",
     tagline: "Hospital quality for Florida Blue members",
     showPoweredBy: true,
+    gated: true,
+    hideHcaNav: true,
+  },
+  /** Ungated Florida Blue–branded share link (same layout/branding; no HCA News tab). */
+  "florida-blue-open": {
+    id: "florida-blue-open",
+    displayName: "Florida Blue",
+    logoUrl: "/florida-blue-logo.png",
+    logoAlt: "Florida Blue (partnership concept — not an official Florida Blue product)",
+    primaryColor: "#00AEEF",
+    secondaryColor: "#003865",
+    welcomeHeadline: "Know how your hospital really compares",
+    welcomeSubheadline:
+      "Compare hospital quality to peers using public CMS & CDC data — never paid rankings.",
+    heroDescription:
+      "A member-first hospital quality guide for Florida Blue members and their families. Same Parigrado layout and tools — Compare Multiple Hospitals and Single Hospital Health — branded for Florida Blue, with no advertising or pay-to-rank lists.",
+    tagline: "Hospital quality for Florida Blue members",
+    showPoweredBy: true,
     gated: false,
-    hideHcaNav: false,
+    hideHcaNav: true,
   },
 };
 

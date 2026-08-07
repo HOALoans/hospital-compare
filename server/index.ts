@@ -370,12 +370,18 @@ app.get(["/hca-watchdog", "/hca-watchdog/"], (req, res) => {
   res.redirect(301, "/hca/");
 });
 
-/** Short AARP partner URLs (branded Parigrado layout; HCA News hidden). */
+/** Short partner URLs (branded Parigrado layout; HCA News hidden). */
 app.get(["/aarp", "/aarp/"], (_req, res) => {
   res.redirect(302, "/?partner=aarp");
 });
 app.get(["/aarp-open", "/aarp-open/"], (_req, res) => {
   res.redirect(302, "/?partner=aarp-open");
+});
+app.get(["/florida-blue", "/florida-blue/"], (_req, res) => {
+  res.redirect(302, "/?partner=florida-blue");
+});
+app.get(["/florida-blue-open", "/florida-blue-open/"], (_req, res) => {
+  res.redirect(302, "/?partner=florida-blue-open");
 });
 
 /** HCA dashboard: chart, analysts, insiders (avoids CORS / keys in client). */

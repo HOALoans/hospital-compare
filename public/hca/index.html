@@ -9,7 +9,9 @@
   var partner = (params.get("partner") || "").trim().toLowerCase();
   var hide =
     partner === "aarp" ||
-    partner === "aarp-open";
+    partner === "aarp-open" ||
+    partner === "florida-blue" ||
+    partner === "florida-blue-open";
   try {
     hide = hide || sessionStorage.getItem("parigrado:hide-hca-nav") === "1";
   } catch (e) {}
