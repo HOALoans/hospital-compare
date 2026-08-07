@@ -37,13 +37,13 @@ services:
         sync: false
       # --- API usage caps (in-memory per IP; see server/rateLimit.ts) ---
       # Set RATE_LIMIT_DISABLED=true to turn off. Defaults: 60s window,
-      # 60 CMS proxy requests/IP, 180 hospital API requests/IP,
-      # 60 finance proxy requests/IP.
+      # 30 CMS proxy requests/IP, 90 hospital API requests/IP,
+      # 30 finance proxy requests/IP.
       - key: RATE_LIMIT_WINDOW_MS
         value: "60000"
       - key: RATE_LIMIT_CMS_MAX
-        value: "60"
+        value: "30"
       - key: RATE_LIMIT_HOSPITAL_MAX
-        value: "180"
+        value: "90"
       - key: RATE_LIMIT_FINANCE_MAX
-        value: "60"
+        value: "30"
