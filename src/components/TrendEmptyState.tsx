@@ -42,7 +42,7 @@ export function TrendEmptyState({ facilityId, hasTrendData }: Props) {
 
   return (
     <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-      <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin text-indigo-600" />
+      <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin text-brand-primary" />
       <p className="text-sm font-medium text-slate-800">{yearLabel}</p>
       <p className="mt-2 text-sm text-slate-600">
         Historical trends use CMS archived hospital snapshots ({ARCHIVE_YEARS[0]}–
@@ -53,7 +53,7 @@ export function TrendEmptyState({ facilityId, hasTrendData }: Props) {
         <div className="mx-auto mt-4 max-w-xs">
           <div className="h-2 overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full rounded-full bg-indigo-600 transition-all"
+              className="h-full rounded-full bg-brand-primary transition-all"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -65,7 +65,7 @@ export function TrendEmptyState({ facilityId, hasTrendData }: Props) {
       )}
       <a
         href="https://data.cms.gov/provider-data/archived-data/hospitals"
-        className="mt-4 inline-block text-sm text-indigo-700 underline"
+        className="mt-4 inline-block text-sm text-brand-primary underline"
         target="_blank"
         rel="noreferrer"
       >

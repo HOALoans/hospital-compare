@@ -442,18 +442,26 @@ export default function App() {
     }
   };
 
+  const isWordmarkLogo = Boolean(
+    partner.logoUrl && /hoals-logo|wordmark|aarp-wordmark|florida-blue/i.test(partner.logoUrl),
+  );
+
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white no-print">
-        <div className="mx-auto flex max-w-screen-2xl flex-col gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+    <div className="min-h-screen bg-white">
+      <header className="border-b border-[var(--hoals-border)] bg-white no-print">
+        <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
           {view === "admin" ? (
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white">
-                <Activity className="h-5 w-5" />
-              </div>
+              <img
+                src="/brand/hoals-logo-mark.svg"
+                alt="HOA Loan Services"
+                className="h-10 w-10 shrink-0"
+              />
               <div className="min-w-0">
-                <h1 className="font-display text-xl leading-tight text-slate-900 sm:text-2xl">Parigrado</h1>
-                <p className="truncate text-sm text-slate-500">Partner program admin</p>
+                <h1 className="text-xl font-extrabold leading-tight tracking-[-0.02em] text-[var(--hoals-ink)] sm:text-2xl">
+                  Parigrado
+                </h1>
+                <p className="truncate text-[13px] text-[var(--hoals-caption)]">Partner program admin</p>
               </div>
             </div>
           ) : (
@@ -466,18 +474,30 @@ export default function App() {
                 <img
                   src={partner.logoUrl}
                   alt={partner.logoAlt ?? partner.displayName}
-                  className="h-10 max-w-[8rem] shrink-0 object-contain sm:max-w-[10rem]"
+                  className={`shrink-0 object-contain ${
+                    isWordmarkLogo
+                      ? "h-9 max-w-[11rem] sm:h-10 sm:max-w-[14rem]"
+                      : "h-10 max-w-[8rem] sm:max-w-[10rem]"
+                  }`}
                 />
               ) : (
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-white">
-                  <Activity className="h-5 w-5" />
-                </div>
+                <img
+                  src="/brand/hoals-logo-mark.svg"
+                  alt="HOA Loan Services"
+                  className="h-10 w-10 shrink-0"
+                />
               )}
               <div className="min-w-0">
-                <h1 className="truncate font-display text-xl leading-tight text-slate-900 sm:text-2xl">
-                  {partner.displayName}
-                </h1>
-                <p className="truncate text-sm text-slate-500">
+                {(!isWordmarkLogo || partner.displayName !== "HOA Loan Services") && (
+                  <h1 className="truncate text-xl font-extrabold leading-tight tracking-[-0.02em] text-[var(--hoals-ink)] sm:text-2xl">
+                    {partner.displayName}
+                  </h1>
+                )}
+                <p
+                  className={`truncate text-[13px] text-[var(--hoals-caption)] ${
+                    isWordmarkLogo ? "sm:text-[14px]" : ""
+                  }`}
+                >
                   {partner.tagline ?? SITE_TAGLINE}
                 </p>
               </div>
@@ -486,60 +506,60 @@ export default function App() {
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 lg:ml-auto">
             <nav
               aria-label="Primary"
-              className="flex max-w-full items-center gap-1 overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-1 [-webkit-overflow-scrolling:touch]"
+              className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-[var(--hoals-border)] bg-[var(--hoals-cultured)] p-1 [-webkit-overflow-scrolling:touch]"
             >
               <button
                 type="button"
                 onClick={goHome}
                 aria-label="Home"
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium transition sm:px-3 sm:py-1.5 ${
+                className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-[14px] font-semibold transition sm:min-h-9 sm:py-1.5 ${
                   view === "home"
-                    ? "bg-white text-brand-primary shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white text-[var(--hoals-blue)] shadow-[var(--shadow-sm)]"
+                    : "text-[var(--hoals-text-secondary)] hover:text-[var(--hoals-ink)]"
                 }`}
               >
-                <Home className="h-4 w-4 shrink-0" />
+                <Home className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                 <span>Home</span>
               </button>
               <button
                 type="button"
                 onClick={goToCompare}
                 aria-label="Compare Multiple Hospitals"
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium transition sm:px-3 sm:py-1.5 ${
+                className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-[14px] font-semibold transition sm:min-h-9 sm:py-1.5 ${
                   view === "compare"
-                    ? "bg-white text-brand-primary shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-white text-[var(--hoals-blue)] shadow-[var(--shadow-sm)]"
+                    : "text-[var(--hoals-text-secondary)] hover:text-[var(--hoals-ink)]"
                 }`}
               >
-                <Building2 className="h-4 w-4 shrink-0" />
-                <span className="hidden xl:inline">Compare Multiple Hospitals</span>
-                <span className="hidden sm:inline xl:hidden">Compare Hospitals</span>
+                <Building2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                <span className="hidden xl:inline">Compare multiple hospitals</span>
+                <span className="hidden sm:inline xl:hidden">Compare hospitals</span>
                 <span className="sm:hidden">Compare</span>
               </button>
               <a
                 href={`/mission-tracker/${partnerQuery}`}
                 aria-label="Single Hospital Health Dashboard"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:px-3 sm:py-1.5"
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-[14px] font-semibold text-[var(--hoals-text-secondary)] transition hover:text-[var(--hoals-ink)] sm:min-h-9 sm:py-1.5"
               >
-                <Activity className="h-4 w-4 shrink-0" />
-                <span className="hidden xl:inline">Single Hospital Health Dashboard</span>
-                <span className="hidden sm:inline xl:hidden">Hospital Health</span>
+                <Activity className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                <span className="hidden xl:inline">Single hospital health dashboard</span>
+                <span className="hidden sm:inline xl:hidden">Hospital health</span>
                 <span className="sm:hidden">Hospital</span>
               </a>
               {!hideHcaNav && (
                 <a
                   href={`/hca/${partnerQuery}`}
                   aria-label="HCA News and Talking Point Dashboard"
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:px-3 sm:py-1.5"
+                  className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-[14px] font-semibold text-[var(--hoals-text-secondary)] transition hover:text-[var(--hoals-ink)] sm:min-h-9 sm:py-1.5"
                 >
-                  <Newspaper className="h-4 w-4 shrink-0" />
-                  <span className="hidden lg:inline">HCA News &amp; Talking Points</span>
-                  <span className="lg:hidden">HCA News</span>
+                  <Newspaper className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                  <span className="hidden lg:inline">HCA news and talking points</span>
+                  <span className="lg:hidden">HCA news</span>
                 </a>
               )}
             </nav>
             {view !== "admin" && !ready && (
-              <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
+              <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-[var(--hoals-mist)] px-3 py-1.5 text-[12px] text-[var(--hoals-ink)]">
                 <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
                 <span className="truncate">
                   {directoryReady
@@ -552,7 +572,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-screen-2xl space-y-6 px-4 py-6 sm:space-y-8 sm:px-6 sm:py-8">
+      <main className="mx-auto max-w-[1280px] space-y-6 px-4 py-6 sm:space-y-8 sm:px-6 sm:py-8">
         {view === "admin" && <PartnerAdminPage onExit={goHome} />}
 
         {view === "home" && (

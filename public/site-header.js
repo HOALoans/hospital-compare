@@ -11,16 +11,20 @@
   var DEFAULT_NAME = "Parigrado";
   var DEFAULT_TAGLINE =
     "Compare hospital quality to county, state, and national peers using public CMS & CDC data";
-  var DEFAULT_PRIMARY = "#4f46e5";
+  var DEFAULT_PRIMARY = "#0390E2";
+  var DEFAULT_LOGO = "/brand/hoals-logo.svg";
+  var DEFAULT_LOGO_ALT = "HOA Loan Services";
 
   var ICON_ACTIVITY =
-    '<svg class="pg-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>';
+    '<svg class="pg-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>';
   var ICON_HOME =
-    '<svg class="pg-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+    '<svg class="pg-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
   var ICON_BUILDING =
-    '<svg class="pg-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>';
+    '<svg class="pg-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>';
   var ICON_NEWS =
-    '<svg class="pg-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>';
+    '<svg class="pg-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>';
+  var ICON_MARK =
+    '<img src="/brand/hoals-logo-mark.svg" width="40" height="40" alt="" />';
 
   var script = document.currentScript;
   var active = (script && script.getAttribute("data-active")) || "";
@@ -81,10 +85,14 @@
   header.innerHTML =
     '<div class="pg-header-inner">' +
     '<a class="pg-brand" data-nav="brand" href="/">' +
-    '<span class="pg-brand-mark" data-brand-mark>' +
-    ICON_ACTIVITY +
+    '<span class="pg-brand-mark" data-brand-mark hidden>' +
+    ICON_MARK +
     "</span>" +
-    '<img class="pg-brand-logo" data-brand-logo hidden alt="" />' +
+    '<img class="pg-brand-logo" data-brand-logo src="' +
+    DEFAULT_LOGO +
+    '" alt="' +
+    DEFAULT_LOGO_ALT +
+    '" />' +
     '<span class="pg-brand-text">' +
     '<span class="pg-brand-name" data-brand-name>' +
     DEFAULT_NAME +
@@ -110,8 +118,8 @@
     tabAttrs("compare") +
     ">" +
     ICON_BUILDING +
-    '<span class="pg-label-full">Compare Multiple Hospitals</span>' +
-    '<span class="pg-label-mid">Compare Hospitals</span>' +
+    '<span class="pg-label-full">Compare multiple hospitals</span>' +
+    '<span class="pg-label-mid">Compare hospitals</span>' +
     '<span class="pg-label-short">Compare</span>' +
     "</a>" +
     '<a class="' +
@@ -120,8 +128,8 @@
     tabAttrs("mission") +
     ">" +
     ICON_ACTIVITY +
-    '<span class="pg-label-full">Single Hospital Health Dashboard</span>' +
-    '<span class="pg-label-mid">Hospital Health</span>' +
+    '<span class="pg-label-full">Single hospital health dashboard</span>' +
+    '<span class="pg-label-mid">Hospital health</span>' +
     '<span class="pg-label-short">Hospital</span>' +
     "</a>" +
     '<a class="' +
@@ -130,8 +138,8 @@
     tabAttrs("hca") +
     ">" +
     ICON_NEWS +
-    '<span class="pg-label-full">HCA News &amp; Talking Points</span>' +
-    '<span class="pg-label-short">HCA News</span>' +
+    '<span class="pg-label-full">HCA news and talking points</span>' +
+    '<span class="pg-label-short">HCA news</span>' +
     "</a>" +
     "</nav>" +
     "</div>" +
@@ -176,11 +184,16 @@
       tagEl.textContent = branding.tagline || DEFAULT_TAGLINE;
     }
 
-    if (branding.logoUrl && logoEl && markEl) {
-      logoEl.src = branding.logoUrl;
-      logoEl.alt = branding.logoAlt || branding.displayName || DEFAULT_NAME;
-      logoEl.hidden = false;
-      markEl.hidden = true;
+    if (logoEl && markEl) {
+      if (branding.logoUrl) {
+        logoEl.src = branding.logoUrl;
+        logoEl.alt = branding.logoAlt || branding.displayName || DEFAULT_NAME;
+        logoEl.hidden = false;
+        markEl.hidden = true;
+      } else {
+        logoEl.hidden = true;
+        markEl.hidden = false;
+      }
     }
 
     if (branding.hideHcaNav) {

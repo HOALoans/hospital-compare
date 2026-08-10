@@ -1,28 +1,52 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap");
+/* HOALS Design System — Inter only; Europa logo is image assets in /brand/ */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 :root {
-  --brand-primary: #4f46e5;
-  --brand-secondary: #ea580c;
-  --brand-primary-hover: #4338ca;
+  /* Five brand colors + supporting tokens (HOALS §01) */
+  --hoals-ink: #1a1e1f;
+  --hoals-blue: #0390e2;
+  --hoals-blue-700: #036ba8;
+  --hoals-mist: #bcd4d6;
+  --hoals-cultured: #f4f4f4;
+  --hoals-white: #ffffff;
+  --hoals-border: #e1e3e4;
+  --hoals-text-secondary: #3d4143;
+  --hoals-caption: #6b7073;
+  --hoals-input-border: #c5c7c9;
+
+  --brand-primary: #0390e2;
+  --brand-secondary: #1a1e1f;
+  --brand-primary-hover: #036ba8;
+
+  --shadow-sm: 0 1px 2px rgba(26, 30, 31, 0.06);
+  --shadow-md: 0 6px 16px rgba(26, 30, 31, 0.1);
+  --shadow-focus: 0 0 0 3px rgba(3, 144, 226, 0.35);
+  --ease-hoals: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --radius-card: 14px;
+  --radius-pill: 999px;
+  --container: 1120px;
 }
 
 @theme inline {
-  --font-sans: "DM Sans", system-ui, sans-serif;
-  --font-display: "Instrument Serif", Georgia, serif;
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-500: #4f46e5;
-  --color-brand-600: #4338ca;
-  --color-brand-700: #3730a3;
-  --color-brand-900: #1e1b4b;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Inter", system-ui, sans-serif;
+  --color-brand-50: #e8f6fc;
+  --color-brand-100: #d0edf9;
+  --color-brand-500: #0390e2;
+  --color-brand-600: #036ba8;
+  --color-brand-700: #025a8d;
+  --color-brand-900: #1a1e1f;
   --color-brand-primary: var(--brand-primary);
   --color-brand-secondary: var(--brand-secondary);
-  --color-accent-500: #c2410c;
-  --color-surface: #f4f6fb;
+  --color-accent-500: #0390e2;
+  --color-surface: #ffffff;
   --color-card: #ffffff;
-  --color-border: #e2e8f0;
-  --color-muted: #64748b;
+  --color-border: #e1e3e4;
+  --color-muted: #6b7073;
+  --color-ink: #1a1e1f;
+  --color-cultured: #f4f4f4;
+  --color-mist: #bcd4d6;
 }
 
 * {
@@ -36,14 +60,138 @@ html {
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background: var(--color-surface);
-  color: #1e293b;
+  font-size: 17px;
+  line-height: 1.65;
+  background: var(--hoals-white);
+  color: var(--hoals-ink);
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
 }
 
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+  color: var(--hoals-ink);
+}
+
+p {
+  text-wrap: pretty;
+}
+
 .font-display {
   font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+/* HOALS eyebrow — ALL CAPS only here (and logo). Never a heading element. */
+.hoals-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hoals-blue);
+}
+
+.hoals-eyebrow::before {
+  content: "";
+  display: block;
+  width: 3px;
+  height: 1.1em;
+  border-radius: 2px;
+  background: var(--hoals-blue);
+}
+
+/* HOALS buttons (§04) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 41px;
+  padding: 12px 22px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 120ms var(--ease-hoals), border-color 120ms var(--ease-hoals),
+    color 120ms var(--ease-hoals), box-shadow 120ms var(--ease-hoals);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn--lg {
+  min-height: 46px;
+  padding: 14px 28px;
+  font-size: 16px;
+}
+
+.btn--primary {
+  background: var(--brand-primary);
+  color: #fff;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--brand-primary-hover);
+}
+
+.btn--secondary {
+  background: #fff;
+  color: var(--hoals-ink);
+  border-color: var(--hoals-border);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  border-color: var(--hoals-caption);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--hoals-ink);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  color: var(--brand-primary);
+}
+
+@media (max-width: 991px) {
+  .btn {
+    min-height: 44px;
+  }
+}
+
+/* HOALS cards (§05) */
+.hoals-card {
+  background: #fff;
+  border: 1px solid var(--hoals-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 220ms var(--ease-hoals), transform 220ms var(--ease-hoals);
+}
+
+.hoals-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+}
+
+.hoals-section-cultured {
+  background: var(--hoals-cultured);
 }
 
 @media print {
@@ -86,7 +234,7 @@ body {
     gap: 0.4in;
     margin: 0 0 0.35rem;
     padding: 0 0 0.35rem;
-    border-bottom: 2.5px solid #4f46e5;
+    border-bottom: 2.5px solid #0390e2;
   }
 
   .print-brand-left {
@@ -108,16 +256,16 @@ body {
     margin: 0;
     font-family: var(--font-display);
     font-size: 14pt;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.1;
-    color: #4f46e5;
+    color: #1a1e1f;
   }
 
   .print-brand-tagline {
     margin: 0.08rem 0 0;
     font-size: 7.5pt;
     line-height: 1.25;
-    color: #64748b;
+    color: #6b7073;
     max-width: 4.2in;
   }
 
@@ -179,7 +327,7 @@ body {
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #4338ca;
+    color: #036ba8;
   }
 
   .print-section-label.win {
@@ -218,9 +366,9 @@ body {
     gap: 0.28in;
     margin-top: 0.35rem;
     padding: 0.28rem 0.3rem;
-    border: 1px solid #c7d2fe;
+    border: 1px solid #e1e3e4;
     border-radius: 0.08in;
-    background: #eef2ff !important;
+    background: #f4f4f4 !important;
   }
 
   .print-about p {
@@ -311,7 +459,7 @@ body {
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #4338ca;
+    color: #036ba8;
     margin-bottom: 0.1rem;
   }
 

@@ -21,13 +21,14 @@ export type PartnerBranding = {
   hideHcaNav?: boolean;
 };
 
-/** Built-in Parigrado branding — always served from code, never stored in JSON. */
+/** Built-in HOALS / Parigrado branding — always served from code, never stored in JSON. */
 export const DEFAULT_PARTNER: PartnerBranding = {
   id: "default",
   displayName: SITE_NAME,
-  logoUrl: null,
-  primaryColor: "#4f46e5",
-  secondaryColor: "#ea580c",
+  logoUrl: "/brand/hoals-logo.svg",
+  logoAlt: "HOA Loan Services",
+  primaryColor: "#0390E2",
+  secondaryColor: "#1A1E1F",
   welcomeHeadline: "Know how your hospital really compares",
   showPoweredBy: false,
 };

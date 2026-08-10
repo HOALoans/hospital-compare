@@ -49,8 +49,8 @@ type FormState = {
 const EMPTY_FORM: FormState = {
   id: "",
   displayName: "",
-  primaryColor: "#4f46e5",
-  secondaryColor: "#ea580c",
+  primaryColor: "#0390E2",
+  secondaryColor: "#1A1E1F",
   welcomeHeadline: "",
   welcomeSubheadline: "",
   heroDescription: "",
@@ -141,9 +141,9 @@ function LogoUploadPanel({
   const previewSrc = logoPreview ?? currentLogoUrl ?? null;
 
   return (
-    <section className="rounded-2xl border-2 border-dashed border-indigo-200 bg-indigo-50/40 p-5">
+    <section className="rounded-2xl border-2 border-dashed border-[var(--hoals-border)] bg-[var(--hoals-cultured)]/40 p-5">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-white">
           <ImageIcon className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
@@ -191,7 +191,7 @@ function LogoUploadPanel({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="inline-flex items-center gap-2 rounded-lg border border-indigo-300 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-[var(--hoals-border)] bg-white px-4 py-2 text-sm font-semibold text-brand-primary hover:bg-brand-50"
         >
           <Upload className="h-4 w-4" />
           Choose logo image
@@ -201,7 +201,7 @@ function LogoUploadPanel({
             type="button"
             onClick={onUpload}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary disabled:opacity-60"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Upload now
@@ -477,8 +477,8 @@ export function PartnerAdminPage({ onExit }: Props) {
   if (!adminToken) {
     return (
       <div className="mx-auto max-w-md py-16">
-        <div className="rounded-2xl border border-indigo-200 bg-white p-8 shadow-lg shadow-indigo-900/5">
-          <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white">
+        <div className="rounded-2xl border border-[var(--hoals-border)] bg-white p-8 shadow-lg shadow-[var(--shadow-sm)]">
+          <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-primary text-white">
             <Lock className="h-6 w-6" />
           </div>
           <h2 className="font-display text-2xl text-slate-900">Partner admin sign in</h2>
@@ -496,7 +496,7 @@ export function PartnerAdminPage({ onExit }: Props) {
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 placeholder="you@company.com"
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                 autoComplete="email"
                 required
               />
@@ -510,7 +510,7 @@ export function PartnerAdminPage({ onExit }: Props) {
                 type="password"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                 autoComplete="current-password"
                 required
               />
@@ -521,7 +521,7 @@ export function PartnerAdminPage({ onExit }: Props) {
             <button
               type="submit"
               disabled={authLoading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-primary disabled:opacity-60"
             >
               {authLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
               Sign in
@@ -539,7 +539,7 @@ export function PartnerAdminPage({ onExit }: Props) {
           <h2 className="font-display text-3xl text-slate-900">Partner programs</h2>
           <p className="mt-1 max-w-2xl text-sm text-slate-600">
             Create white-label partner branding and share links like{" "}
-            <code className="rounded bg-slate-100 px-1.5 py-0.5 text-indigo-700">
+            <code className="rounded bg-slate-100 px-1.5 py-0.5 text-brand-primary">
               ?partner=your-slug
             </code>
             .
@@ -569,7 +569,7 @@ export function PartnerAdminPage({ onExit }: Props) {
             <button
               type="button"
               onClick={startCreate}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-primary"
             >
               <Plus className="h-4 w-4" />
               New partner
@@ -614,7 +614,7 @@ export function PartnerAdminPage({ onExit }: Props) {
               </p>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700 ring-1 ring-slate-200">
-                  <Database className="h-3.5 w-3.5 text-indigo-600" />
+                  <Database className="h-3.5 w-3.5 text-brand-primary" />
                   CMS period: {freshness?.reportingPeriod.start || "—"} –{" "}
                   {freshness?.reportingPeriod.end || "—"}
                 </span>
@@ -629,7 +629,7 @@ export function PartnerAdminPage({ onExit }: Props) {
                 type="button"
                 onClick={handleRefreshData}
                 disabled={refreshing}
-                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary disabled:opacity-60"
               >
                 {refreshing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -643,7 +643,7 @@ export function PartnerAdminPage({ onExit }: Props) {
                   type="checkbox"
                   checked={reingestArchives}
                   onChange={(e) => setReingestArchives(e.target.checked)}
-                  className="rounded border-slate-300 text-indigo-600"
+                  className="rounded border-slate-300 text-brand-primary"
                 />
                 Also re-ingest trend archives
               </label>
@@ -729,7 +729,7 @@ export function PartnerAdminPage({ onExit }: Props) {
                               href={link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-indigo-600 hover:underline"
+                              className="inline-flex items-center gap-1 text-brand-primary hover:underline"
                             >
                               Preview
                               <ExternalLink className="h-3.5 w-3.5" />
@@ -744,7 +744,7 @@ export function PartnerAdminPage({ onExit }: Props) {
                               <button
                                 type="button"
                                 onClick={() => startEdit(partner)}
-                                className="rounded-md p-2 text-slate-500 hover:bg-indigo-50 hover:text-indigo-700"
+                                className="rounded-md p-2 text-slate-500 hover:bg-brand-50 hover:text-brand-primary"
                                 title="Edit"
                               >
                                 <Pencil className="h-4 w-4" />
@@ -838,7 +838,7 @@ export function PartnerAdminPage({ onExit }: Props) {
                     type="checkbox"
                     checked={form.showPoweredBy}
                     onChange={(e) => setForm((f) => ({ ...f, showPoweredBy: e.target.checked }))}
-                    className="rounded border-slate-300 text-indigo-600"
+                    className="rounded border-slate-300 text-brand-primary"
                   />
                   Show &quot;Powered by Parigrado&quot;
                 </label>
@@ -849,7 +849,7 @@ export function PartnerAdminPage({ onExit }: Props) {
                     type="checkbox"
                     checked={form.gated}
                     onChange={(e) => setForm((f) => ({ ...f, gated: e.target.checked }))}
-                    className="rounded border-slate-300 text-indigo-600"
+                    className="rounded border-slate-300 text-brand-primary"
                   />
                   Gate behind demo access code (private preview)
                 </label>
@@ -860,7 +860,7 @@ export function PartnerAdminPage({ onExit }: Props) {
                     type="checkbox"
                     checked={form.hideHcaNav}
                     onChange={(e) => setForm((f) => ({ ...f, hideHcaNav: e.target.checked }))}
-                    className="rounded border-slate-300 text-indigo-600"
+                    className="rounded border-slate-300 text-brand-primary"
                   />
                   Hide HCA News &amp; Talking Points tab
                 </label>
@@ -937,7 +937,7 @@ export function PartnerAdminPage({ onExit }: Props) {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary disabled:opacity-60"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 {mode === "create" ? "Create partner" : "Save changes"}
@@ -959,7 +959,7 @@ export function PartnerAdminPage({ onExit }: Props) {
                 <h4 className="text-sm font-semibold text-slate-900">Share link</h4>
                 <p className="mt-1 text-xs text-slate-500">
                   Give this URL to your partner. Branding loads from the{" "}
-                  <code className="text-indigo-700">partner</code> query param.
+                  <code className="text-brand-primary">partner</code> query param.
                 </p>
                 <div className="mt-3 flex gap-2">
                   <input
@@ -980,7 +980,7 @@ export function PartnerAdminPage({ onExit }: Props) {
                   href={shareUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:underline"
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-primary hover:underline"
                 >
                   Open preview
                   <ExternalLink className="h-3.5 w-3.5" />
@@ -989,7 +989,7 @@ export function PartnerAdminPage({ onExit }: Props) {
             )}
 
             {mode === "create" && (
-              <section className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/50 p-5 text-sm text-slate-600">
+              <section className="rounded-2xl border border-dashed border-[var(--hoals-border)] bg-[var(--hoals-cultured)]/50 p-5 text-sm text-slate-600">
                 After you create the partner, the share link will appear here. You can also upload
                 the logo above before saving — it uploads automatically with the partner.
               </section>

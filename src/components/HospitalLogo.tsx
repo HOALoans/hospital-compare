@@ -22,7 +22,7 @@ export function HospitalLogo({ hospital, size = 32, className = "", showProfileL
 
   const logo = !faviconUrl || failed ? (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700 ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-lg bg-[var(--hoals-mist)] text-brand-primary ${className}`}
       style={{ width: size, height: size }}
       aria-hidden
     >
@@ -49,7 +49,7 @@ export function HospitalLogo({ hospital, size = 32, className = "", showProfileL
         href={cmsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-0.5 text-[10px] text-indigo-600 hover:underline no-print"
+        className="inline-flex items-center gap-0.5 text-[10px] text-brand-primary hover:underline no-print"
       >
         CMS <ExternalLink className="h-2.5 w-2.5" />
       </a>

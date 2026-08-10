@@ -58,7 +58,7 @@ export function PrintComparisonReport({
   const compareHospitals = (comparison.compareHospitals ?? []).slice(0, 2);
   const brandName = isPartnerMode ? partner.displayName : SITE_NAME;
   const brandTagline = partner.tagline ?? SITE_TAGLINE;
-  const logoSrc = partner.logoUrl || "/parigrado-mark.svg";
+  const logoSrc = partner.logoUrl || "/brand/hoals-logo-mark.svg";
 
   const rows = COMPARISON_MEASURES.map((measure) => {
     const def = getMeasureDefinition(measure.id)!;

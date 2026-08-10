@@ -46,7 +46,7 @@ export function SiteDisclaimer({
                 href={CMS_HOSPITAL_COMPARE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-0.5 text-slate-500 underline decoration-slate-300 underline-offset-2 hover:text-indigo-700"
+                className="inline-flex items-center gap-0.5 text-slate-500 underline decoration-slate-300 underline-offset-2 hover:text-brand-primary"
               >
                 CMS Care Compare
                 <ExternalLink className="h-3 w-3" />
@@ -64,7 +64,7 @@ export function SiteDisclaimer({
                       target="_blank"
                       rel="noopener noreferrer"
                       title={src.description}
-                      className="inline-flex items-center gap-0.5 text-slate-500 underline decoration-slate-300 underline-offset-2 hover:text-indigo-700"
+                      className="inline-flex items-center gap-0.5 text-slate-500 underline decoration-slate-300 underline-offset-2 hover:text-brand-primary"
                     >
                       {src.name} <span className="text-slate-400">({src.agency})</span>
                       <ExternalLink className="h-3 w-3" />
@@ -85,14 +85,14 @@ export function SiteDisclaimer({
                 <button
                   type="button"
                   onClick={onOpenAdmin}
-                  className="text-slate-400 underline decoration-slate-300 underline-offset-2 hover:text-indigo-600"
+                  className="text-slate-400 underline decoration-slate-300 underline-offset-2 hover:text-brand-primary"
                 >
                   Partner admin
                 </button>
               ) : (
                 <a
                   href="/admin"
-                  className="text-slate-400 underline decoration-slate-300 underline-offset-2 hover:text-indigo-600"
+                  className="text-slate-400 underline decoration-slate-300 underline-offset-2 hover:text-brand-primary"
                 >
                   Partner admin
                 </a>

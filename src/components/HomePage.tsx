@@ -1,5 +1,4 @@
 import {
-  Activity,
   ArrowRight,
   BarChart3,
   BookOpen,
@@ -23,182 +22,181 @@ export function HomePage({ onStartCompare, onOpenMethodology }: Props) {
     : "/mission-tracker/";
 
   return (
-    <div className="space-y-10">
-      <section className="relative overflow-hidden rounded-2xl border-2 border-brand-primary/40 bg-gradient-to-br from-brand-primary/5 via-white to-brand-secondary/10 p-6 shadow-xl shadow-brand-primary/5 ring-1 ring-brand-primary/20 sm:p-8 lg:p-12">
-        <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-brand-primary/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-brand-secondary/15 blur-3xl" />
-        <div className="relative mx-auto max-w-3xl text-center">
-          <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-primary text-white shadow-lg sm:mb-6 sm:h-14 sm:w-14">
-            <Activity className="h-6 w-6 sm:h-7 sm:w-7" />
-          </div>
-          <h2 className="text-balance font-display text-3xl leading-tight text-slate-900 sm:text-4xl lg:text-5xl">
+    <div className="space-y-0">
+      <section className="border-b border-[var(--hoals-border)] bg-white px-0 py-10 sm:py-14 lg:py-20">
+        <div className="mx-auto max-w-[1120px]">
+          <div className="hoals-eyebrow mb-5">Hospital quality</div>
+          <h2 className="max-w-3xl text-balance text-[38px] font-extrabold leading-[1.08] tracking-[-0.025em] text-[var(--hoals-ink)] sm:text-[48px] lg:text-[52px]">
             {partner.welcomeHeadline}
           </h2>
-          <p className="mt-4 text-base text-slate-600 sm:text-lg">{subheadline}</p>
+          <p className="mt-5 max-w-2xl text-[19px] font-medium leading-[1.5] text-[var(--hoals-text-secondary)]">
+            {subheadline}
+          </p>
           {isPartnerMode && partner.heroDescription ? (
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-slate-700 sm:text-lg">
-              <span className="block rounded-xl border border-brand-primary/20 bg-brand-primary/5 px-4 py-3 text-left shadow-sm sm:px-5 sm:py-4">
-                {partner.heroDescription}
-              </span>
+            <p className="mt-6 max-w-2xl rounded-[14px] border border-[var(--hoals-border)] bg-[var(--hoals-cultured)] px-5 py-4 text-[17px] leading-[1.65] text-[var(--hoals-text-secondary)]">
+              {partner.heroDescription}
             </p>
           ) : null}
-          <div className="mt-8 flex w-full flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              onClick={onStartCompare}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:bg-brand-primary/90"
-            >
-              Compare Multiple Hospitals
-              <ArrowRight className="h-5 w-5" />
+          <div className="mt-8 flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+            <button type="button" onClick={onStartCompare} className="btn btn--primary btn--lg">
+              Compare multiple hospitals
+              <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
             </button>
-            <a
-              href={hospitalHealthHref}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-brand-primary bg-white px-6 py-3.5 text-base font-semibold text-brand-primary transition hover:bg-brand-primary/5"
-            >
-              <span className="sm:hidden">Hospital Health</span>
-              <span className="hidden sm:inline">Single Hospital Health Dashboard</span>
-              <ArrowRight className="h-5 w-5" />
+            <a href={hospitalHealthHref} className="btn btn--secondary btn--lg">
+              <span className="sm:hidden">Hospital health</span>
+              <span className="hidden sm:inline">Single hospital health dashboard</span>
+              <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
             </a>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-4">
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-800">
-            <Scale className="h-5 w-5" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900">For employers &amp; health plans</h3>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            Evaluate in-network hospitals against county, ZIP, and state peers on patient experience,
-            infections, and readmissions — the same federal metrics CMS publishes. Useful for benefits
-            teams comparing network adequacy without paid &quot;best hospital&quot; lists.
-          </p>
-        </article>
+      <section className="bg-[var(--hoals-cultured)] px-0 py-10 sm:py-14 lg:py-20">
+        <div className="mx-auto grid max-w-[1120px] gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <article className="hoals-card p-6">
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-[10px] bg-[var(--hoals-mist)] text-[var(--hoals-ink)]">
+              <Scale className="h-5 w-5" strokeWidth={1.75} />
+            </div>
+            <h3 className="text-[19px] font-bold tracking-[-0.01em] text-[var(--hoals-ink)]">
+              For employers and health plans
+            </h3>
+            <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--hoals-text-secondary)]">
+              Evaluate in-network hospitals against county, ZIP, and state peers on patient experience,
+              infections, and readmissions — the same federal metrics CMS publishes. Useful for benefits
+              teams comparing network adequacy without paid &quot;best hospital&quot; lists.
+            </p>
+          </article>
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
-            <BarChart3 className="h-5 w-5" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900">What {SITE_NAME} does</h3>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            Search any Medicare-certified hospital and see how it stacks up against county, ZIP,
-            state, and national peers. We chart HCAHPS patient experience scores and CDC NHSN
-            infection measures side by side — so you can spot strengths and gaps at a glance.
-          </p>
-        </article>
+          <article className="hoals-card p-6">
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-[10px] bg-[var(--hoals-mist)] text-[var(--hoals-ink)]">
+              <BarChart3 className="h-5 w-5" strokeWidth={1.75} />
+            </div>
+            <h3 className="text-[19px] font-bold tracking-[-0.01em] text-[var(--hoals-ink)]">
+              What {SITE_NAME} does
+            </h3>
+            <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--hoals-text-secondary)]">
+              Search any Medicare-certified hospital and see how it stacks up against county, ZIP,
+              state, and national peers. We chart HCAHPS patient experience scores and CDC NHSN
+              infection measures side by side — so you can spot strengths and gaps at a glance.
+            </p>
+          </article>
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 text-orange-700">
-            <Database className="h-5 w-5" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900">How the data is collected</h3>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            Every score comes from public federal datasets: CMS Hospital Compare (HCAHPS surveys,
-            general hospital information) and healthcare-associated infection measures reported
-            through CDC&apos;s NHSN. Historical trends use CMS archived hospital snapshots. No
-            hospital payments, sponsorships, or proprietary ratings — just what agencies publish.
-          </p>
-        </article>
+          <article className="hoals-card p-6">
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-[10px] bg-[var(--hoals-mist)] text-[var(--hoals-ink)]">
+              <Database className="h-5 w-5" strokeWidth={1.75} />
+            </div>
+            <h3 className="text-[19px] font-bold tracking-[-0.01em] text-[var(--hoals-ink)]">
+              How the data is collected
+            </h3>
+            <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--hoals-text-secondary)]">
+              Every score comes from public federal datasets: CMS Hospital Compare (HCAHPS surveys,
+              general hospital information) and healthcare-associated infection measures reported
+              through CDC&apos;s NHSN. Historical trends use CMS archived hospital snapshots. No
+              hospital payments, sponsorships, or proprietary ratings — just what agencies publish.
+            </p>
+          </article>
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900">Why unbiased data matters now</h3>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            Many &quot;best hospital&quot; lists are influenced by advertising and paid placements.
-            When choosing where to get care — or advocating for your community — you deserve
-            measures that aren&apos;t for sale. Public CMS and CDC data level the field so you can
-            compare on facts, not marketing budgets.
-          </p>
-        </article>
+          <article className="hoals-card p-6">
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-[10px] bg-[var(--hoals-mist)] text-[var(--hoals-ink)]">
+              <ShieldCheck className="h-5 w-5" strokeWidth={1.75} />
+            </div>
+            <h3 className="text-[19px] font-bold tracking-[-0.01em] text-[var(--hoals-ink)]">
+              Why unbiased data matters now
+            </h3>
+            <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--hoals-text-secondary)]">
+              Many &quot;best hospital&quot; lists are influenced by advertising and paid placements.
+              When choosing where to get care — or advocating for your community — you deserve
+              measures that aren&apos;t for sale. Public CMS and CDC data level the field so you can
+              compare on facts, not marketing budgets.
+            </p>
+          </article>
+        </div>
       </section>
 
-      <section className="rounded-2xl border border-brand-primary/30 bg-gradient-to-r from-brand-primary/5 to-brand-secondary/10 p-6 sm:p-8">
-        <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
+      <section className="border-b border-[var(--hoals-border)] bg-white px-0 py-10 sm:py-14">
+        <div className="mx-auto flex max-w-[1120px] flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-brand-primary shadow-sm ring-1 ring-brand-primary/20">
-              <Scale className="h-6 w-6" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-[var(--hoals-mist)] text-[var(--hoals-ink)]">
+              <Scale className="h-6 w-6" strokeWidth={1.75} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">Ready to compare?</h3>
-              <p className="mt-1 text-sm text-slate-600">
+              <h3 className="text-[19px] font-bold tracking-[-0.01em] text-[var(--hoals-ink)]">
+                Ready to compare?
+              </h3>
+              <p className="mt-1 text-[14.5px] leading-[1.55] text-[var(--hoals-text-secondary)]">
                 Search by hospital name, city, or ZIP. Add peer hospitals, export to CSV or PDF,
                 and explore year-over-year trends.
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onStartCompare}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg border-2 border-brand-primary bg-white px-5 py-2.5 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
-          >
-            Compare Multiple Hospitals
-            <ArrowRight className="h-4 w-4" />
+          <button type="button" onClick={onStartCompare} className="btn btn--primary shrink-0">
+            Compare multiple hospitals
+            <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
           </button>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 md:gap-6">
-        <div className="rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-white to-indigo-50/40 p-6 shadow-sm sm:p-8">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-700 text-white shadow-sm">
-              <Scale className="h-6 w-6" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">Why &ldquo;Parigrado&rdquo;?</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                The name blends the Italian and Latin roots{" "}
-                <span className="font-semibold text-indigo-700">pari</span> (equal, on par) and{" "}
-                <span className="font-semibold text-orange-700">grado</span> (grade, degree) — because
-                our mission is to grade hospitals on an equal, unbiased footing, using the same public
-                federal metrics for everyone.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-3 py-1 font-medium text-indigo-800">
-                  pari · equal
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 font-medium text-orange-800">
-                  grado · grade
-                </span>
+      <section className="bg-[var(--hoals-cultured)] px-0 py-10 sm:py-14 lg:py-20">
+        <div className="mx-auto grid max-w-[1120px] gap-6 md:grid-cols-2">
+          <div className="hoals-card p-6 sm:p-8">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-[var(--hoals-blue)] text-white">
+                <Scale className="h-6 w-6" strokeWidth={1.75} />
+              </div>
+              <div>
+                <h3 className="text-[19px] font-bold tracking-[-0.01em] text-[var(--hoals-ink)]">
+                  Why &ldquo;Parigrado&rdquo;?
+                </h3>
+                <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--hoals-text-secondary)]">
+                  The name blends the Italian and Latin roots{" "}
+                  <span className="font-semibold text-[var(--hoals-ink)]">pari</span> (equal, on par)
+                  and <span className="font-semibold text-[var(--hoals-ink)]">grado</span> (grade,
+                  degree) — because our mission is to grade hospitals on an equal, unbiased footing,
+                  using the same public federal metrics for everyone.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2 text-[13px]">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--hoals-mist)] px-3 py-1 font-medium text-[var(--hoals-ink)]">
+                    pari · equal
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 font-medium text-[var(--hoals-ink)] ring-1 ring-[var(--hoals-border)]">
+                    grado · grade
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm sm:p-8">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-white shadow-sm">
-              <BookOpen className="h-6 w-6" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">Methodology</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                See how peer averages, county and state groups, and ownership splits are computed from
-                public CMS Hospital Compare data — with no paid rankings or sponsorships.
-              </p>
-              <button
-                type="button"
-                onClick={onOpenMethodology}
-                className="mt-4 inline-flex items-center gap-2 rounded-lg border border-brand-primary/30 bg-white px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/5"
-              >
-                Read methodology
-                <ArrowRight className="h-4 w-4" />
-              </button>
+          <div className="hoals-card p-6 sm:p-8">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-[var(--hoals-ink)] text-white">
+                <BookOpen className="h-6 w-6" strokeWidth={1.75} />
+              </div>
+              <div>
+                <h3 className="text-[19px] font-bold tracking-[-0.01em] text-[var(--hoals-ink)]">
+                  Methodology
+                </h3>
+                <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--hoals-text-secondary)]">
+                  See how peer averages, county and state groups, and ownership splits are computed from
+                  public CMS Hospital Compare data — with no paid rankings or sponsorships.
+                </p>
+                <button type="button" onClick={onOpenMethodology} className="btn btn--ghost mt-4 px-0">
+                  Read methodology
+                  <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <p className="px-1 text-sm text-slate-500">
+      <p className="mx-auto max-w-[1120px] px-0 py-8 text-[13px] leading-[1.55] text-[var(--hoals-caption)]">
         Every score comes from public federal datasets — CMS Hospital Compare (HCAHPS),
         CDC/NHSN infection measures, CMS readmissions, and CMS archived snapshots. See{" "}
         <a
           href="#data-sources"
-          className="font-medium text-brand-primary underline decoration-brand-primary/30 underline-offset-2 hover:text-brand-primary/80"
+          className="font-medium text-[var(--hoals-blue)] underline decoration-[var(--hoals-mist)] underline-offset-2 hover:text-[var(--hoals-blue-700)]"
         >
-          data sources &amp; disclaimer
+          data sources and disclaimer
         </a>{" "}
         for details and source links.
       </p>
