@@ -16,6 +16,12 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import Anthropic from "@anthropic-ai/sdk";
+import {
+  syncSourcesFromHtml,
+  mergeSourcesFromNewsPayload,
+  formatSourcesForPrompt,
+  loadHcaSources,
+} from "./hcaSources.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -36,7 +42,13 @@ const BACKGROUND_FACTS = `BACKGROUND FACTS (established advocacy context for the
 - NC DHHS awarded Mission 95 CON beds despite active federal safety sanctions.
 - April 28, 2026: HCA CEO Sam Hazen testified before the House Ways and Means Committee (hearing with health system CEOs). Written testimony focused on affordability, uncompensated care, Helene response in western NC, workforce training, and eliminating certificate-of-need (CON) laws. It did not address Mission Immediate Jeopardy citations, staffing collapse, federal noncompliance, or the AG lawsuit. Primary sources: https://www.congress.gov/event/119th-congress/house-event/119239 and https://www.congress.gov/119/meeting/house/119239/witnesses/HHRG-119-WM00-Wstate-HazenS-20260428.pdf (also hosted at /hca/hazen-hca-testimony-2026-04-28.pdf on this site).`;
 
-const SYSTEM_PROMPT = `You are a research assistant for Reclaim Healthcare WNC, a nonprofit holding HCA Healthcare accountable for poor care at Mission Hospital in Asheville NC. Your job is to generate updated content for their public watchdog dashboard.
+function buildSystemPrompt(learnedSourcesText) {
+  return `${SYSTEM_PROMPT_BASE}
+
+${learnedSourcesText || ""}`.trim();
+}
+
+const SYSTEM_PROMPT_BASE = `You are a research assistant for Reclaim Healthcare WNC, a nonprofit holding HCA Healthcare accountable for poor care at Mission Hospital in Asheville NC. Your job is to generate updated content for their public watchdog dashboard.
 
 Mission context: HCA acquired Mission in 2019, has received 4 Immediate Jeopardy citations, Mission has 2-star HCAHPS ratings 2020-2024, 800+ staff have left, staffing ratio fell from 6.1 to 3.7 FTE per bed vs 5.1 NC average. NC AG lawsuit advancing after July 28 2026 summary judgment denial. Federal monitor confirmed noncompliance July 2026. For the AG case, prefer "lawsuit" (not "trial") in tags and short notes when framing the case.
 
@@ -44,7 +56,9 @@ ${BACKGROUND_FACTS}
 
 Generate updated dashboard content based on the most recent news you are aware of. Search for the latest news about HCA Healthcare, Mission Hospital Asheville, NC Attorney General lawsuit against HCA, CMS compliance status, HCA earnings, and relevant congressional hearings or CEO testimony (including Sam Hazen / Ways and Means) when tools are available.
 
-KEY OUTLETS TO CHECK (when searching): Asheville Watchdog, Blue Ridge Public Radio (BPR), NC Health News, WLOS (https://wlos.com/ — Asheville local TV / Mission & HCA coverage), Becker's Hospital Review (https://www.beckershospitalreview.com/ — HCA / Mission / for-profit hospital coverage), Dogwood Health Trust (https://dogwoodhealthtrust.org/ — Independent Monitor reports, community webinars, Mission sale compliance), Washington Post / KFF Health News (national Mission monopoly pricing coverage), NC DOJ / AG, CMS, HCA investor relations, National Nurses United, and related congressional coverage. Prefer primary publisher URLs. Always consider Dogwood / Affiliated Monitors Independent Monitor updates when fresh. Keep the August 9, 2026 WaPo/KFF monopoly-pricing investigation in newsItems (and a talking point) unless a clearly fresher Mission accountability story displaces it.
+KEY OUTLETS TO CHECK (when searching): Asheville Watchdog, Blue Ridge Public Radio (BPR), NC Health News, WLOS (https://wlos.com/ — Asheville local TV / Mission & HCA coverage), Becker's Hospital Review (https://www.beckershospitalreview.com/ — HCA / Mission / for-profit hospital coverage), Dogwood Health Trust (https://dogwoodhealthtrust.org/ — Independent Monitor reports, community webinars, Mission sale compliance), Washington Post / KFF Health News (national Mission monopoly pricing coverage), NC DOJ / AG, CMS, HCA investor relations, National Nurses United, MarketBeat (institutional / filing alerts), and related congressional coverage. Prefer primary publisher URLs. Always consider Dogwood / Affiliated Monitors Independent Monitor updates when fresh. Keep the August 9, 2026 WaPo/KFF monopoly-pricing investigation in newsItems (and a talking point) unless a clearly fresher Mission accountability story displaces it.
+
+IMPORTANT: Also check every outlet listed under LEARNED / PERSISTENT OUTLETS below — those are sources from articles already on the dashboard (including manually added ones) and must stay in the daily search universe.
 
 IMPORTANT COLUMN SPLIT:
 - newsItems = accountability / care / CMS / lawsuit / staffing / CON / congressional oversight / advocacy framing for Mission and WNC. Do NOT put pure earnings/stock items here.
@@ -801,7 +815,7 @@ async function requestDashboardJson(client, params) {
   }
 }
 
-async function fetchDashboardData(apiKey) {
+async function fetchDashboardData(apiKey, learnedSourcesText = "") {
   // Streaming + generous timeout: scheduled runs (Aug 4 #30918362133, Aug 5
   // #31014010755) hit APIConnectionTimeoutError ~5m into non-streaming
   // web_search — idle sockets get closed before the full JSON arrives.
@@ -841,7 +855,7 @@ CRITICAL: After any tool use, your FINAL message must be ONLY the raw JSON objec
     model,
     // Web search burns output budget on tool rounds; leave headroom for full JSON.
     max_tokens: 16000,
-    system: SYSTEM_PROMPT,
+    system: buildSystemPrompt(learnedSourcesText),
     messages: [{ role: "user", content: userPrompt }],
   };
 
@@ -918,7 +932,17 @@ async function main() {
 
   console.log(`Dashboard: ${htmlPath}`);
 
-  const data = await fetchDashboardData(apiKey);
+  // Pick up any manually added article sources before searching.
+  const preSync = syncSourcesFromHtml(htmlPath);
+  console.log(
+    `Source universe: ${preSync.total} outlets` +
+      (preSync.added.length
+        ? ` (${preSync.added.length} new from current HTML)`
+        : ""),
+  );
+  const learnedSourcesText = formatSourcesForPrompt(loadHcaSources().sources);
+
+  const data = await fetchDashboardData(apiKey, learnedSourcesText);
   data.newsItems = sortNewsItemsByDateDesc(data.newsItems);
   data.financialNewsItems = sortNewsItemsByDateDesc(data.financialNewsItems);
 
@@ -952,6 +976,22 @@ async function main() {
   );
 
   fs.writeFileSync(htmlPath, html, "utf8");
+
+  // Persist any newly discovered outlets from this refresh.
+  const postSync = mergeSourcesFromNewsPayload(
+    data.newsItems,
+    data.financialNewsItems,
+    data.talkingPoints,
+  );
+  if (postSync.added.length) {
+    console.log(
+      `Added ${postSync.added.length} outlet(s) to daily source universe:`,
+    );
+    for (const s of postSync.added) {
+      console.log(`  - ${s.name}${s.host ? ` (${s.host})` : ""}`);
+    }
+  }
+
   console.log("Dashboard updated successfully");
   console.log(
     `  newsItems=${data.newsItems.length} financialNewsItems=${data.financialNewsItems.length} talkingPoints=${data.talkingPoints.length}`,
