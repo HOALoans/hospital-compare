@@ -16,6 +16,7 @@
     "refresh:mission-tracker": "node public/mission-tracker/refresh.mjs",
     "update:hca": "node scripts/update-dashboard.js",
     "update:hca-watchdog": "node scripts/update-dashboard.js",
+    "sync:hca-sources": "node scripts/sync-hca-sources.js",
     "build:staff-ratios": "python3 scripts/buildStaffRatios.py"
   },
   "dependencies": {
