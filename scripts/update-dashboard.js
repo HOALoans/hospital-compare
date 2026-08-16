@@ -74,8 +74,8 @@ ORDERING: Return newsItems and financialNewsItems newest-first (most recent date
 Return ONLY a valid raw JSON object with exactly this structure, no markdown, no backticks, no preamble:
 {
   todayDate: "Month D, YYYY",
-  sectionLabel: "Recent news — Month D, YYYY",
-  financialSectionLabel: "Recent financial news — Month D, YYYY",
+  sectionLabel: "ignored — script sets Scanned timestamp",
+  financialSectionLabel: "ignored — script sets Scanned timestamp",
   newsItems: [
     {
       source: "Source name",
@@ -333,7 +333,7 @@ function validatePayload(data) {
     typeof data.financialSectionLabel !== "string" ||
     !data.financialSectionLabel.trim()
   ) {
-    data.financialSectionLabel = `Recent financial news — ${data.todayDate.trim()}`;
+    data.financialSectionLabel = `Recent financial news · Scanned ${data.todayDate.trim()}`;
   }
   for (const [i, item] of data.newsItems.entries()) {
     validateNewsItem(item, "newsItems", i);
@@ -618,10 +618,35 @@ function ensureMarkers(html) {
   return out;
 }
 
-function updateMastheadAndSection(html, todayDate, sectionLabel, financialSectionLabel) {
+/** Eastern-time stamp for when the dashboard was last scanned/refreshed. */
+function formatEasternScan(now = new Date()) {
+  const tz = "America/New_York";
+  const datePart = now.toLocaleDateString("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const timePart = now.toLocaleTimeString("en-US", {
+    timeZone: tz,
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  const scannedAt = `Scanned ${datePart} at ${timePart} ET`;
+  return {
+    todayDate: datePart,
+    scannedAt,
+    sectionLabel: `Recent news · ${scannedAt}`,
+    financialSectionLabel: `Recent financial news · ${scannedAt}`,
+  };
+}
+
+function updateMastheadAndSection(html, todayDate, sectionLabel, financialSectionLabel, scannedAt) {
   const date = todayDate.trim();
   const label = sectionLabel.trim();
-  const finLabel = (financialSectionLabel || `Recent financial news — ${date}`).trim();
+  const finLabel = (financialSectionLabel || `Recent financial news · Scanned ${date}`).trim();
+  const updatedLine = (scannedAt || `Scanned ${date}`).trim();
   const escapedLabel = escapeHtml(label);
   const escapedFinLabel = escapeHtml(finLabel);
   let out = html.replace(
@@ -647,7 +672,7 @@ function updateMastheadAndSection(html, todayDate, sectionLabel, financialSectio
   }
   out = out.replace(
     /(<div class="masthead-updated">)([\s\S]*?)(<\/div>)/,
-    `$1Last updated automatically — check sources for latest$3`,
+    `$1${escapeHtml(updatedLine)}$3`,
   );
   return out;
 }
@@ -846,8 +871,7 @@ Consider Sam Hazen / House Ways and Means testimony (April 28, 2026) when releva
 For tag, use a short label like Lawsuit, Noncompliance, Earnings, CON, Safety, Monitor, Congress, Guidance, Margins, Buyback, or Update. Prefer "Lawsuit" (not "Trial") for AG case items.
 For tagClass, choose tag-red, tag-amber, tag-blue, or tag-teal to match severity/topic.
 Set todayDate to today's date in "Month D, YYYY" format.
-Set sectionLabel to "Recent news — Month D, YYYY" using that same date.
-Set financialSectionLabel to "Recent financial news — Month D, YYYY" using that same date.
+Set sectionLabel and financialSectionLabel to any non-empty strings (the update script overwrites them with a Scanned date/time stamp).
 
 CRITICAL: After any tool use, your FINAL message must be ONLY the raw JSON object — no narration like "Now I have…" or "Let me compile…".`;
 
@@ -968,11 +992,14 @@ async function main() {
     "<!-- TP_END -->",
     renderTalkingPoints(data.talkingPoints),
   );
+  // Scan stamp is wall-clock of this refresh — not the newest article date.
+  const scan = formatEasternScan();
   html = updateMastheadAndSection(
     html,
-    data.todayDate,
-    data.sectionLabel,
-    data.financialSectionLabel,
+    scan.todayDate,
+    scan.sectionLabel,
+    scan.financialSectionLabel,
+    scan.scannedAt,
   );
 
   fs.writeFileSync(htmlPath, html, "utf8");
