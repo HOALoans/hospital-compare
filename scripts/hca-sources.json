@@ -1,12 +1,18 @@
 {
-  "updatedAt": "2026-08-16T15:10:47.836Z",
+  "updatedAt": "2026-08-17T12:54:15.888Z",
   "sources": [
     {
       "name": "Asheville Watchdog",
       "host": "avlwatchdog.org",
       "exampleUrl": "https://avlwatchdog.org/mission-hospital-to-relax-degree-requirements-for-nurses/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-16"
+      "lastSeen": "2026-08-17"
+    },
+    {
+      "name": "Bank of America / TipRanks",
+      "host": "",
+      "firstSeen": "2026-08-17",
+      "lastSeen": "2026-08-17"
     },
     {
       "name": "Becker's Hospital Review",
@@ -28,21 +34,28 @@
       "host": "congress.gov",
       "exampleUrl": "https://www.congress.gov/event/119th-congress/house-event/119239",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-16"
+      "lastSeen": "2026-08-17"
     },
     {
       "name": "Dogwood Health Trust",
       "host": "dogwoodhealthtrust.org",
       "exampleUrl": "https://dogwoodhealthtrust.org/independent-monitor-dogwood-host-community-qa-webinar-on-2025-monitoring-report/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-16"
+      "lastSeen": "2026-08-17"
+    },
+    {
+      "name": "HCA Healthcare / SEC 8-K (StockTitan)",
+      "host": "stocktitan.net",
+      "exampleUrl": "https://www.stocktitan.net/sec-filings/HCA/8-k-hca-healthcare-inc-reports-material-event-7847ef2dffb0.html",
+      "firstSeen": "2026-08-12",
+      "lastSeen": "2026-08-17"
     },
     {
       "name": "HCA Healthcare Investor Relations",
       "host": "investor.hcahealthcare.com",
       "exampleUrl": "https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-16"
+      "lastSeen": "2026-08-17"
     },
     {
       "name": "HCA Q2 2026 Earnings Release (SEC 8-K)",
@@ -56,14 +69,14 @@
       "host": "finance.yahoo.com",
       "exampleUrl": "https://finance.yahoo.com/healthcare/articles/could-hca-healthcare-inc-hca-221733771.html",
       "firstSeen": "2026-08-12",
-      "lastSeen": "2026-08-16"
+      "lastSeen": "2026-08-17"
     },
     {
       "name": "MarketBeat",
       "host": "marketbeat.com",
       "exampleUrl": "https://www.marketbeat.com/instant-alerts/filing-deane-retirement-strategies-inc-invests-480-million-in-hca-healthcare-inc-hca-2026-08-10/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-16"
+      "lastSeen": "2026-08-17"
     },
     {
       "name": "National Nurses United",
@@ -74,7 +87,7 @@
       "host": "ncdoj.gov",
       "exampleUrl": "https://ncdoj.gov/ag-jackson-wins-key-arguments-as-hca-mission-hospital-case-proceeds-to-trial/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-16"
+      "lastSeen": "2026-08-17"
     },
     {
       "name": "NC Health News",
@@ -87,28 +100,21 @@
       "name": "StockTitan / SEC 8-K",
       "host": "",
       "firstSeen": "2026-08-12",
-      "lastSeen": "2026-08-16"
-    },
-    {
-      "name": "StockTitan / SEC 8-K",
-      "host": "stocktitan.net",
-      "exampleUrl": "https://www.stocktitan.net/sec-filings/HCA/8-k-hca-healthcare-inc-reports-material-event-7847ef2dffb0.html",
-      "firstSeen": "2026-08-12",
-      "lastSeen": "2026-08-16"
+      "lastSeen": "2026-08-17"
     },
     {
       "name": "Washington Post / KFF Health News",
       "host": "kffhealthnews.org",
       "exampleUrl": "https://kffhealthnews.org/health-industry/hospital-mergers-monopolies-drive-healthcare-costs-asheville-north-carolina/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-16"
+      "lastSeen": "2026-08-17"
     },
     {
       "name": "WLOS",
       "host": "wlos.com",
-      "exampleUrl": "https://wlos.com/news/local/independent-monitor-discusses-hcas-ownership-of-mission-hospital",
+      "exampleUrl": "https://wlos.com/news/local/beds-hospital-asheville-unc-novant-mission-advent-hca-medical-westgate-shopping-center-competitors-western-north-carolina-wnc-community",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-16"
+      "lastSeen": "2026-08-17"
     }
   ]
 }
