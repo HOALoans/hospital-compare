@@ -504,6 +504,39 @@
     color: var(--text-2);
     line-height: 1.55;
   }
+  .news-item.is-collapsed .news-blurb {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .news-item.is-collapsed .news-positioning {
+    display: none;
+  }
+  .news-expand-toggle {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 0.35rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--teal);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .news-expand-toggle:hover { text-decoration: underline; }
+  .news-expand-toggle:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  .news-item:not(.is-collapsed) .news-expand-more { display: none; }
+  .news-item.is-collapsed .news-expand-less { display: none; }
   .news-positioning {
     margin-top: 0.45rem;
   }
@@ -880,6 +913,13 @@
     .arc-summary { display: none; }
     .arc-details .arc-full { display: block !important; }
     .news-modal { display: none !important; }
+    .news-item.is-collapsed .news-blurb {
+      display: block;
+      -webkit-line-clamp: unset;
+      overflow: visible;
+    }
+    .news-item.is-collapsed .news-positioning { display: block; }
+    .news-expand-toggle { display: none; }
   }
 </style>
 </head>
@@ -1699,6 +1739,32 @@
       });
       window.addEventListener('afterprint', function () {
         arc.open = wasOpen;
+      });
+    })();
+
+    (function setupNewsItemCollapse() {
+      document.querySelectorAll('.news-item').forEach(function (item) {
+        if (item.querySelector('.news-expand-toggle')) return;
+        const blurb = item.querySelector('.news-blurb');
+        const positioning = item.querySelector('.news-positioning');
+        if (!blurb) return;
+        item.classList.add('is-collapsed');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'news-expand-toggle';
+        btn.setAttribute('aria-expanded', 'false');
+        btn.innerHTML =
+          '<span class="news-expand-more">Show details</span>' +
+          '<span class="news-expand-less">Show less</span>';
+        btn.addEventListener('click', function () {
+          const collapsed = item.classList.toggle('is-collapsed');
+          btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        });
+        if (positioning) {
+          positioning.parentNode.insertBefore(btn, positioning);
+        } else {
+          blurb.insertAdjacentElement('afterend', btn);
+        }
       });
     })();
 
