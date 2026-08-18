@@ -714,6 +714,13 @@
   }
   .tp-text { font-size: 13px; color: var(--text); line-height: 1.55; }
   .tp-text strong { font-weight: 600; color: var(--text); display: block; margin-bottom: 2px; }
+  /* Talking points are never collapsed — only news articles use is-collapsed */
+  section[aria-labelledby="tp-heading"] .tp-text,
+  section[aria-labelledby="tp-heading"] .tp-source {
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+  }
   .tp-source {
     margin-top: 6px;
     font-size: 11px;
@@ -1743,7 +1750,9 @@
     })();
 
     (function setupNewsItemCollapse() {
-      document.querySelectorAll('.news-item').forEach(function (item) {
+      const newsRow = document.querySelector('.news-row');
+      if (!newsRow) return;
+      newsRow.querySelectorAll('.news-item').forEach(function (item) {
         if (item.querySelector('.news-expand-toggle')) return;
         const blurb = item.querySelector('.news-blurb');
         const positioning = item.querySelector('.news-positioning');
