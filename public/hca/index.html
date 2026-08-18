@@ -535,6 +535,41 @@
   }
   .news-item:not(.is-collapsed) .news-expand-more { display: none; }
   .news-item.is-collapsed .news-expand-less { display: none; }
+  /* ── LIST OVERFLOW (show N items + expand) ── */
+  .list-overflow-collapsed .is-list-overflow-hidden {
+    display: none !important;
+  }
+  .list-overflow-expanded .tp-item.is-list-overflow-hidden {
+    display: flex;
+  }
+  .list-overflow-toggle {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 0.85rem;
+    padding: 8px 14px;
+    border: 0.5px solid var(--teal-border);
+    border-radius: 6px;
+    background: var(--teal-bg);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--teal);
+    cursor: pointer;
+    min-height: 36px;
+  }
+  .list-overflow-toggle:hover {
+    border-color: var(--teal);
+    background: #e0f3eb;
+  }
+  .list-overflow-toggle:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+  }
+  .list-overflow-expanded .list-overflow-more { display: none; }
+  .list-overflow-collapsed .list-overflow-less { display: none; }
   .news-positioning {
     margin-top: 0.45rem;
   }
@@ -925,6 +960,9 @@
     }
     .news-item.is-collapsed .news-positioning { display: block; }
     .news-expand-toggle { display: none; }
+    .is-list-overflow-hidden { display: revert !important; }
+    .list-overflow-expanded .tp-item.is-list-overflow-hidden { display: flex !important; }
+    .list-overflow-toggle { display: none; }
   }
 </style>
 </head>
@@ -1769,6 +1807,45 @@
         });
         blurb.insertAdjacentElement('afterend', btn);
       });
+    })();
+
+    (function setupListOverflow() {
+      const NEWS_LIMIT = 3;
+      const TP_LIMIT = 10;
+
+      function initOverflow(sectionBody, itemSelector, limit, moreSuffix, lessLabel) {
+        if (!sectionBody || sectionBody.querySelector('.list-overflow-toggle')) return;
+        const items = Array.from(sectionBody.querySelectorAll(itemSelector));
+        if (items.length <= limit) return;
+
+        items.forEach(function (item, index) {
+          if (index >= limit) item.classList.add('is-list-overflow-hidden');
+        });
+
+        const hiddenCount = items.length - limit;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'list-overflow-toggle';
+        btn.setAttribute('aria-expanded', 'false');
+        btn.innerHTML =
+          '<span class="list-overflow-more">Show ' + hiddenCount + ' more ' + moreSuffix + '</span>' +
+          '<span class="list-overflow-less">' + lessLabel + '</span>';
+        btn.addEventListener('click', function () {
+          const expanded = sectionBody.classList.toggle('list-overflow-expanded');
+          sectionBody.classList.toggle('list-overflow-collapsed', !expanded);
+          btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        });
+
+        sectionBody.classList.add('list-overflow-collapsed');
+        sectionBody.appendChild(btn);
+      }
+
+      document.querySelectorAll('.news-col .section-body').forEach(function (body) {
+        initOverflow(body, ':scope > .news-item', NEWS_LIMIT, 'articles', 'Show fewer articles');
+      });
+
+      const tpBody = document.querySelector('section[aria-labelledby="tp-heading"] .section-body');
+      initOverflow(tpBody, ':scope > .tp-item', TP_LIMIT, 'talking points', 'Show fewer talking points');
     })();
 
     (function setupNewsBriefModal() {
