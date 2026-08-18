@@ -26,6 +26,7 @@ export const DEFAULT_OUTLETS = [
   { name: "CMS", host: "cms.gov" },
   { name: "HCA Healthcare Investor Relations", host: "investor.hcahealthcare.com" },
   { name: "National Nurses United", host: "nationalnursesunited.org" },
+  { name: "National Nurses United / Too Big to Care", host: "toobig2care.org" },
   { name: "MarketBeat", host: "marketbeat.com" },
   { name: "Congress.gov", host: "congress.gov" },
 ];

@@ -83,6 +83,13 @@
       "host": "nationalnursesunited.org"
     },
     {
+      "name": "National Nurses United / Too Big to Care",
+      "host": "toobig2care.org",
+      "exampleUrl": "https://toobig2care.org/hca-case-study/",
+      "firstSeen": "2026-08-18",
+      "lastSeen": "2026-08-18"
+    },
+    {
       "name": "NC Department of Justice",
       "host": "ncdoj.gov",
       "exampleUrl": "https://ncdoj.gov/ag-jackson-wins-key-arguments-as-hca-mission-hospital-case-proceeds-to-trial/",
