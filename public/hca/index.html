@@ -510,9 +510,7 @@
     -webkit-line-clamp: 2;
     overflow: hidden;
   }
-  .news-item.is-collapsed .news-positioning {
-    display: none;
-  }
+  /* How to position this bullets stay visible; Show details only expands the blurb */
   .news-expand-toggle {
     appearance: none;
     display: inline-flex;
@@ -1763,17 +1761,13 @@
         btn.className = 'news-expand-toggle';
         btn.setAttribute('aria-expanded', 'false');
         btn.innerHTML =
-          '<span class="news-expand-more">Show details</span>' +
+          '<span class="news-expand-more">Show full summary</span>' +
           '<span class="news-expand-less">Show less</span>';
         btn.addEventListener('click', function () {
           const collapsed = item.classList.toggle('is-collapsed');
           btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
         });
-        if (positioning) {
-          positioning.parentNode.insertBefore(btn, positioning);
-        } else {
-          blurb.insertAdjacentElement('afterend', btn);
-        }
+        blurb.insertAdjacentElement('afterend', btn);
       });
     })();
 
