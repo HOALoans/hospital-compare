@@ -1,18 +1,18 @@
 {
-  "updatedAt": "2026-08-17T12:54:15.888Z",
+  "updatedAt": "2026-08-18T12:58:29.599Z",
   "sources": [
     {
       "name": "Asheville Watchdog",
       "host": "avlwatchdog.org",
       "exampleUrl": "https://avlwatchdog.org/mission-hospital-to-relax-degree-requirements-for-nurses/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-17"
+      "lastSeen": "2026-08-18"
     },
     {
       "name": "Bank of America / TipRanks",
       "host": "",
       "firstSeen": "2026-08-17",
-      "lastSeen": "2026-08-17"
+      "lastSeen": "2026-08-18"
     },
     {
       "name": "Becker's Hospital Review",
@@ -34,35 +34,35 @@
       "host": "congress.gov",
       "exampleUrl": "https://www.congress.gov/event/119th-congress/house-event/119239",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-17"
+      "lastSeen": "2026-08-18"
     },
     {
       "name": "Dogwood Health Trust",
       "host": "dogwoodhealthtrust.org",
       "exampleUrl": "https://dogwoodhealthtrust.org/independent-monitor-dogwood-host-community-qa-webinar-on-2025-monitoring-report/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-17"
+      "lastSeen": "2026-08-18"
+    },
+    {
+      "name": "HCA Healthcare / SEC 8-K",
+      "host": "sec.gov",
+      "exampleUrl": "https://www.sec.gov/Archives/edgar/data/0000860730/000119312526302539/hca-ex99_1.htm",
+      "firstSeen": "2026-08-12",
+      "lastSeen": "2026-08-18"
     },
     {
       "name": "HCA Healthcare / SEC 8-K (StockTitan)",
       "host": "stocktitan.net",
       "exampleUrl": "https://www.stocktitan.net/sec-filings/HCA/8-k-hca-healthcare-inc-reports-material-event-7847ef2dffb0.html",
       "firstSeen": "2026-08-12",
-      "lastSeen": "2026-08-17"
+      "lastSeen": "2026-08-18"
     },
     {
       "name": "HCA Healthcare Investor Relations",
       "host": "investor.hcahealthcare.com",
       "exampleUrl": "https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-17"
-    },
-    {
-      "name": "HCA Q2 2026 Earnings Release (SEC 8-K)",
-      "host": "sec.gov",
-      "exampleUrl": "https://www.sec.gov/Archives/edgar/data/0000860730/000119312526315151/hca-ex99_1.htm",
-      "firstSeen": "2026-08-12",
-      "lastSeen": "2026-08-12"
+      "lastSeen": "2026-08-18"
     },
     {
       "name": "Insider Monkey / Yahoo Finance",
@@ -76,7 +76,7 @@
       "host": "marketbeat.com",
       "exampleUrl": "https://www.marketbeat.com/instant-alerts/filing-deane-retirement-strategies-inc-invests-480-million-in-hca-healthcare-inc-hca-2026-08-10/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-17"
+      "lastSeen": "2026-08-18"
     },
     {
       "name": "National Nurses United",
@@ -87,7 +87,7 @@
       "host": "ncdoj.gov",
       "exampleUrl": "https://ncdoj.gov/ag-jackson-wins-key-arguments-as-hca-mission-hospital-case-proceeds-to-trial/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-17"
+      "lastSeen": "2026-08-18"
     },
     {
       "name": "NC Health News",
@@ -107,14 +107,14 @@
       "host": "kffhealthnews.org",
       "exampleUrl": "https://kffhealthnews.org/health-industry/hospital-mergers-monopolies-drive-healthcare-costs-asheville-north-carolina/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-17"
+      "lastSeen": "2026-08-18"
     },
     {
       "name": "WLOS",
       "host": "wlos.com",
-      "exampleUrl": "https://wlos.com/news/local/beds-hospital-asheville-unc-novant-mission-advent-hca-medical-westgate-shopping-center-competitors-western-north-carolina-wnc-community",
+      "exampleUrl": "https://wlos.com/news/local/mission-hospital-careers-job-employement-page-shows-nearly-500-openings-wnc-network-western-north-carolina-immediate-jeopardy-wnc-cms-healthcare-hca-emergency-medicine",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-17"
+      "lastSeen": "2026-08-18"
     }
   ]
 }
