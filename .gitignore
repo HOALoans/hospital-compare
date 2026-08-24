@@ -1,7 +1,8 @@
 .cache
 node_modules
 dist
-data
+# Ignore runtime data/, but allow the Leapfrog seed file CI commits.
+data/*
 !data/leapfrog-grades.json
 *.log
 .DS_Store

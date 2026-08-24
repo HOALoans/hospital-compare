@@ -30,8 +30,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 
 const RELEASE = process.env.LEAPFROG_RELEASE ?? "Spring 2026";
-const SCRAPE_DELAY_MS = Number(process.env.LEAPFROG_SCRAPE_DELAY_MS ?? 400);
-const SCRAPE_CONCURRENCY = Number(process.env.LEAPFROG_SCRAPE_CONCURRENCY ?? 2);
+const SCRAPE_DELAY_MS = Number(process.env.LEAPFROG_SCRAPE_DELAY_MS ?? 750);
+const SCRAPE_CONCURRENCY = Number(process.env.LEAPFROG_SCRAPE_CONCURRENCY ?? 1);
+const SCRAPE_MAX_RETRIES = Number(process.env.LEAPFROG_SCRAPE_MAX_RETRIES ?? 4);
+/** Abort full scrape if this many consecutive fetches return empty/blocked pages. */
+const SCRAPE_ABORT_AFTER_EMPTY = Number(process.env.LEAPFROG_SCRAPE_ABORT_AFTER_EMPTY ?? 25);
+/** Minimum graded hospitals required for a full national scrape to succeed. */
+const SCRAPE_MIN_GRADED = Number(process.env.LEAPFROG_SCRAPE_MIN_GRADED ?? 500);
 const CURL_USER_AGENT =
   "Mozilla/5.0 (compatible; ParigradoHospitalCompare/1.0; +https://parigrado.com)";
 
@@ -93,18 +98,48 @@ function parseGradeFromHtml(html: string): {
 function fetchHospitalPage(url: string): string | null {
   const result = spawnSync(
     "curl",
-    ["-sL", "--max-time", "45", "-A", CURL_USER_AGENT, url],
+    [
+      "-sL",
+      "--max-time",
+      "45",
+      "-A",
+      CURL_USER_AGENT,
+      "-H",
+      "Accept: text/html,application/xhtml+xml",
+      "-H",
+      "Accept-Language: en-US,en;q=0.9",
+      url,
+    ],
     { encoding: "utf8", maxBuffer: 12 * 1024 * 1024 },
   );
   const html = result.stdout?.trim();
   if (result.status !== 0 || !html) return null;
+  // Soft blocks / challenge pages lack hospital grade markup.
+  if (!/gradeWrapper|Hospital Details|Hospital Safety Grade/i.test(html)) {
+    return null;
+  }
   return html;
 }
 
-async function scrapeFacilityGrade(facilityId: string): Promise<LeapfrogFacilityGrade> {
+async function fetchHospitalPageWithRetry(url: string): Promise<string | null> {
+  for (let attempt = 1; attempt <= SCRAPE_MAX_RETRIES; attempt++) {
+    const html = fetchHospitalPage(url);
+    if (html) return html;
+    const backoff = SCRAPE_DELAY_MS * attempt * 2;
+    console.warn(
+      `[leapfrog] Empty/blocked response for ${url} (attempt ${attempt}/${SCRAPE_MAX_RETRIES}); waiting ${backoff}ms`,
+    );
+    await sleep(backoff);
+  }
+  return null;
+}
+
+type ScrapeFacilityResult = LeapfrogFacilityGrade & { emptyFetch: boolean };
+
+async function scrapeFacilityGrade(facilityId: string): Promise<ScrapeFacilityResult> {
   const url = leapfrogProfileUrl(facilityId);
   try {
-    const html = fetchHospitalPage(url);
+    const html = await fetchHospitalPageWithRetry(url);
     if (!html) {
       return {
         facilityId,
@@ -113,6 +148,7 @@ async function scrapeFacilityGrade(facilityId: string): Promise<LeapfrogFacility
         status: "not_found",
         release: RELEASE,
         profileUrl: url,
+        emptyFetch: true,
       };
     }
     const parsed = parseGradeFromHtml(html);
@@ -123,6 +159,7 @@ async function scrapeFacilityGrade(facilityId: string): Promise<LeapfrogFacility
       status: parsed.status,
       release: RELEASE,
       profileUrl: url,
+      emptyFetch: false,
     };
   } catch {
     return {
@@ -132,7 +169,15 @@ async function scrapeFacilityGrade(facilityId: string): Promise<LeapfrogFacility
       status: "not_found",
       release: RELEASE,
       profileUrl: url,
+      emptyFetch: true,
     };
+  }
+}
+
+class ScrapeBlockedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ScrapeBlockedError";
   }
 }
 
@@ -143,17 +188,32 @@ async function scrapeFacilities(
   const grades: Record<string, LeapfrogFacilityGrade> = {};
   let index = 0;
   let done = 0;
+  let consecutiveEmpty = 0;
+  let aborted = false;
   const total = facilityIds.length;
 
   async function worker() {
-    while (index < facilityIds.length) {
+    while (!aborted && index < facilityIds.length) {
       const i = index++;
       const facilityId = facilityIds[i];
       const result = await scrapeFacilityGrade(facilityId);
-      grades[facilityId] = result;
+      const { emptyFetch, ...grade } = result;
+      grades[facilityId] = grade;
+      if (emptyFetch) {
+        consecutiveEmpty += 1;
+        if (consecutiveEmpty >= SCRAPE_ABORT_AFTER_EMPTY) {
+          aborted = true;
+          throw new ScrapeBlockedError(
+            `Aborting after ${consecutiveEmpty} consecutive empty/blocked fetches (likely rate-limited by hospitalsafetygrade.org)`,
+          );
+        }
+      } else {
+        consecutiveEmpty = 0;
+      }
       done += 1;
       if (done % 50 === 0 || done === total) {
-        console.log(`[leapfrog] Scraped ${done}/${total}…`);
+        const graded = Object.values(grades).filter((g) => g.status === "graded").length;
+        console.log(`[leapfrog] Scraped ${done}/${total}… (${graded} graded)`);
         onProgress?.(grades, done, total);
       }
       await sleep(SCRAPE_DELAY_MS);
@@ -234,9 +294,10 @@ async function main() {
 
   if (opts.facility) {
     const facilityId = normalizeFacilityId(opts.facility);
-    const grades = { [facilityId]: await scrapeFacilityGrade(facilityId) };
+    const { emptyFetch: _empty, ...grade } = await scrapeFacilityGrade(facilityId);
+    const grades = { [facilityId]: grade };
     writeGradesFile(grades, "hospitalsafetygrade.org (single)", true);
-    console.log(grades[facilityId]);
+    console.log(grade);
     return;
   }
 
@@ -245,15 +306,35 @@ async function main() {
     if (opts.limit && opts.limit > 0) ids = ids.slice(0, opts.limit);
     console.log(`[leapfrog] Scraping ${ids.length} hospitals from hospitalsafetygrade.org…`);
     const merge = Boolean(opts.state);
-    const grades = await scrapeFacilities(ids, (partial, done, total) => {
-      if (done % 200 === 0 || done === total) {
-        writeGradesFile(partial, "hospitalsafetygrade.org (in progress)", merge);
+    let grades: Record<string, LeapfrogFacilityGrade>;
+    try {
+      grades = await scrapeFacilities(ids, (partial, done, total) => {
+        if (done % 200 === 0 || done === total) {
+          writeGradesFile(partial, "hospitalsafetygrade.org (in progress)", merge);
+        }
+      });
+    } catch (err) {
+      if (err instanceof ScrapeBlockedError) {
+        console.error(`[leapfrog] ${err.message}`);
+        process.exit(1);
       }
-    });
+      throw err;
+    }
     writeGradesFile(grades, "hospitalsafetygrade.org", merge);
+    const graded = Object.values(grades).filter((g) => g.status === "graded").length;
+    const isPartial = Boolean(opts.state || opts.limit);
+    if (!isPartial && graded < SCRAPE_MIN_GRADED) {
+      console.error(
+        `[leapfrog] Only ${graded} graded hospitals (need ≥ ${SCRAPE_MIN_GRADED}). Refusing to treat this as a successful national scrape.`,
+      );
+      process.exit(1);
+    }
     return;
   }
 
+  if (!fs.existsSync(LEAPFROG_SOURCE_DIR)) {
+    fs.mkdirSync(LEAPFROG_SOURCE_DIR, { recursive: true });
+  }
   const defaultXlsx = fs
     .readdirSync(LEAPFROG_SOURCE_DIR, { withFileTypes: true })
     .filter((d) => d.isFile() && /\.xlsx$/i.test(d.name))
