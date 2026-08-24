@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-21T12:56:58.556Z",
+  "updatedAt": "2026-08-24T13:02:28.675Z",
   "sources": [
     {
       "name": "828 News NOW",
@@ -11,9 +11,9 @@
     {
       "name": "Asheville Watchdog",
       "host": "avlwatchdog.org",
-      "exampleUrl": "https://avlwatchdog.org/mission-hospital-to-relax-degree-requirements-for-nurses/",
+      "exampleUrl": "https://avlwatchdog.org/92-new-hospital-beds-up-for-grabs-amid-anger-at-hca-distrust-of-state-regulators/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-18"
+      "lastSeen": "2026-08-24"
     },
     {
       "name": "Bank of America / TipRanks",
@@ -33,7 +33,7 @@
       "host": "bpr.org",
       "exampleUrl": "https://www.bpr.org/health/2026-08-20/four-hospital-systems-propose-competing-expansions-in-buncombe-county",
       "firstSeen": "2026-08-21",
-      "lastSeen": "2026-08-21"
+      "lastSeen": "2026-08-24"
     },
     {
       "name": "CMS",
@@ -44,7 +44,7 @@
       "host": "congress.gov",
       "exampleUrl": "https://www.congress.gov/event/119th-congress/house-event/119239",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-21"
+      "lastSeen": "2026-08-24"
     },
     {
       "name": "Dogwood Health Trust",
@@ -65,14 +65,14 @@
       "host": "investor.hcahealthcare.com",
       "exampleUrl": "https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-21"
+      "lastSeen": "2026-08-24"
     },
     {
-      "name": "Healthcare Dive / HCA Healthcare",
+      "name": "Healthcare Dive",
       "host": "healthcaredive.com",
       "exampleUrl": "https://www.healthcaredive.com/news/hca-cuts-2026-earnings-ACA-coverage-losses/825147/",
       "firstSeen": "2026-08-20",
-      "lastSeen": "2026-08-21"
+      "lastSeen": "2026-08-24"
     },
     {
       "name": "Insider Monkey / Yahoo Finance",
@@ -86,7 +86,7 @@
       "host": "marketbeat.com",
       "exampleUrl": "https://www.marketbeat.com/instant-alerts/filing-deane-retirement-strategies-inc-invests-480-million-in-hca-healthcare-inc-hca-2026-08-10/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-21"
+      "lastSeen": "2026-08-24"
     },
     {
       "name": "National Nurses United",
@@ -97,14 +97,14 @@
       "host": "toobig2care.org",
       "exampleUrl": "https://toobig2care.org/hca-case-study/",
       "firstSeen": "2026-08-18",
-      "lastSeen": "2026-08-21"
+      "lastSeen": "2026-08-24"
     },
     {
       "name": "NC Department of Justice",
       "host": "ncdoj.gov",
       "exampleUrl": "https://ncdoj.gov/ag-jackson-wins-key-arguments-as-hca-mission-hospital-case-proceeds-to-trial/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-21"
+      "lastSeen": "2026-08-24"
     },
     {
       "name": "NC Health News",
@@ -131,14 +131,14 @@
       "host": "kffhealthnews.org",
       "exampleUrl": "https://kffhealthnews.org/health-industry/hospital-mergers-monopolies-drive-healthcare-costs-asheville-north-carolina/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-21"
+      "lastSeen": "2026-08-24"
     },
     {
       "name": "WLOS",
       "host": "wlos.com",
-      "exampleUrl": "https://wlos.com/news/local/independent-monitor-discusses-hcas-ownership-of-mission-hospital",
+      "exampleUrl": "https://wlos.com/news/local/mission-hospital-cms-compliance-enhanced-plan-correction-immediate-jeopardy-ceo-greg-lowe-centers-medicare-medicaid-services",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-21"
+      "lastSeen": "2026-08-24"
     }
   ]
 }
