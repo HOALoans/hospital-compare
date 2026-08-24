@@ -637,7 +637,11 @@ export function ComparisonTable({
               ? "Patient experience"
               : cat.id === "infections"
                 ? "Infections"
-                : "Readmissions"}
+                : cat.id === "leapfrog"
+                  ? "Leapfrog grade"
+                  : cat.id === "readmissions"
+                    ? "Readmissions"
+                    : cat.label}
           </button>
         ))}
       </div>
