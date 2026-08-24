@@ -61,6 +61,7 @@ function stateGap(
 function scaleBounds(values: number[], valueType: MeasureValueType) {
   // Star ratings always use the full CMS 1–5 scale so tick marks stay meaningful.
   if (valueType === "star") return { min: 1, max: 5 };
+  if (valueType === "grade") return { min: 0, max: 4 };
   if (values.length === 0) {
     if (valueType === "sir") return { min: 0, max: 1 };
     return { min: 0, max: 100 };
@@ -81,6 +82,7 @@ function scaleTicks(
   valueType: MeasureValueType,
 ): number[] {
   if (valueType === "star") return [1, 2, 3, 4, 5];
+  if (valueType === "grade") return [0, 1, 2, 3, 4];
   if (valueType === "sir") {
     const hi = Math.max(max, 1);
     const step = hi <= 1.2 ? 0.25 : hi <= 2 ? 0.5 : 1;
@@ -635,7 +637,11 @@ export function ComparisonTable({
               ? "Patient experience"
               : cat.id === "infections"
                 ? "Infections"
-                : "Readmissions"}
+                : cat.id === "leapfrog"
+                  ? "Leapfrog grade"
+                  : cat.id === "readmissions"
+                    ? "Readmissions"
+                    : cat.label}
           </button>
         ))}
       </div>

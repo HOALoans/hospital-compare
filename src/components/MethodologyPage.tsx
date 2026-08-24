@@ -21,8 +21,9 @@ export function MethodologyPage({ onBack, onStartCompare }: Props) {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
         <h2 className="font-display text-2xl text-slate-900 sm:text-3xl">How we compute comparisons</h2>
         <p className="mt-3 text-slate-600">
-          {SITE_NAME} uses only public CMS Hospital Compare data. Peer averages are simple
-          unweighted means across hospitals in each group that report a score for that measure.
+          {SITE_NAME} uses public CMS Hospital Compare data plus Leapfrog Hospital Safety
+          Grades (A–F). Peer averages are simple unweighted means across hospitals in each group
+          that report a score for that measure.
         </p>
       </section>
 
@@ -70,6 +71,24 @@ export function MethodologyPage({ onBack, onStartCompare }: Props) {
             Infection measures (SIR) and readmission rates use lower-is-better direction.
           </p>
         </article>
+      </section>
+
+      <section className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-6">
+        <h3 className="font-semibold text-slate-900">Leapfrog Hospital Safety Grade</h3>
+        <p className="mt-2 text-sm text-slate-600">
+          Letter grades (A–F) from{" "}
+          <a
+            href="https://www.hospitalsafetygrade.org/"
+            className="font-medium text-indigo-700 hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            The Leapfrog Group
+          </a>
+          , updated twice per year. Grades reflect how well hospitals protect patients from errors,
+          injuries, accidents, and infections. Hospitals without a current grade show as &ldquo;Not
+          assigned.&rdquo;
+        </p>
       </section>
 
       <section className="rounded-2xl border border-indigo-200/60 bg-indigo-50/50 p-6">

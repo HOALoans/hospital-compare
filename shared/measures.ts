@@ -1,3 +1,5 @@
+import { formatLeapfrogGrade, LEAPFROG_MEASURE_ID } from "./leapfrog.js";
+
 export type MeasureGroup =
   | "overall"
   | "communication"
@@ -8,11 +10,15 @@ export type MeasureGroup =
   | "safety"
   | "readmissions";
 
-export type MeasureValueType = "linear" | "percent" | "star" | "sir";
+export type MeasureValueType = "linear" | "percent" | "star" | "sir" | "grade";
 
-export type MeasureDataset = "hcahps" | "hai" | "readmissions";
+export type MeasureDataset = "hcahps" | "hai" | "readmissions" | "leapfrog";
 
-export type MeasureCategory = "patient-experience" | "infections" | "readmissions";
+export type MeasureCategory =
+  | "patient-experience"
+  | "infections"
+  | "readmissions"
+  | "leapfrog";
 
 export interface MeasureDefinition {
   id: string;
@@ -32,6 +38,7 @@ export interface MeasureDefinition {
 }
 
 export const MEASURE_CATEGORIES: { id: MeasureCategory; label: string }[] = [
+  { id: "leapfrog", label: "Leapfrog safety grade" },
   { id: "patient-experience", label: "Patient experience (HCAHPS)" },
   { id: "infections", label: "Infections & safety (HAI)" },
   { id: "readmissions", label: "Readmissions" },
@@ -264,7 +271,22 @@ export const READMISSION_MEASURES: MeasureDefinition[] = [
   },
 ];
 
+export const LEAPFROG_MEASURES: MeasureDefinition[] = [
+  {
+    id: LEAPFROG_MEASURE_ID,
+    label: "Leapfrog Hospital Safety Grade",
+    group: "safety",
+    category: "leapfrog",
+    valueType: "grade",
+    higherIsBetter: true,
+    description:
+      "Letter grade (A–F) from The Leapfrog Group's Hospital Safety Grade, focused on preventable errors, injuries, and infections. Updated twice per year.",
+    dataset: "leapfrog",
+  },
+];
+
 export const COMPARISON_MEASURES: MeasureDefinition[] = [
+  ...LEAPFROG_MEASURES,
   ...HCAHPS_MEASURES,
   ...HAI_MEASURES,
   ...READMISSION_MEASURES,
@@ -282,8 +304,10 @@ export function parseNumericValue(raw: string | undefined | null): number | null
   return Number.isFinite(n) ? n : null;
 }
 
+
 export function formatMeasureValue(value: number | null, valueType: MeasureValueType): string {
   if (value === null) return "—";
+  if (valueType === "grade") return formatLeapfrogGrade(value);
   if (valueType === "star") {
     const rounded = Math.round(value * 10) / 10;
     return `${rounded} ★`;
@@ -309,6 +333,8 @@ export function formatGapValue(gap: number | null, valueType: MeasureValueType):
 /** Human-readable unit label for CSV / print legends. */
 export function measureUnitLabel(valueType: MeasureValueType): string {
   switch (valueType) {
+    case "grade":
+      return "Letter grade (A–F)";
     case "star":
       return "Stars (1–5)";
     case "percent":
@@ -341,6 +367,13 @@ export const DATA_SOURCES = [
     description:
       "30-day unplanned readmission rates for common conditions in the Hospital Readmissions Reduction Program.",
     url: "https://data.cms.gov/provider-data/dataset/9n3s-kdb3",
+  },
+  {
+    name: "Leapfrog Hospital Safety Grade",
+    agency: "The Leapfrog Group",
+    description:
+      "Independent letter grades (A–F) rating how well hospitals protect patients from errors, injuries, accidents, and infections.",
+    url: "https://www.hospitalsafetygrade.org/",
   },
   {
     name: "CMS Hospital General Information",
