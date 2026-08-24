@@ -2,5 +2,6 @@
 node_modules
 dist
 data
+!data/leapfrog-grades.json
 *.log
 .DS_Store

@@ -1,0 +1,43 @@
+# Refresh Leapfrog Hospital Safety Grades from hospitalsafetygrade.org.
+# Leapfrog releases twice per year (Spring/Fall); run manually after each release
+# or on this schedule as a fallback.
+name: Update Leapfrog Grades
+
+on:
+  schedule:
+    # 1st of April and October, 06:00 UTC (~2am Eastern).
+    - cron: "0 6 1 4,10 *"
+  workflow_dispatch:
+
+jobs:
+  update-leapfrog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Scrape Leapfrog grades
+        env:
+          LEAPFROG_SCRAPE_DELAY_MS: "400"
+          LEAPFROG_SCRAPE_CONCURRENCY: "2"
+        run: npm run ingest:leapfrog -- --scrape
+
+      - name: Commit and push
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@github.com"
+          mkdir -p seed
+          cp data/leapfrog-grades.json seed/leapfrog-grades.json
+          git add data/leapfrog-grades.json seed/leapfrog-grades.json
+          git diff --staged --quiet || git commit -m "Auto-update: Leapfrog safety grades $(date +'%Y-%m-%d')"
+          git push
