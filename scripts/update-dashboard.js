@@ -706,23 +706,49 @@ function formatAnthropicBillingError(err) {
 /** Wall-clock bound for a single streaming request (SSE keeps the connection alive). */
 const ANTHROPIC_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
 /**
- * App-level retries after a timeout on the *same* tool variant.
- * Keep low so we fail over to the next variant (or no-tools) before the GHA job burns ~15m.
- * SDK maxRetries is 0 so these do not stack with SDK retries.
+ * App-level retries after a timeout / dropped stream on the *same* tool variant.
+ * Keep modest so we still fail over to the next variant (or no-tools) before the
+ * GHA job burns the full timeout budget. SDK maxRetries is 0 so these do not stack.
  */
-const ANTHROPIC_TIMEOUT_RETRIES = 1;
-const ANTHROPIC_TIMEOUT_RETRY_BASE_MS = 3000;
+const ANTHROPIC_TIMEOUT_RETRIES = Number(process.env.ANTHROPIC_TIMEOUT_RETRIES ?? 2);
+const ANTHROPIC_TIMEOUT_RETRY_BASE_MS = Number(
+  process.env.ANTHROPIC_TIMEOUT_RETRY_BASE_MS ?? 5000,
+);
+
+/** Walk err.cause chain and collect message/code/name strings for matching. */
+function errorChainText(err) {
+  const parts = [];
+  const seen = new Set();
+  let cur = err;
+  for (let depth = 0; cur && depth < 6; depth++) {
+    if (seen.has(cur)) break;
+    seen.add(cur);
+    if (cur.name) parts.push(String(cur.name));
+    if (cur.constructor?.name) parts.push(String(cur.constructor.name));
+    if (cur.message) parts.push(String(cur.message));
+    if (cur.code) parts.push(String(cur.code));
+    if (typeof cur.cause === "string") parts.push(cur.cause);
+    cur = cur.cause;
+  }
+  return parts.join("\n");
+}
 
 function isAnthropicTimeoutError(err) {
   if (!err) return false;
   if (
     err.name === "APIConnectionTimeoutError" ||
-    err.constructor?.name === "APIConnectionTimeoutError"
+    err.constructor?.name === "APIConnectionTimeoutError" ||
+    err.name === "APIConnectionError" ||
+    err.constructor?.name === "APIConnectionError"
   ) {
     return true;
   }
-  const msg = err.message || String(err);
-  return /APIConnectionTimeoutError|Request timed out|ETIMEDOUT|timeout/i.test(msg);
+  const msg = errorChainText(err);
+  // SDK often surfaces mid-stream drops as "terminated" with nested ETIMEDOUT /
+  // ECONNRESET (seen 2026-08-26 Update HCA Dashboard run #32971164756).
+  return /APIConnectionTimeoutError|APIConnectionError|Request timed out|ETIMEDOUT|ECONNRESET|ECONNREFUSED|EPIPE|ENOTFOUND|socket hang up|other side closed|UND_ERR_|terminated|fetch failed|network|timeout/i.test(
+    msg,
+  );
 }
 
 function sleep(ms) {
@@ -757,8 +783,13 @@ async function withAnthropicTimeoutRetry(fn, label = "Anthropic request") {
       }
       lastErr = err;
       const delay = ANTHROPIC_TIMEOUT_RETRY_BASE_MS * 2 ** (attempt - 1);
+      const detail = (errorChainText(err) || err.message || String(err))
+        .split("\n")
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(" → ");
       console.warn(
-        `${label} timed out (attempt ${attempt}/${maxAttempts}): ${err.message || err}. ` +
+        `${label} dropped/timed out (attempt ${attempt}/${maxAttempts}): ${detail}. ` +
           `Retrying in ${delay}ms…`,
       );
       await sleep(delay);
@@ -776,7 +807,17 @@ async function withAnthropicTimeoutRetry(fn, label = "Anthropic request") {
 async function createMessage(client, params, label) {
   return withAnthropicTimeoutRetry(async () => {
     const stream = client.messages.stream(params);
-    return stream.finalMessage();
+    try {
+      return await stream.finalMessage();
+    } catch (err) {
+      // Abort the SSE reader so retries do not leave a hung socket around.
+      try {
+        stream.abort?.();
+      } catch {
+        /* ignore */
+      }
+      throw err;
+    }
   }, label);
 }
 
@@ -912,11 +953,12 @@ CRITICAL: After any tool use, your FINAL message must be ONLY the raw JSON objec
           : new Error(formatAnthropicBillingError(err));
       }
       const msg = err?.message || String(err);
-      // Timeouts on a web_search variant: fail over (older tool type, then no tools)
-      // instead of failing the whole job after stacking retries on one path.
+      const chain = errorChainText(err);
+      // Timeouts / dropped streams on a web_search variant: fail over (older
+      // tool type, then no tools) instead of failing the whole job.
       if (tools && isAnthropicTimeoutError(err)) {
         console.warn(
-          `Timed out with ${tools[0].type} (${msg.split("\n")[0]}). Trying next option…`,
+          `Connection/timeout with ${tools[0].type} (${(chain || msg).split("\n")[0]}). Trying next option…`,
         );
         continue;
       }
