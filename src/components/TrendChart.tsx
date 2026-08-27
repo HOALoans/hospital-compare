@@ -60,15 +60,6 @@ function yDomain(
     return [0, 5];
   }
 
-  if (valueType === "grade") {
-    if (mode === "fit" && values.length > 0) {
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      return [Math.max(0, Math.floor(min - 0.5)), Math.min(4, Math.ceil(max + 0.5))];
-    }
-    return [0, 4];
-  }
-
   if (valueType === "sir") {
     if (mode === "fit" && values.length > 0) {
       const min = Math.min(...values);
@@ -95,7 +86,6 @@ function yDomain(
 
 function fullAxisLabel(valueType: MeasureValueType): string {
   if (valueType === "star") return "Full (0–5)";
-  if (valueType === "grade") return "Full (F–A)";
   if (valueType === "sir") return "Full (from 0)";
   return "Full (0–100)";
 }

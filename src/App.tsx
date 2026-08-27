@@ -20,6 +20,12 @@ import {
 } from "@shared/measures";
 import { OWNERSHIP_LABELS } from "@shared/ownership";
 import { CHART } from "@shared/chartTheme";
+import {
+  HCA_NC_BASE_FACILITY_ID,
+  HCA_NC_OVERLAY_FACILITY_IDS,
+  HCA_NC_PRESET_LABEL,
+  HCA_NC_PRESET_NOTE,
+} from "@shared/hcaNcFacilities";
 import { fetchArchiveMeta, fetchComparison, fetchHealth, fetchHospital, fetchSavedComparison, fetchTrends, saveComparisonForLater } from "@/lib/api";
 import { downloadComparisonCsv } from "@/lib/exportComparisonCsv";
 import { parseUrlState, syncUrl } from "@/lib/urlState";
@@ -87,6 +93,7 @@ export default function App() {
   const [trendMeasure, setTrendMeasure] = useState(COMPARISON_MEASURES[0].id);
   const [error, setError] = useState<string | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
+  const [presetLoading, setPresetLoading] = useState(false);
   const [savedCode, setSavedCode] = useState(initialUrl.savedCode ?? "");
   const [saveLabel, setSaveLabel] = useState("");
   const [savedShareUrl, setSavedShareUrl] = useState<string | null>(null);
@@ -205,6 +212,43 @@ export default function App() {
     },
     [loadComparison, compareHospitals],
   );
+
+  const loadNcHcaPreset = useCallback(async () => {
+    setView("compare");
+    setPresetLoading(true);
+    setLoading(true);
+    setError(null);
+    clearSavedComparison();
+    try {
+      const base = await fetchHospital(HCA_NC_BASE_FACILITY_ID);
+      const overlayResults = await Promise.allSettled(
+        HCA_NC_OVERLAY_FACILITY_IDS.map((id) => fetchHospital(id)),
+      );
+      const overlays = overlayResults
+        .filter((r): r is PromiseFulfilledResult<HospitalSummary> => r.status === "fulfilled")
+        .map((r) => r.value)
+        .slice(0, MAX_COMPARE);
+      setSelected(base);
+      setCompareHospitals(overlays);
+      skipCompareRefetch.current = true;
+      await loadComparison(
+        base,
+        overlays.map((h) => h.facilityId),
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not load NC HCA (Mission Health) hospitals",
+      );
+      setComparison(null);
+      setTrend(null);
+      setCompareTrends([]);
+    } finally {
+      setLoading(false);
+      setPresetLoading(false);
+    }
+  }, [loadComparison]);
 
   // Restore state from URL on first ready
   useEffect(() => {
@@ -589,6 +633,22 @@ export default function App() {
                   }}
                   initialState={searchStateFilter}
                 />
+                <div className="mt-4 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void loadNcHcaPreset()}
+                    disabled={!directoryReady || presetLoading || loading}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-primary/30 bg-white px-3 py-2 text-sm font-semibold text-brand-primary shadow-sm hover:bg-brand-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {presetLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Building2 className="h-4 w-4" />
+                    )}
+                    {HCA_NC_PRESET_LABEL}
+                  </button>
+                  <p className="text-xs text-slate-500">{HCA_NC_PRESET_NOTE}</p>
+                </div>
               </section>
             ) : (
               <section
@@ -751,6 +811,22 @@ export default function App() {
                   />
 
                   <div className="space-y-3 no-print">
+                    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                      <button
+                        type="button"
+                        onClick={() => void loadNcHcaPreset()}
+                        disabled={presetLoading || loading}
+                        className="inline-flex w-fit items-center gap-2 rounded-lg border border-brand-primary/30 bg-white px-3 py-2 text-sm font-semibold text-brand-primary shadow-sm hover:bg-brand-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {presetLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Building2 className="h-4 w-4" />
+                        )}
+                        {HCA_NC_PRESET_LABEL}
+                      </button>
+                      <p className="text-xs text-slate-500">{HCA_NC_PRESET_NOTE}</p>
+                    </div>
                     <CompareHospitalPicker
                       baseHospitalId={selected.facilityId}
                       selected={compareHospitals}

@@ -1,8 +1,7 @@
 .cache
 node_modules
 dist
-# Ignore runtime data/, but allow the Leapfrog seed file CI commits.
-data/*
-!data/leapfrog-grades.json
+# Runtime data/ (hospitals cache, scores, partners, archives) is not committed.
+data/
 *.log
 .DS_Store

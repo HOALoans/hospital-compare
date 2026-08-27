@@ -132,7 +132,6 @@ function fitDomain(
   values: number[],
 ): [number, number] | [number, "auto"] {
   if (valueType === "star") return [0, 5];
-  if (valueType === "grade") return [0, 4];
   if (values.length === 0) return valueType === "sir" ? [0, 1] : [0, 100];
   const min = Math.min(...values);
   const max = Math.max(...values);

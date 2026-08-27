@@ -13,7 +13,6 @@
     "build": "vite build && tsc -p tsconfig.server.json",
     "start": "node dist/server/index.js",
     "ingest:archives": "tsx scripts/ingestArchives.ts",
-    "ingest:leapfrog": "tsx scripts/ingestLeapfrog.ts",
     "refresh:mission-tracker": "node public/mission-tracker/refresh.mjs",
     "update:hca": "node scripts/update-dashboard.js",
     "update:hca-watchdog": "node scripts/update-dashboard.js",

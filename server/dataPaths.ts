@@ -13,6 +13,3 @@ export const LOGOS_DIR = path.join(DATA_DIR, "partner-logos");
 export const HOSPITALS_CACHE_FILE = path.join(DATA_DIR, "hospitals.json");
 export const SCORES_CACHE_FILE = path.join(DATA_DIR, "hcahps-scores.json");
 export const SAVED_COMPARISONS_FILE = path.join(DATA_DIR, "saved-comparisons.json");
-export const LEAPFROG_GRADES_FILE = path.join(DATA_DIR, "leapfrog-grades.json");
-export const LEAPFROG_GRADES_SEED = path.join(process.cwd(), "seed", "leapfrog-grades.json");
-export const LEAPFROG_SOURCE_DIR = path.join(DATA_DIR, "leapfrog-source");

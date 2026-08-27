@@ -5,7 +5,6 @@ import { HCAHPS_MEASURES, HAI_MEASURES, READMISSION_MEASURES } from "../shared/m
 import { HOSPITAL_SEARCH_ALIASES } from "../shared/hospitalAliases.js";
 import { cmsQuery, cmsQueryAll, DATASETS } from "./cmsClient.js";
 import { DATA_DIR, HOSPITALS_CACHE_FILE, SCORES_CACHE_FILE } from "./dataPaths.js";
-import { applyLeapfrogGrades } from "./leapfrogGrades.js";
 
 const HOSPITALS_FILE = HOSPITALS_CACHE_FILE;
 const SCORES_FILE = SCORES_CACHE_FILE;
@@ -196,27 +195,6 @@ function addNationalScore(measureId: string, value: number) {
 function finalizeNationalAverages() {
   for (const [measureId, sum] of nationalBenchmarks) {
     const count = nationalCounts.get(measureId) ?? 1;
-    nationalBenchmarks.set(measureId, sum / count);
-  }
-}
-
-function mergeLeapfrogGradesIntoCache() {
-  applyLeapfrogGrades(
-    hospitals,
-    scoresByFacility,
-    scoresByPeer,
-    nationalBenchmarks,
-    nationalCounts,
-    indexScore,
-    currentPeriod,
-  );
-}
-
-function finalizeLeapfrogNationalAverage() {
-  const measureId = "LEAPFROG_SAFETY_GRADE";
-  const sum = nationalBenchmarks.get(measureId);
-  const count = nationalCounts.get(measureId);
-  if (sum !== undefined && count && count > 0) {
     nationalBenchmarks.set(measureId, sum / count);
   }
 }
@@ -477,7 +455,6 @@ async function loadFromCms() {
     }
   }
 
-  mergeLeapfrogGradesIntoCache();
   finalizeNationalAverages();
   lastCacheRefresh = new Date().toISOString();
 
@@ -515,8 +492,6 @@ function loadFromDisk() {
   );
   nationalBenchmarks = new Map(scoreData.national);
   nationalCounts = new Map(scoreData.nationalCounts ?? []);
-  mergeLeapfrogGradesIntoCache();
-  finalizeLeapfrogNationalAverage();
   return true;
 }
 
