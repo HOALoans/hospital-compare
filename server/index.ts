@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import multer from "multer";
 import { ARCHIVE_YEARS, COMPARISON_MEASURES } from "../shared/measures.js";
-import type { HcaNationalResponse, HospitalSummary, HospitalTrend } from "../shared/types.js";
+import type { HcaNationalHospital, HcaNationalResponse, HospitalSummary, HospitalTrend } from "../shared/types.js";
 import {
   HCA_NATIONAL_AS_OF,
   HCA_NATIONAL_FACILITY_IDS,
@@ -25,6 +25,7 @@ import {
   startScheduledRefresh,
   getPeerAverage,
   getNationalBenchmark,
+  getFacilityScores,
 } from "./cache.js";
 import { buildComparison } from "./comparisons.js";
 import { scheduleArchiveIngest, sampleTrendYearCoverage, runArchiveIngest } from "./archiveIngest.js";
@@ -229,12 +230,28 @@ app.get("/api/hca/national", limitHospital, (_req, res) => {
     res.status(503).json({ error: "Hospital directory is still loading. Try again shortly." });
     return;
   }
-  const matched: HospitalSummary[] = [];
+  if (!isCacheReady()) {
+    res.status(503).json({ error: "Quality scores are still loading. Try again shortly." });
+    return;
+  }
+
+  const matched: HcaNationalHospital[] = [];
   const missingIds: string[] = [];
   for (const id of HCA_NATIONAL_FACILITY_IDS) {
     const h = getHospitalById(id);
-    if (h) matched.push(h);
-    else missingIds.push(id);
+    if (!h) {
+      missingIds.push(id);
+      continue;
+    }
+    const scoreRows = getFacilityScores(id);
+    const scores: Record<string, number | null> = {};
+    for (const def of COMPARISON_MEASURES) {
+      scores[def.id] = null;
+    }
+    for (const row of scoreRows) {
+      scores[row.measureId] = row.value;
+    }
+    matched.push({ ...h, scores });
   }
   matched.sort(
     (a, b) => a.state.localeCompare(b.state) || a.name.localeCompare(b.name),

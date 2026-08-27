@@ -79,6 +79,11 @@ export interface HcaNationalMeasureAverage {
   hcaHospitalCount: number;
 }
 
+export interface HcaNationalHospital extends HospitalSummary {
+  /** CMS compare measure values keyed by measureId. */
+  scores: Record<string, number | null>;
+}
+
 export interface HcaNationalResponse {
   rosterCount: number;
   matchedCount: number;
@@ -86,6 +91,6 @@ export interface HcaNationalResponse {
   asOf: string;
   period: { start: string; end: string };
   measures: HcaNationalMeasureAverage[];
-  hospitals: HospitalSummary[];
+  hospitals: HcaNationalHospital[];
   missingIds: string[];
 }
