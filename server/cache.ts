@@ -5,6 +5,11 @@ import { HCAHPS_MEASURES, HAI_MEASURES, READMISSION_MEASURES } from "../shared/m
 import { HOSPITAL_SEARCH_ALIASES } from "../shared/hospitalAliases.js";
 import { cmsQuery, cmsQueryAll, DATASETS } from "./cmsClient.js";
 import { DATA_DIR, HOSPITALS_CACHE_FILE, SCORES_CACHE_FILE } from "./dataPaths.js";
+import {
+  HCA_NATIONAL_FACILITY_IDS,
+  HCA_PEER_KEY_ALL,
+  isHcaNationalFacility,
+} from "../shared/hcaNationalFacilities.js";
 
 const HOSPITALS_FILE = HOSPITALS_CACHE_FILE;
 const SCORES_FILE = SCORES_CACHE_FILE;
@@ -228,6 +233,9 @@ function indexScore(
     addPeerScore(peerKeyZip3(hospital.zip3, "all"), measureId, value);
     addPeerScore(peerKeyZip3(hospital.zip3, og), measureId, value);
   }
+  if (isHcaNationalFacility(hospital.facilityId)) {
+    addPeerScore(HCA_PEER_KEY_ALL, measureId, value);
+  }
 }
 
 export function isCacheReady() {
@@ -350,6 +358,9 @@ export function getNationalBenchmark(measureId: string): number | null {
 }
 
 export function countHospitalsInPeer(peerKey: string): number {
+  if (peerKey === HCA_PEER_KEY_ALL || peerKey.startsWith("hca:")) {
+    return hospitals.filter((h) => isHcaNationalFacility(h.facilityId)).length;
+  }
   if (peerKey.startsWith("s:")) {
     const [, state, og] = peerKey.split(":");
     return hospitals.filter(
@@ -372,6 +383,18 @@ export function countHospitalsInPeer(peerKey: string): number {
     ).length;
   }
   return 0;
+}
+
+/** Rebuild HCA system peer averages from facility scores (safe after disk load). */
+export function rebuildHcaNationalPeer() {
+  scoresByPeer.delete(HCA_PEER_KEY_ALL);
+  for (const facilityId of HCA_NATIONAL_FACILITY_IDS) {
+    const rows = scoresByFacility.get(facilityId) ?? [];
+    for (const row of rows) {
+      if (row.value == null || !Number.isFinite(row.value)) continue;
+      addPeerScore(HCA_PEER_KEY_ALL, row.measureId, row.value);
+    }
+  }
 }
 
 async function loadFromCms() {
@@ -456,6 +479,7 @@ async function loadFromCms() {
   }
 
   finalizeNationalAverages();
+  rebuildHcaNationalPeer();
   lastCacheRefresh = new Date().toISOString();
 
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -492,6 +516,7 @@ function loadFromDisk() {
   );
   nationalBenchmarks = new Map(scoreData.national);
   nationalCounts = new Map(scoreData.nationalCounts ?? []);
+  rebuildHcaNationalPeer();
   return true;
 }
 

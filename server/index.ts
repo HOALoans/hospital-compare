@@ -3,8 +3,14 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import multer from "multer";
-import { ARCHIVE_YEARS } from "../shared/measures.js";
-import type { HospitalTrend } from "../shared/types.js";
+import { ARCHIVE_YEARS, COMPARISON_MEASURES } from "../shared/measures.js";
+import type { HcaNationalResponse, HospitalSummary, HospitalTrend } from "../shared/types.js";
+import {
+  HCA_NATIONAL_AS_OF,
+  HCA_NATIONAL_FACILITY_IDS,
+  HCA_NATIONAL_SOURCE,
+  HCA_PEER_KEY_ALL,
+} from "../shared/hcaNationalFacilities.js";
 import {
   initializeCache,
   isCacheReady,
@@ -17,6 +23,8 @@ import {
   getLastCacheRefresh,
   refreshScoreCache,
   startScheduledRefresh,
+  getPeerAverage,
+  getNationalBenchmark,
 } from "./cache.js";
 import { buildComparison } from "./comparisons.js";
 import { scheduleArchiveIngest, sampleTrendYearCoverage, runArchiveIngest } from "./archiveIngest.js";
@@ -214,6 +222,45 @@ app.get("/api/health", (_req, res) => {
     reportingPeriod: getCurrentPeriod(),
     lastCacheRefresh: getLastCacheRefresh(),
   });
+});
+
+app.get("/api/hca/national", limitHospital, (_req, res) => {
+  if (!isHospitalDirectoryReady()) {
+    res.status(503).json({ error: "Hospital directory is still loading. Try again shortly." });
+    return;
+  }
+  const matched: HospitalSummary[] = [];
+  const missingIds: string[] = [];
+  for (const id of HCA_NATIONAL_FACILITY_IDS) {
+    const h = getHospitalById(id);
+    if (h) matched.push(h);
+    else missingIds.push(id);
+  }
+  matched.sort(
+    (a, b) => a.state.localeCompare(b.state) || a.name.localeCompare(b.name),
+  );
+
+  const measures = COMPARISON_MEASURES.map((def) => {
+    const peer = getPeerAverage(HCA_PEER_KEY_ALL, def.id);
+    return {
+      measureId: def.id,
+      hcaAverage: peer.value,
+      nationalAverage: getNationalBenchmark(def.id),
+      hcaHospitalCount: peer.count,
+    };
+  });
+
+  const payload: HcaNationalResponse = {
+    rosterCount: HCA_NATIONAL_FACILITY_IDS.length,
+    matchedCount: matched.length,
+    source: HCA_NATIONAL_SOURCE,
+    asOf: HCA_NATIONAL_AS_OF,
+    period: getCurrentPeriod(),
+    measures,
+    hospitals: matched,
+    missingIds,
+  };
+  res.json(payload);
 });
 
 app.get("/api/hospitals/search", limitHospital, (req, res) => {

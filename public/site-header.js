@@ -5,7 +5,7 @@
  *
  * Usage (place as first child of <body>):
  *   <link rel="stylesheet" href="/site-header.css" />
- *   <script src="/site-header.js" data-active="mission|hca|home|compare"></script>
+ *   <script src="/site-header.js" data-active="mission|hca|hca-national|home|compare"></script>
  */
 (function () {
   var DEFAULT_NAME = "Parigrado";
@@ -125,6 +125,15 @@
     '<span class="pg-label-short">Hospital</span>' +
     "</a>" +
     '<a class="' +
+    tabClass("hca-national") +
+    '" data-nav="hca-national" href="/?view=hca-national" aria-label="National HCA"' +
+    tabAttrs("hca-national") +
+    ">" +
+    ICON_BUILDING +
+    '<span class="pg-label-full">National HCA</span>' +
+    '<span class="pg-label-short">HCA</span>' +
+    "</a>" +
+    '<a class="' +
     tabClass("hca") +
     '" data-nav="hca" href="/hca/" aria-label="HCA News and Talking Point Dashboard"' +
     tabAttrs("hca") +
@@ -149,7 +158,9 @@
 
   var hideHca = shouldHideHca(partner);
   var hcaTab = header.querySelector('[data-nav="hca"]');
+  var hcaNationalTab = header.querySelector('[data-nav="hca-national"]');
   if (hcaTab && hideHca) hcaTab.remove();
+  if (hcaNationalTab && hideHca) hcaNationalTab.remove();
 
   header.querySelectorAll("a[data-nav]").forEach(function (el) {
     el.setAttribute("href", withPartner(el.getAttribute("href") || "/", partner));

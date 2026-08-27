@@ -1,5 +1,6 @@
 import type {
   ComparisonResult,
+  HcaNationalResponse,
   HospitalSummary,
   HospitalTrend,
   NearbyHospital,
@@ -112,6 +113,10 @@ export function fetchHealth() {
     reportingPeriod?: { start: string; end: string };
     lastCacheRefresh?: string | null;
   }>("/api/health");
+}
+
+export function fetchHcaNational() {
+  return apiGet<HcaNationalResponse>("/api/hca/national");
 }
 
 export function fetchArchiveMeta() {

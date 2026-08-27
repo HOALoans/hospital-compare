@@ -71,3 +71,21 @@ export interface SearchResult {
   hospitals: HospitalSummary[];
   query: string;
 }
+
+export interface HcaNationalMeasureAverage {
+  measureId: string;
+  hcaAverage: number | null;
+  nationalAverage: number | null;
+  hcaHospitalCount: number;
+}
+
+export interface HcaNationalResponse {
+  rosterCount: number;
+  matchedCount: number;
+  source: string;
+  asOf: string;
+  period: { start: string; end: string };
+  measures: HcaNationalMeasureAverage[];
+  hospitals: HospitalSummary[];
+  missingIds: string[];
+}

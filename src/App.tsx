@@ -44,10 +44,11 @@ import { ShareLinkButton } from "@/components/ShareLinkButton";
 import { SaveComparisonPanel } from "@/components/SaveComparisonPanel";
 import { PrintComparisonReport } from "@/components/PrintComparisonReport";
 import { MethodologyPage } from "@/components/MethodologyPage";
+import { NationalHcaPage } from "@/components/NationalHcaPage";
 import { PartnerAdminPage } from "@/components/PartnerAdminPage";
 import { SiteDisclaimer } from "@/components/SiteDisclaimer";
 
-type AppView = "home" | "compare" | "methodology" | "admin";
+type AppView = "home" | "compare" | "methodology" | "admin" | "hca-national";
 
 const CORE_PEER_KEYS = new Set(["national", "state-all", "county-all"]);
 
@@ -351,6 +352,10 @@ export default function App() {
       syncUrl({ view: "home", partner: urlPartner });
       return;
     }
+    if (view === "hca-national") {
+      syncUrl({ view: "hca-national", partner: urlPartner });
+      return;
+    }
     syncUrl({
       view,
       hospital: selected,
@@ -420,6 +425,30 @@ export default function App() {
     setView("methodology");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  const goHcaNational = () => {
+    setView("hca-national");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const openCompareFromNational = useCallback(
+    async (facilityId: string) => {
+      setLoading(true);
+      setError(null);
+      clearSavedComparison();
+      try {
+        const hospital = await fetchHospital(facilityId);
+        setCompareHospitals([]);
+        await loadHospital(hospital, []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to open hospital in Compare");
+        setView("compare");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loadHospital],
+  );
 
   const goAdmin = () => {
     setView("admin");
@@ -571,15 +600,31 @@ export default function App() {
                 <span className="sm:hidden">Hospital</span>
               </a>
               {!hideHcaNav && (
-                <a
-                  href={`/hca/${partnerQuery}`}
-                  aria-label="HCA News and Talking Point Dashboard"
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:px-3 sm:py-1.5"
-                >
-                  <Newspaper className="h-4 w-4 shrink-0" />
-                  <span className="hidden lg:inline">HCA News &amp; Talking Points</span>
-                  <span className="lg:hidden">HCA News</span>
-                </a>
+                <>
+                  <button
+                    type="button"
+                    onClick={goHcaNational}
+                    aria-label="National HCA"
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium transition sm:px-3 sm:py-1.5 ${
+                      view === "hca-national"
+                        ? "bg-white text-brand-primary shadow-sm"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <Building2 className="h-4 w-4 shrink-0" />
+                    <span className="hidden lg:inline">National HCA</span>
+                    <span className="lg:hidden">HCA</span>
+                  </button>
+                  <a
+                    href={`/hca/${partnerQuery}`}
+                    aria-label="HCA News and Talking Point Dashboard"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:px-3 sm:py-1.5"
+                  >
+                    <Newspaper className="h-4 w-4 shrink-0" />
+                    <span className="hidden lg:inline">HCA News &amp; Talking Points</span>
+                    <span className="lg:hidden">HCA News</span>
+                  </a>
+                </>
               )}
             </nav>
             {view !== "admin" && !ready && (
@@ -607,6 +652,13 @@ export default function App() {
           <MethodologyPage onBack={goHome} onStartCompare={goToCompare} />
         )}
 
+        {view === "hca-national" && (
+          <NationalHcaPage
+            partnerQuery={partnerQuery}
+            onOpenCompare={(facilityId) => void openCompareFromNational(facilityId)}
+          />
+        )}
+
         {view === "compare" && (
           <>
             {!selected ? (
@@ -631,6 +683,7 @@ export default function App() {
                     clearSavedComparison();
                     loadHospital(h, []);
                   }}
+                  onSelectHcaSystem={hideHcaNav ? undefined : goHcaNational}
                   initialState={searchStateFilter}
                 />
                 <div className="mt-4 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
@@ -670,6 +723,7 @@ export default function App() {
                         clearSavedComparison();
                         loadHospital(h, []);
                       }}
+                      onSelectHcaSystem={hideHcaNav ? undefined : goHcaNational}
                       initialState={searchStateFilter}
                     />
                   </div>

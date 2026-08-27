@@ -1,21 +1,38 @@
 import { useEffect, useState } from "react";
-import { Search, Loader2, MapPin } from "lucide-react";
+import { Building2, Loader2, MapPin, Search } from "lucide-react";
 import type { HospitalSummary } from "@shared/types";
 import { US_STATES } from "@shared/usStates";
 import { searchHospitals } from "@/lib/api";
 import { HospitalLogo } from "@/components/HospitalLogo";
 
+/** Show the National HCA system shortcut when the user is clearly searching HCA. */
+function queryLooksLikeHcaSystem(q: string): boolean {
+  const t = q.trim().toLowerCase();
+  if (t.length < 2) return false;
+  return (
+    /\bhca\b/.test(t) ||
+    t === "hca" ||
+    t.startsWith("hca ") ||
+    t.includes("hca healthcare") ||
+    t.includes("hospital corporation of america")
+  );
+}
+
 interface Props {
   onSelect: (hospital: HospitalSummary) => void;
+  /** Opens the National HCA system page (averages + full roster). */
+  onSelectHcaSystem?: () => void;
   initialState?: string;
 }
 
-export function HospitalSearch({ onSelect, initialState = "" }: Props) {
+export function HospitalSearch({ onSelect, onSelectHcaSystem, initialState = "" }: Props) {
   const [query, setQuery] = useState("");
   const [state, setState] = useState(initialState);
   const [results, setResults] = useState<HospitalSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  const showHcaSystemLink = Boolean(onSelectHcaSystem) && queryLooksLikeHcaSystem(query);
 
   useEffect(() => {
     if (initialState) setState(initialState);
@@ -66,6 +83,14 @@ export function HospitalSearch({ onSelect, initialState = "" }: Props) {
     onSelect(hospital);
   };
 
+  const handleSelectHcaSystem = () => {
+    setQuery("");
+    setResults([]);
+    setSearchError(null);
+    setLoading(false);
+    onSelectHcaSystem?.();
+  };
+
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border-2 border-teal-600/20 bg-white p-3 shadow-md sm:p-4">
@@ -102,8 +127,29 @@ export function HospitalSearch({ onSelect, initialState = "" }: Props) {
         </div>
       )}
 
-      {results.length > 0 && (
+      {(showHcaSystemLink || results.length > 0) && (
         <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border-2 border-teal-100 bg-white shadow-md">
+          {showHcaSystemLink && (
+            <li>
+              <button
+                type="button"
+                onClick={handleSelectHcaSystem}
+                className="flex w-full items-center gap-3 bg-brand-primary/5 px-4 py-3.5 text-left transition hover:bg-brand-primary/10"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-primary text-white">
+                  <Building2 className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <span className="font-semibold text-brand-primary">
+                    Entire HCA Healthcare system
+                  </span>
+                  <span className="mt-0.5 block text-sm text-slate-600">
+                    View national HCA averages vs CMS + all HCA hospitals in one place
+                  </span>
+                </div>
+              </button>
+            </li>
+          )}
           {results.map((h) => (
             <li key={h.facilityId}>
               <button
@@ -131,7 +177,11 @@ export function HospitalSearch({ onSelect, initialState = "" }: Props) {
         </p>
       )}
 
-      {query.length >= 2 && !loading && !searchError && results.length === 0 && (
+      {query.length >= 2 &&
+        !loading &&
+        !searchError &&
+        results.length === 0 &&
+        !showHcaSystemLink && (
         <p className="text-sm text-slate-600">
           No hospitals matched your search. Try a shorter name, city, or ZIP — CMS uses official
           facility names (e.g. Asheville&apos;s Mission Hospital is listed as &quot;Memorial Mission

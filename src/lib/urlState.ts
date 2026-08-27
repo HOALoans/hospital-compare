@@ -1,7 +1,9 @@
 import type { HospitalSummary } from "@shared/types";
 
+export type AppUrlView = "home" | "compare" | "methodology" | "admin" | "hca-national";
+
 export interface CompareUrlState {
-  view: "home" | "compare" | "methodology" | "admin";
+  view: AppUrlView;
   hospitalId?: string;
   compareWith: string[];
   peers: string[];
@@ -30,9 +32,11 @@ export function parseUrlState(
       ? "admin"
       : viewParam === "methodology"
         ? "methodology"
-        : viewParam === "compare" || params.get("hospital") || params.get("saved")
-          ? "compare"
-          : "home";
+        : viewParam === "hca-national"
+          ? "hca-national"
+          : viewParam === "compare" || params.get("hospital") || params.get("saved")
+            ? "compare"
+            : "home";
 
   const compareWith = (params.get("compare") ?? params.get("compareWith") ?? "")
     .split(",")
@@ -60,7 +64,7 @@ export function parseUrlState(
 }
 
 export function buildUrlState(state: {
-  view: "home" | "compare" | "methodology" | "admin";
+  view: AppUrlView;
   hospital?: HospitalSummary | null;
   compareHospitals?: HospitalSummary[];
   visiblePeers?: Set<string>;
@@ -91,6 +95,11 @@ export function buildUrlState(state: {
   }
 
   params.set("view", state.view);
+
+  if (state.view === "hca-national") {
+    const qs = params.toString();
+    return { pathname: "/", search: qs ? `?${qs}` : "" };
+  }
 
   if (state.hospital) {
     params.set("hospital", state.hospital.facilityId);
