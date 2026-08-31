@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-28T21:54:31.655Z",
+  "updatedAt": "2026-08-31T19:03:08.511Z",
   "sources": [
     {
       "name": "828 News NOW",
@@ -13,7 +13,7 @@
       "host": "avlwatchdog.org",
       "exampleUrl": "https://avlwatchdog.org/lawsuit-alleges-failure-during-routine-surgery-led-to-patient-death-at-mission-hospital/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-28"
+      "lastSeen": "2026-08-31"
     },
     {
       "name": "Bank of America / TipRanks",
@@ -44,35 +44,35 @@
       "host": "congress.gov",
       "exampleUrl": "https://www.congress.gov/event/119th-congress/house-event/119239",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-28"
+      "lastSeen": "2026-08-31"
     },
     {
       "name": "Dogwood Health Trust",
       "host": "dogwoodhealthtrust.org",
       "exampleUrl": "https://dogwoodhealthtrust.org/independent-monitor-dogwood-host-community-qa-webinar-on-2025-monitoring-report/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-28"
+      "lastSeen": "2026-08-31"
     },
     {
       "name": "HCA 10-Q / SEC, Q2 2026",
       "host": "sec.gov",
       "exampleUrl": "https://www.sec.gov/Archives/edgar/data/0000860730/000119312526321077/hca-20260630.htm",
       "firstSeen": "2026-08-12",
-      "lastSeen": "2026-08-28"
+      "lastSeen": "2026-08-31"
     },
     {
       "name": "HCA Healthcare Investor Relations",
       "host": "investor.hcahealthcare.com",
       "exampleUrl": "https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-28"
+      "lastSeen": "2026-08-31"
     },
     {
-      "name": "Healthcare Dive / Yahoo Finance",
+      "name": "Healthcare Dive / SEC 8-K",
       "host": "healthcaredive.com",
       "exampleUrl": "https://www.healthcaredive.com/news/hca-cuts-2026-earnings-ACA-coverage-losses/825147/",
       "firstSeen": "2026-08-20",
-      "lastSeen": "2026-08-28"
+      "lastSeen": "2026-08-31"
     },
     {
       "name": "Insider Monkey / Yahoo Finance",
@@ -86,7 +86,7 @@
       "host": "marketbeat.com",
       "exampleUrl": "https://www.marketbeat.com/instant-alerts/filing-deane-retirement-strategies-inc-invests-480-million-in-hca-healthcare-inc-hca-2026-08-10/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-28"
+      "lastSeen": "2026-08-31"
     },
     {
       "name": "National Nurses United",
@@ -97,21 +97,21 @@
       "host": "toobig2care.org",
       "exampleUrl": "https://toobig2care.org/hca-case-study/",
       "firstSeen": "2026-08-18",
-      "lastSeen": "2026-08-28"
+      "lastSeen": "2026-08-31"
     },
     {
       "name": "NC Department of Justice",
       "host": "ncdoj.gov",
       "exampleUrl": "https://ncdoj.gov/ag-jackson-wins-key-arguments-as-hca-mission-hospital-case-proceeds-to-trial/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-28"
+      "lastSeen": "2026-08-31"
     },
     {
       "name": "NC Health News",
       "host": "northcarolinahealthnews.org",
       "exampleUrl": "https://www.northcarolinahealthnews.org/2026/08/25/western-nc-hospital-certificate-of-need-tug-of-war/",
       "firstSeen": "2026-08-13",
-      "lastSeen": "2026-08-28"
+      "lastSeen": "2026-08-31"
     },
     {
       "name": "SEC / HCA Investor Relations",
@@ -131,14 +131,14 @@
       "host": "kffhealthnews.org",
       "exampleUrl": "https://kffhealthnews.org/health-industry/hospital-mergers-monopolies-drive-healthcare-costs-asheville-north-carolina/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-28"
+      "lastSeen": "2026-08-31"
     },
     {
       "name": "WLOS",
       "host": "wlos.com",
       "exampleUrl": "https://wlos.com/news/local/independent-monitor-discusses-hcas-ownership-of-mission-hospital",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-28"
+      "lastSeen": "2026-08-31"
     }
   ]
 }
