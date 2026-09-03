@@ -18,7 +18,8 @@
     "update:hca": "node scripts/update-dashboard.js",
     "update:hca-watchdog": "node scripts/update-dashboard.js",
     "sync:hca-sources": "node scripts/sync-hca-sources.js",
-    "crawl:hpt": "tsx scripts/crawlHpt.ts",
+    "build:staff-ratios": "python3 scripts/buildStaffRatios.py",
+    "crawl:hpt": "tsx scripts/crawlHpt.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
