@@ -78,8 +78,9 @@ export async function buildHptComparison(opts: {
   const codes = normalizeCodes(opts.codes);
   const compareIds = (opts.compareWith ?? []).filter((id) => id && id !== hospital.facilityId).slice(0, 8);
 
-  prioritizeHospitals([hospital.facilityId, ...compareIds]);
-  const pendingHospital = !(await ensureHospitalCrawled(hospital));
+  const crawl = await ensureHospitalCrawled(hospital);
+  prioritizeHospitals(compareIds);
+  const pendingHospital = !crawl.ready;
 
   const rows: HptCodeRow[] = [];
   const trends: HptCodeTrend[] = [];
@@ -157,11 +158,13 @@ export async function buildHptComparison(opts: {
   }
 
   const coverage = getCoverage();
-  const note = pendingHospital
-    ? "This hospital has not been crawled yet. It is queued; national/ZIP percentiles use hospitals already ingested."
-    : coverage.crawledOk < 50
-      ? "National crawl is just getting started. Quartiles and the top-1% flag will stabilize as more hospitals are ingested."
-      : `Percentiles use ${coverage.crawledOk.toLocaleString()} crawled hospitals (cash vs negotiated rates from CMS hospital MRFs).`;
+  const note = crawl.error
+    ? `Could not load this hospital's price file: ${crawl.error}`
+    : pendingHospital
+      ? "Still downloading this hospital's CMS price file. This page will refresh automatically."
+      : coverage.crawledOk < 50
+        ? "National crawl is just getting started. Quartiles and the top-1% flag will stabilize as more hospitals are ingested."
+        : `Percentiles use ${coverage.crawledOk.toLocaleString()} crawled hospitals (cash vs negotiated rates from CMS hospital MRFs).`;
 
   return {
     hospital: {
@@ -175,6 +178,7 @@ export async function buildHptComparison(opts: {
     payer: opts.payer,
     snapshotDate,
     pendingHospital,
+    crawlError: crawl.error ?? null,
     coverage,
     rows,
     trends,

@@ -93,6 +93,7 @@ export interface HptCompareResponse {
   payer: HptPayer;
   snapshotDate: string | null;
   pendingHospital: boolean;
+  crawlError?: string | null;
   coverage: HptCoverage;
   rows: HptCodeRow[];
   trends: HptCodeTrend[];

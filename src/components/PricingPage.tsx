@@ -71,26 +71,36 @@ export function PricingPage({ onBack }: Props) {
       return;
     }
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    fetchHptCompare({
-      hospitalId: hospital.facilityId,
-      codes,
-      compareWith: compareWith.map((h) => h.facilityId),
-      metric,
-      payer,
-    })
-      .then((res) => {
-        if (!cancelled) setData(res);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const load = (showSpinner: boolean) => {
+      if (showSpinner) setLoading(true);
+      setError(null);
+      fetchHptCompare({
+        hospitalId: hospital.facilityId,
+        codes,
+        compareWith: compareWith.map((h) => h.facilityId),
+        metric,
+        payer,
       })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load prices");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+        .then((res) => {
+          if (cancelled) return;
+          setData(res);
+          const waiting = res.pendingHospital && !res.crawlError;
+          if (waiting) timer = setTimeout(() => load(false), 4000);
+        })
+        .catch((err) => {
+          if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load prices");
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    };
+
+    load(true);
     return () => {
       cancelled = true;
+      if (timer) clearTimeout(timer);
     };
   }, [hospital, codes, compareWith, metric, payer]);
 
@@ -226,6 +236,14 @@ export function PricingPage({ onBack }: Props) {
       {loading && (
         <p className="inline-flex items-center gap-2 text-sm text-slate-600">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading charges…
+        </p>
+      )}
+
+      {data?.pendingHospital && !data.crawlError && (
+        <p className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+          Downloading this hospital&apos;s CMS price file (often 50–200MB). The table will fill in
+          automatically — usually 1–3 minutes.
         </p>
       )}
 

@@ -76,7 +76,41 @@ export function parseCmsHptTxt(text: string): CmsHptLocation[] {
   return out;
 }
 
+export function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(
+      /\b(the|inc|llc|llp|pc|hospital|medical|center|centre|health|healthcare|system|regional|campus|of)\b/g,
+      " ",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function nameScore(a: string, b: string): number {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (a.includes(b) || b.includes(a)) return 0.85;
+  const ta = a.split(" ").filter((t) => t.length > 2);
+  const tb = b.split(" ").filter((t) => t.length > 2);
+  if (ta.length === 0 || tb.length === 0) return 0;
+
+  // If every token of the shorter name appears in the longer, treat as a strong match
+  // (e.g. "mission" ⊂ "memorial mission and asheville surgery").
+  const [small, large] =
+    ta.length <= tb.length ? [ta, new Set(tb)] : [tb, new Set(ta)];
+  if (small.length > 0 && small.every((t) => large.has(t))) return 0.9;
+
+  let inter = 0;
+  const setB = new Set(tb);
+  for (const t of ta) if (setB.has(t)) inter += 1;
+  return inter / Math.max(ta.length, tb.length);
+}
+
 export function bestLocationMatch(hospitalName: string, locations: CmsHptLocation[]): CmsHptLocation | null {
+  if (locations.length === 0) return null;
   if (locations.length === 1) return locations[0]!;
   const n = normalizeName(hospitalName);
   let best: CmsHptLocation | null = null;
@@ -88,27 +122,6 @@ export function bestLocationMatch(hospitalName: string, locations: CmsHptLocatio
       best = loc;
     }
   }
-  return bestScore >= 0.35 ? best : locations[0] ?? null;
-}
-
-export function normalizeName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\b(the|inc|llc|llp|pc|hospital|medical|center|centre|health|healthcare|system|regional|campus|of)\b/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-export function nameScore(a: string, b: string): number {
-  if (!a || !b) return 0;
-  if (a === b) return 1;
-  if (a.includes(b) || b.includes(a)) return 0.8;
-  const ta = new Set(a.split(" ").filter((t) => t.length > 2));
-  const tb = new Set(b.split(" ").filter((t) => t.length > 2));
-  if (ta.size === 0 || tb.size === 0) return 0;
-  let inter = 0;
-  for (const t of ta) if (tb.has(t)) inter += 1;
-  return inter / Math.max(ta.size, tb.size);
+  // Never fall back to the first listing — multi-hospital systems list many facilities.
+  return bestScore >= 0.35 ? best : null;
 }

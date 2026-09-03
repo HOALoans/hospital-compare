@@ -87,40 +87,47 @@ function hptTxtUrls(domain: string): string[] {
   ];
 }
 
-async function mrfFromHptTxt(url: string, hospitalName: string): Promise<string | null> {
+async function mrfFromHptTxt(url: string, hospitalNames: string[]): Promise<{ mrfUrl: string; locationName: string } | null> {
   const { ok, text } = await fetchText(url);
   if (!ok) return null;
   if (/<html/i.test(text.slice(0, 200))) return null;
   const locations = parseCmsHptTxt(text);
-  const best = bestLocationMatch(hospitalName, locations);
-  return best?.mrfUrl ?? null;
+  for (const name of hospitalNames) {
+    const best = bestLocationMatch(name, locations);
+    if (best?.mrfUrl) return { mrfUrl: best.mrfUrl, locationName: best.locationName };
+  }
+  return null;
 }
 
 function matchIndex(hospital: HospitalSummary, records: IndexRecord[]): IndexRecord | null {
-  const n = normalizeName(hospital.name);
+  const names = [hospital.name, ...(HPT_LOCATION_ALIASES[hospital.facilityId] ?? [])];
   let best: IndexRecord | null = null;
   let bestScore = 0;
-  for (const rec of records) {
-    const score = nameScore(n, normalizeName(rec.location_name ?? ""));
-    if (score > bestScore) {
-      bestScore = score;
-      best = rec;
+  for (const name of names) {
+    const n = normalizeName(name);
+    for (const rec of records) {
+      const score = nameScore(n, normalizeName(rec.location_name ?? ""));
+      if (score > bestScore) {
+        bestScore = score;
+        best = rec;
+      }
     }
   }
   return bestScore >= 0.55 ? best : null;
 }
 
+/** Curated cms-hpt.txt location names when CMS facility names are truncated/aliased. */
+export const HPT_LOCATION_ALIASES: Record<string, string[]> = {
+  "340002": ["MISSION HOSPITAL", "MEMORIAL MISSION HOSPITAL"],
+  "340087": ["MISSION HOSPITAL", "MEMORIAL MISSION HOSPITAL"],
+};
+
 export async function discoverMrfUrl(hospital: HospitalSummary): Promise<{ mrfUrl: string; via: string } | null> {
   const records = await loadPublicMrfIndex();
-  const idx = matchIndex(hospital, records);
-  if (idx?.mrf_url) {
-    if (idx.source) {
-      const fromTxt = await mrfFromHptTxt(idx.source, hospital.name);
-      if (fromTxt) return { mrfUrl: fromTxt, via: "cms-hpt.txt (index)" };
-    }
-    return { mrfUrl: idx.mrf_url, via: "public MRF index" };
-  }
+  const aliases = HPT_LOCATION_ALIASES[hospital.facilityId] ?? [];
+  const searchNames = [hospital.name, ...aliases];
 
+  const idx = matchIndex(hospital, records);
   const extraDomains: string[] = [];
   if (idx?.hospital_domain) extraDomains.push(idx.hospital_domain);
   if (idx?.source) {
@@ -131,17 +138,27 @@ export async function discoverMrfUrl(hospital: HospitalSummary): Promise<{ mrfUr
     }
   }
 
+  // Prefer known hospital domains + aliases so multi-campus cms-hpt.txt files match correctly.
   const domains = [...new Set([...domainsFor(hospital), ...extraDomains])];
   for (const domain of domains) {
     for (const url of hptTxtUrls(domain)) {
       try {
-        const mrf = await mrfFromHptTxt(url, hospital.name);
-        if (mrf) return { mrfUrl: mrf, via: url };
+        const hit = await mrfFromHptTxt(url, searchNames);
+        if (hit) return { mrfUrl: hit.mrfUrl, via: `${url} → ${hit.locationName}` };
       } catch {
         /* try next */
       }
     }
   }
+
+  if (idx?.mrf_url) {
+    if (idx.source) {
+      const hit = await mrfFromHptTxt(idx.source, searchNames);
+      if (hit) return { mrfUrl: hit.mrfUrl, via: `cms-hpt.txt (index) → ${hit.locationName}` };
+    }
+    return { mrfUrl: idx.mrf_url, via: "public MRF index" };
+  }
+
   return null;
 }
 

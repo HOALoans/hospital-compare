@@ -152,10 +152,19 @@ async function crawlLoop() {
   }
 }
 
-export async function ensureHospitalCrawled(hospital: HospitalSummary): Promise<boolean> {
-  if (hospitalHasSnapshot(hospital.facilityId) && !isStale(hospital.facilityId)) return true;
+export async function ensureHospitalCrawled(hospital: HospitalSummary): Promise<{ ready: boolean; error?: string }> {
+  if (hospitalHasSnapshot(hospital.facilityId) && !isStale(hospital.facilityId)) {
+    return { ready: true };
+  }
+  const rec = loadStatus().hospitals[hospital.facilityId];
   prioritizeHospitals([hospital.facilityId]);
-  return hospitalHasSnapshot(hospital.facilityId);
+  // Do not await the MRF download on the HTTP request — Render times out ~30s.
+  // The pricing page polls until this hospital's snapshot lands.
+  if (rec?.status === "failed" && rec.error && rec.lastAttemptAt) {
+    const age = Date.now() - Date.parse(rec.lastAttemptAt);
+    if (age < 10 * 60 * 1000) return { ready: false, error: rec.error };
+  }
+  return { ready: hospitalHasSnapshot(hospital.facilityId), error: rec?.error };
 }
 
 export function startNationalHptCrawl(isReady: () => boolean = isHospitalDirectoryReady) {
