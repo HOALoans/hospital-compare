@@ -8,12 +8,13 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { HPT_TMP_DIR } from "../dataPaths.js";
 import { collapseCode, ingestCsvRow, mapCsvHeaderLine, parseCsvLine, type ParsedCodeCharges } from "./parseCsv.js";
-import { parseMrfJson } from "./parseJson.js";
+import { parseMrfJson, streamParseMrfJsonFile } from "./parseJson.js";
 
 const execFileAsync = promisify(execFile);
 const USER_AGENT = "Parigrado/1.0 (hospital price transparency research; https://parigrado.com)";
 const MAX_BYTES = 1_500_000_000;
-const JSON_IN_MEMORY_MAX = 40_000_000;
+/** Files larger than this use the streaming JSON parser (keeps free-tier RAM in check). */
+const JSON_IN_MEMORY_MAX = 25_000_000;
 
 function sniff(buf: Buffer): "zip" | "gzip" | "json" | "csv" {
   if (buf.length >= 2 && buf[0] === 0x1f && buf[1] === 0x8b) return "gzip";
@@ -135,9 +136,13 @@ export async function parseMrfUrl(mrfUrl: string): Promise<{
     if (kind === "json") {
       const size = fs.statSync(workPath).size;
       if (size > JSON_IN_MEMORY_MAX) {
-        throw new Error(`JSON MRF is ${Math.round(size / 1e6)}MB; skipping until streaming JSON parse is enabled`);
+        const items = await streamParseMrfJsonFile(workPath, acc);
+        if (items === 0 && acc.size === 0) {
+          throw new Error(`Streaming JSON parse found 0 charge items (${Math.round(size / 1e6)}MB)`);
+        }
+      } else {
+        parseMrfJson(fs.readFileSync(workPath, "utf8"), acc);
       }
-      parseMrfJson(fs.readFileSync(workPath, "utf8"), acc);
     } else {
       await parseCsvFile(workPath, acc);
     }
