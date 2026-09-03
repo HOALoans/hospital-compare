@@ -223,6 +223,8 @@ export async function streamParseMrfJsonFile(file: string, acc: Map<string, Pars
   for await (const chunk of stream) {
     if (state.mode === "done") break;
     processChunk(chunk);
+    // Yield after each ~256KB chunk so Express can serve requests mid-parse.
+    await new Promise<void>((resolve) => setImmediate(resolve));
   }
   if (state.mode !== "done" && buf.length) processChunk("");
 

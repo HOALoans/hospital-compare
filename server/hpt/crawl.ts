@@ -13,6 +13,9 @@ import {
 } from "./store.js";
 
 const STALE_MS = 30 * 24 * 60 * 60 * 1000;
+/** Pause between hospitals so Express can serve page loads on free-tier RAM. */
+const BETWEEN_HOSPITAL_MS = Number(process.env.HPT_BETWEEN_MS ?? 2_500);
+
 let queue: string[] = [];
 let looping = false;
 const inFlight = new Set<string>();
@@ -24,7 +27,7 @@ function isStale(facilityId: string): boolean {
   return Date.now() - Date.parse(rec.lastOkAt) > STALE_MS;
 }
 
-function seedQueue(preferred: string[] = []) {
+function seedNationalQueue(preferred: string[] = []) {
   if (!isHospitalDirectoryReady()) return;
   const hospitals = getHospitals();
   const st = loadStatus();
@@ -59,9 +62,11 @@ function seedQueue(preferred: string[] = []) {
   queue = [...new Set([...pref, ...byNeed])];
 }
 
+/** Queue specific hospitals only — never seeds the full national roster. */
 export function prioritizeHospitals(ids: string[]) {
-  for (const id of ids) priority.add(id);
-  queue = [...new Set([...ids, ...queue])];
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return;
+  for (const id of unique) priority.add(id);
   void crawlLoop();
 }
 
@@ -96,6 +101,8 @@ async function crawlOne(facilityId: string): Promise<void> {
   }
 
   const parsed = await parseMrfUrl(found.mrfUrl);
+  // Yield so pending HTTP responses can flush before the next heavy parse.
+  await new Promise((r) => setImmediate(r));
   const date = new Date().toISOString().slice(0, 10);
   await upsertHospitalCharges({
     facilityId,
@@ -104,7 +111,9 @@ async function crawlOne(facilityId: string): Promise<void> {
     mrfUrl: found.mrfUrl,
     codes: parsed.codes,
   });
-  console.log(`[hpt] ${hospital.facilityId} ${hospital.name}: ${Object.keys(parsed.codes).length} HCPCS codes via ${found.via}`);
+  console.log(
+    `[hpt] ${hospital.facilityId} ${hospital.name}: ${Object.keys(parsed.codes).length} HCPCS codes via ${found.via}`,
+  );
 }
 
 async function crawlLoop() {
@@ -112,7 +121,6 @@ async function crawlLoop() {
   looping = true;
   markRunning(true);
   try {
-    if (queue.length === 0) seedQueue([...priority]);
     while (queue.length > 0 || priority.size > 0) {
       const id = [...priority][0] ?? queue.shift();
       if (!id) break;
@@ -144,7 +152,7 @@ async function crawlLoop() {
       } finally {
         inFlight.delete(id);
       }
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, BETWEEN_HOSPITAL_MS));
     }
   } finally {
     looping = false;
@@ -152,7 +160,9 @@ async function crawlLoop() {
   }
 }
 
-export async function ensureHospitalCrawled(hospital: HospitalSummary): Promise<{ ready: boolean; error?: string }> {
+export async function ensureHospitalCrawled(
+  hospital: HospitalSummary,
+): Promise<{ ready: boolean; error?: string }> {
   if (hospitalHasSnapshot(hospital.facilityId) && !isStale(hospital.facilityId)) {
     return { ready: true };
   }
@@ -167,23 +177,26 @@ export async function ensureHospitalCrawled(hospital: HospitalSummary): Promise<
   return { ready: hospitalHasSnapshot(hospital.facilityId), error: rec?.error };
 }
 
+/**
+ * Opt-in national crawl. Default is OFF on the web service so free-tier
+ * Render instances stay responsive; run `npm run crawl:hpt` or set
+ * INGEST_HPT=true when you want background nationwide ingestion.
+ */
 export function startNationalHptCrawl(isReady: () => boolean = isHospitalDirectoryReady) {
-  if (process.env.INGEST_HPT === "false") {
-    console.log("[hpt] National crawl disabled (INGEST_HPT=false)");
+  if (process.env.INGEST_HPT !== "true") {
+    console.log("[hpt] National crawl idle (set INGEST_HPT=true or use npm run crawl:hpt). On-demand crawls still run from the Pricing page.");
     return;
   }
   const wait = async () => {
     while (!isReady()) {
       await new Promise((r) => setTimeout(r, 4000));
     }
-    // Give CMS score/archive warm-up a head start on small Render instances so
-    // MRF downloads don't starve data.cms.gov fetches during boot.
     const delayMs = Number(process.env.HPT_START_DELAY_MS ?? 90_000);
     if (delayMs > 0) {
       console.log(`[hpt] Score cache ready — delaying national MRF crawl ${Math.round(delayMs / 1000)}s`);
       await new Promise((r) => setTimeout(r, delayMs));
     }
-    seedQueue();
+    seedNationalQueue();
     console.log(`[hpt] Starting national MRF crawl (${getCoverage().hospitalCount} hospitals in directory)`);
     void crawlLoop();
   };

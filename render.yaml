@@ -25,6 +25,11 @@ services:
       # as a separate one-off job instead.
       - key: INGEST_ARCHIVES
         value: "true"
+      # Keep the web dyno responsive: national MRF crawl is opt-in via
+      # `npm run crawl:hpt` (or set INGEST_HPT=true). Pricing page still
+      # crawls hospitals on demand when a user selects them.
+      - key: INGEST_HPT
+        value: "false"
       # Signs admin session tokens after login; also accepts Bearer ADMIN_SECRET for scripts.
       - key: ADMIN_SECRET
         sync: false
