@@ -1,6 +1,6 @@
 import type { HospitalSummary } from "@shared/types";
 
-export type AppUrlView = "home" | "compare" | "methodology" | "admin" | "hca-national";
+export type AppUrlView = "home" | "compare" | "methodology" | "admin" | "hca-national" | "pricing";
 
 export interface CompareUrlState {
   view: AppUrlView;
@@ -34,6 +34,8 @@ export function parseUrlState(
         ? "methodology"
         : viewParam === "hca-national"
           ? "hca-national"
+          : viewParam === "pricing"
+            ? "pricing"
           : viewParam === "compare" || params.get("hospital") || params.get("saved")
             ? "compare"
             : "home";
@@ -96,7 +98,7 @@ export function buildUrlState(state: {
 
   params.set("view", state.view);
 
-  if (state.view === "hca-national") {
+  if (state.view === "hca-national" || state.view === "pricing") {
     const qs = params.toString();
     return { pathname: "/", search: qs ? `?${qs}` : "" };
   }

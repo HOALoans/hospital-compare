@@ -6,6 +6,7 @@ import type {
   NearbyHospital,
 } from "@shared/types";
 import type { SaveComparisonRequest, SaveComparisonResponse, SavedComparisonRecord } from "@shared/savedComparison";
+import type { HptCompareResponse, HptMetric, HptPayer } from "@shared/hpt";
 
 const REQUEST_TIMEOUT_MS = 15000;
 const WARMING_UP_MESSAGE =
@@ -128,6 +129,23 @@ export function fetchArchiveMeta() {
     lastCacheRefresh?: string | null;
     reportingPeriod?: { start: string; end: string };
   }>("/api/meta/archives");
+}
+
+export function fetchHptCompare(opts: {
+  hospitalId: string;
+  codes: string[];
+  compareWith?: string[];
+  metric: HptMetric;
+  payer: HptPayer;
+}) {
+  const params = new URLSearchParams({
+    hospital: opts.hospitalId,
+    codes: opts.codes.join(","),
+    metric: opts.metric,
+    payer: opts.payer,
+  });
+  if (opts.compareWith?.length) params.set("compare", opts.compareWith.join(","));
+  return apiGet<HptCompareResponse>(`/api/hpt/compare?${params}`);
 }
 
 export function saveComparisonForLater(payload: SaveComparisonRequest) {

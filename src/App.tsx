@@ -7,6 +7,7 @@ import {
   Check,
   ChevronDown,
   Download,
+  CircleDollarSign,
   Home,
   Loader2,
   Newspaper,
@@ -47,8 +48,9 @@ import { MethodologyPage } from "@/components/MethodologyPage";
 import { NationalHcaPage } from "@/components/NationalHcaPage";
 import { PartnerAdminPage } from "@/components/PartnerAdminPage";
 import { SiteDisclaimer } from "@/components/SiteDisclaimer";
+import { PricingPage } from "@/components/PricingPage";
 
-type AppView = "home" | "compare" | "methodology" | "admin" | "hca-national";
+type AppView = "home" | "compare" | "methodology" | "admin" | "hca-national" | "pricing";
 
 const CORE_PEER_KEYS = new Set(["national", "state-all", "county-all"]);
 
@@ -356,6 +358,10 @@ export default function App() {
       syncUrl({ view: "hca-national", partner: urlPartner });
       return;
     }
+    if (view === "pricing") {
+      syncUrl({ view: "pricing", partner: urlPartner });
+      return;
+    }
     syncUrl({
       view,
       hospital: selected,
@@ -423,6 +429,11 @@ export default function App() {
 
   const goMethodology = () => {
     setView("methodology");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goPricing = () => {
+    setView("pricing");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -589,6 +600,20 @@ export default function App() {
                 <span className="hidden sm:inline xl:hidden">Compare Hospitals</span>
                 <span className="sm:hidden">Compare</span>
               </button>
+              <button
+                type="button"
+                onClick={goPricing}
+                aria-label="Procedure prices"
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium transition sm:px-3 sm:py-1.5 ${
+                  view === "pricing"
+                    ? "bg-white text-brand-primary shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <CircleDollarSign className="h-4 w-4 shrink-0" />
+                <span className="hidden xl:inline">Procedure prices</span>
+                <span className="xl:hidden">Prices</span>
+              </button>
               <a
                 href={`/mission-tracker/${partnerQuery}`}
                 aria-label="Single Hospital Health Dashboard"
@@ -645,12 +670,18 @@ export default function App() {
         {view === "admin" && <PartnerAdminPage onExit={goHome} />}
 
         {view === "home" && (
-          <HomePage onStartCompare={goToCompare} onOpenMethodology={goMethodology} />
+          <HomePage
+            onStartCompare={goToCompare}
+            onOpenMethodology={goMethodology}
+            onOpenPricing={goPricing}
+          />
         )}
 
         {view === "methodology" && (
           <MethodologyPage onBack={goHome} onStartCompare={goToCompare} />
         )}
+
+        {view === "pricing" && <PricingPage onBack={goHome} />}
 
         {view === "hca-national" && (
           <NationalHcaPage

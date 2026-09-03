@@ -73,6 +73,19 @@ export function MethodologyPage({ onBack, onStartCompare }: Props) {
         </article>
       </section>
 
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-slate-900">HCPCS standard charges</h3>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+          Procedure prices come from each hospital&apos;s CMS-required machine-readable file
+          (discovered via <span className="font-mono">cms-hpt.txt</span>), not from a paid aggregator.
+          For each HCPCS code we collapse cash/self-pay amounts and negotiated (all-payer) amounts to
+          a hospital-level mean or median, then compute ZIP-3 and national distributions. Quartiles
+          use the 25th/50th/75th percentiles of that hospital-level distribution; <strong>top 1%</strong>{" "}
+          means the hospital&apos;s charge is at or above the 99th percentile. Trend lines use our
+          crawl history — hospitals rarely keep old files online.
+        </p>
+      </section>
+
       <section className="rounded-2xl border border-indigo-200/60 bg-indigo-50/50 p-6">
         <h3 className="text-lg font-semibold text-slate-900">For employers &amp; health plans</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">

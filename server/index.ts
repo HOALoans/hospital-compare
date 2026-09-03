@@ -52,6 +52,9 @@ import {
   fetchHcaInsiders,
   type ChartRangeKey,
 } from "./financeProxy.js";
+import { getCoverage } from "./hpt/store.js";
+import { buildHptComparison } from "./hpt/compare.js";
+import { startNationalHptCrawl } from "./hpt/crawl.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 5175);
@@ -222,6 +225,7 @@ app.get("/api/health", (_req, res) => {
     hospitalCount: getHospitals().length,
     reportingPeriod: getCurrentPeriod(),
     lastCacheRefresh: getLastCacheRefresh(),
+    hpt: getCoverage(),
   });
 });
 
@@ -316,6 +320,47 @@ app.get("/api/hospitals/:facilityId", limitHospital, (req, res) => {
     return;
   }
   res.json(hospital);
+});
+
+app.get("/api/hpt/status", limitHospital, (_req, res) => {
+  res.json(getCoverage());
+});
+
+app.get("/api/hpt/compare", limitHospital, async (req, res) => {
+  if (!isHospitalDirectoryReady()) {
+    res.status(503).json({ error: "Hospital directory is still loading. Try again shortly." });
+    return;
+  }
+  const facilityId = String(req.query.hospital ?? "").trim();
+  if (!facilityId) {
+    res.status(400).json({ error: "hospital is required" });
+    return;
+  }
+  const codes = String(req.query.codes ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (codes.length === 0) {
+    res.status(400).json({ error: "codes is required (comma-separated HCPCS)" });
+    return;
+  }
+  const metric = req.query.metric === "mean" ? "mean" : "median";
+  const payer = req.query.payer === "all" ? "all" : "cash";
+  const compareWith = String(req.query.compare ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  try {
+    const result = await buildHptComparison({ facilityId, codes, compareWith, metric, payer });
+    if (!result) {
+      res.status(404).json({ error: "Hospital not found" });
+      return;
+    }
+    res.json(result);
+  } catch (err) {
+    console.error("[hpt-compare]", err);
+    res.status(500).json({ error: err instanceof Error ? err.message : "Comparison failed" });
+  }
 });
 
 app.get("/api/watchlist", (_req, res) => {
@@ -581,12 +626,12 @@ async function start() {
   startScheduledRefresh();
 
   if (process.env.INGEST_ARCHIVES !== "false") {
-    // Wait until the primary score cache is ready before starting the heavy
-    // archive ingest so the two don't compete for the 512MB free-tier heap.
     scheduleArchiveIngest(isCacheReady).catch((err) => {
       console.warn("[archives] Background ingest error:", err);
     });
   }
+
+  startNationalHptCrawl(isHospitalDirectoryReady);
 
   app.listen(PORT, () => {
     const rl = rateLimitConfig();

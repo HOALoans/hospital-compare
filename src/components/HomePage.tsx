@@ -13,9 +13,10 @@ import { usePartner } from "@/context/PartnerContext";
 interface Props {
   onStartCompare: () => void;
   onOpenMethodology: () => void;
+  onOpenPricing: () => void;
 }
 
-export function HomePage({ onStartCompare, onOpenMethodology }: Props) {
+export function HomePage({ onStartCompare, onOpenMethodology, onOpenPricing }: Props) {
   const { partner, partnerId, isPartnerMode } = usePartner();
   const subheadline = partner.welcomeSubheadline ?? SITE_TAGLINE;
   const hospitalHealthHref = partnerId
@@ -59,6 +60,14 @@ export function HomePage({ onStartCompare, onOpenMethodology }: Props) {
               <span className="hidden sm:inline">Single Hospital Health Dashboard</span>
               <ArrowRight className="h-5 w-5" />
             </a>
+            <button
+              type="button"
+              onClick={onOpenPricing}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-slate-300 bg-white px-6 py-3.5 text-base font-semibold text-slate-800 transition hover:bg-slate-50"
+            >
+              Procedure prices
+              <ArrowRight className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </section>
