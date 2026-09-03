@@ -116,9 +116,14 @@ function finalize(acc: Map<string, ParsedCodeCharges>) {
 }
 
 /** Stream a large JSON MRF straight from HTTP — never writes the full file to disk. */
-async function parseJsonFromNetwork(url: string, acc: Map<string, ParsedCodeCharges>, opts: JsonParseOpts) {
+async function parseJsonFromNetwork(
+  url: string,
+  acc: Map<string, ParsedCodeCharges>,
+  opts: JsonParseOpts,
+) {
   const res = await fetch(url, {
     redirect: "follow",
+    signal: opts.signal,
     headers: { "User-Agent": USER_AGENT, Accept: "application/json,*/*" },
   });
   if (!res.ok) throw new Error(`MRF download ${res.status}`);
@@ -130,6 +135,17 @@ async function parseJsonFromNetwork(url: string, acc: Map<string, ParsedCodeChar
 
   let nodeStream: Readable = Readable.fromWeb(res.body as import("stream/web").ReadableStream);
   let bytes = 0;
+  const onAbort = () => {
+    try {
+      nodeStream.destroy(new Error("aborted"));
+    } catch {
+      /* ignore */
+    }
+  };
+  if (opts.signal) {
+    if (opts.signal.aborted) onAbort();
+    else opts.signal.addEventListener("abort", onAbort, { once: true });
+  }
   nodeStream.on("data", (chunk: Buffer | string) => {
     bytes += typeof chunk === "string" ? Buffer.byteLength(chunk) : chunk.length;
     if (bytes > MAX_STREAM_BYTES) {
@@ -145,7 +161,7 @@ async function parseJsonFromNetwork(url: string, acc: Map<string, ParsedCodeChar
   }
 
   if (opts.codeFilter && opts.codeFilter.size > 0) {
-    const n = await extractFilteredCodesFromJsonStream(nodeStream, acc, opts.codeFilter);
+    const n = await extractFilteredCodesFromJsonStream(nodeStream, acc, opts.codeFilter, opts.signal);
     if (n === 0 && acc.size === 0) {
       throw new Error(
         `Filtered JSON extract found 0 matching HCPCS codes (${Math.round((declared || bytes) / 1e6) || "?"}MB file)`,
@@ -167,19 +183,27 @@ export async function parseMrfUrl(
   const acc = new Map<string, ParsedCodeCharges>();
 
   // Huge JSON files (e.g. Mission ~800MB): stream from network with an optional code filter.
+  // Skip HEAD when filtering — one less round-trip that can hang, and we always stream.
+  if (looksLikeJsonUrl(mrfUrl) && opts.codeFilter && opts.codeFilter.size > 0) {
+    await parseJsonFromNetwork(mrfUrl, acc, opts);
+    return finalize(acc);
+  }
+
   if (looksLikeJsonUrl(mrfUrl)) {
     try {
       const head = await fetch(mrfUrl, {
         method: "HEAD",
         redirect: "follow",
+        signal: opts.signal,
         headers: { "User-Agent": USER_AGENT },
       });
       const len = Number(head.headers.get("content-length") || 0);
-      if (!head.ok || len === 0 || len > MAX_DISK_BYTES || opts.codeFilter?.size) {
+      if (!head.ok || len === 0 || len > MAX_DISK_BYTES) {
         await parseJsonFromNetwork(mrfUrl, acc, opts);
         return finalize(acc);
       }
-    } catch {
+    } catch (err) {
+      if (opts.signal?.aborted) throw err;
       await parseJsonFromNetwork(mrfUrl, acc, opts);
       return finalize(acc);
     }

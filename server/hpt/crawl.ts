@@ -16,7 +16,7 @@ import {
 const STALE_MS = 30 * 24 * 60 * 60 * 1000;
 const BETWEEN_HOSPITAL_MS = Number(process.env.HPT_BETWEEN_MS ?? 2_500);
 /** Abort a single hospital crawl if the MRF stream takes longer than this. */
-const CRAWL_TIMEOUT_MS = Number(process.env.HPT_CRAWL_TIMEOUT_MS ?? 12 * 60 * 1000);
+const CRAWL_TIMEOUT_MS = Number(process.env.HPT_CRAWL_TIMEOUT_MS ?? 3 * 60 * 1000);
 
 let queue: string[] = [];
 let looping = false;
@@ -72,22 +72,34 @@ export function prioritizeHospitals(ids: string[], codes?: string[]) {
   for (const id of unique) {
     priority.add(id);
     if (codes?.length) {
+      // Only the codes the UI asked for. Merging every DEFAULT code forced a full
+      // ~800MB scan whenever one code (e.g. 93000) was absent from the MRF.
       const set = codeFilters.get(id) ?? new Set<string>();
-      for (const c of codes) set.add(c.trim().toUpperCase());
-      for (const c of DEFAULT_HCPCS_CODES) set.add(c);
+      for (const c of codes) {
+        const n = c.trim().toUpperCase();
+        if (n) set.add(n);
+      }
       codeFilters.set(id, set);
     }
   }
   void crawlLoop();
 }
 
-async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+async function withTimeout<T>(
+  run: (signal: AbortSignal) => Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
+  const ctrl = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
-      promise,
+      run(ctrl.signal),
       new Promise<T>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)), ms);
+        timer = setTimeout(() => {
+          ctrl.abort();
+          reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`));
+        }, ms);
       }),
     ]);
   } finally {
@@ -126,8 +138,9 @@ async function crawlOne(facilityId: string): Promise<void> {
   }
 
   const filter = codeFilters.get(facilityId) ?? new Set(DEFAULT_HCPCS_CODES);
+  console.log(`[hpt] Parsing ${facilityId} (${filter.size} HCPCS filter) ${found.mrfUrl.slice(0, 80)}…`);
   const parsed = await withTimeout(
-    parseMrfUrl(found.mrfUrl, { codeFilter: filter }),
+    (signal) => parseMrfUrl(found.mrfUrl, { codeFilter: filter, signal }),
     CRAWL_TIMEOUT_MS,
     `MRF parse for ${facilityId}`,
   );

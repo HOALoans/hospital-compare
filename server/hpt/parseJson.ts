@@ -9,6 +9,8 @@ function asRecord(v: unknown): Record<string, unknown> | null {
 export interface JsonParseOpts {
   /** When set, only keep these HCPCS/CPT codes (huge MRFs stay memory-safe). */
   codeFilter?: Set<string> | null;
+  /** Cancel in-flight HTTP stream (crawl timeout). */
+  signal?: AbortSignal;
 }
 
 export function ingestItem(
