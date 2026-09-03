@@ -36,16 +36,52 @@ function buildQueryUrl({ dataset, conditions = [], limit = 500, offset = 0 }: Cm
   return `${CMS_BASE}/${dataset}/0?${params.toString()}`;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableFetchError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message.toLowerCase();
+  if (msg.includes("fetch failed") || msg.includes("network") || msg.includes("timeout")) return true;
+  const cause = (err as Error & { cause?: { code?: string } }).cause;
+  const code = cause?.code ?? "";
+  return (
+    code === "ETIMEDOUT" ||
+    code === "ECONNRESET" ||
+    code === "EAI_AGAIN" ||
+    code === "UND_ERR_CONNECT_TIMEOUT"
+  );
+}
+
 export async function cmsQuery<T extends Record<string, unknown>>(
   options: CmsQueryOptions,
 ): Promise<{ results: T[]; count: number }> {
   const url = buildQueryUrl(options);
-  const res = await fetch(url);
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`CMS API error ${res.status}: ${text.slice(0, 200)}`);
+  const maxAttempts = 4;
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const text = await res.text();
+        if (res.status >= 500 && attempt < maxAttempts) {
+          await sleep(750 * attempt);
+          continue;
+        }
+        throw new Error(`CMS API error ${res.status}: ${text.slice(0, 200)}`);
+      }
+      return res.json() as Promise<{ results: T[]; count: number }>;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxAttempts && isRetryableFetchError(err)) {
+        await sleep(750 * attempt);
+        continue;
+      }
+      throw err;
+    }
   }
-  return res.json() as Promise<{ results: T[]; count: number }>;
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
 export async function cmsQueryAll<T extends Record<string, unknown>>(

@@ -626,12 +626,15 @@ async function start() {
   startScheduledRefresh();
 
   if (process.env.INGEST_ARCHIVES !== "false") {
+    // Wait until the primary score cache is ready before starting the heavy
+    // archive ingest so the two don't compete for the 512MB free-tier heap.
     scheduleArchiveIngest(isCacheReady).catch((err) => {
       console.warn("[archives] Background ingest error:", err);
     });
   }
 
-  startNationalHptCrawl(isHospitalDirectoryReady);
+  // Same gate as archives: do not compete with the initial CMS HCAHPS/HAI load.
+  startNationalHptCrawl(isCacheReady);
 
   app.listen(PORT, () => {
     const rl = rateLimitConfig();

@@ -167,6 +167,13 @@ export function startNationalHptCrawl(isReady: () => boolean = isHospitalDirecto
     while (!isReady()) {
       await new Promise((r) => setTimeout(r, 4000));
     }
+    // Give CMS score/archive warm-up a head start on small Render instances so
+    // MRF downloads don't starve data.cms.gov fetches during boot.
+    const delayMs = Number(process.env.HPT_START_DELAY_MS ?? 90_000);
+    if (delayMs > 0) {
+      console.log(`[hpt] Score cache ready — delaying national MRF crawl ${Math.round(delayMs / 1000)}s`);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
     seedQueue();
     console.log(`[hpt] Starting national MRF crawl (${getCoverage().hospitalCount} hospitals in directory)`);
     void crawlLoop();
