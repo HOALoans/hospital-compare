@@ -1,4 +1,5 @@
 import type { HospitalSummary } from "../../shared/types.js";
+import { DEFAULT_HCPCS_CODES } from "../../shared/hpt.js";
 import { getHospitals, getHospitalById, isHospitalDirectoryReady } from "../cache.js";
 import { discoverMrfUrl } from "./discover.js";
 import { parseMrfUrl } from "./parseMrf.js";
@@ -13,13 +14,16 @@ import {
 } from "./store.js";
 
 const STALE_MS = 30 * 24 * 60 * 60 * 1000;
-/** Pause between hospitals so Express can serve page loads on free-tier RAM. */
 const BETWEEN_HOSPITAL_MS = Number(process.env.HPT_BETWEEN_MS ?? 2_500);
+/** Abort a single hospital crawl if the MRF stream takes longer than this. */
+const CRAWL_TIMEOUT_MS = Number(process.env.HPT_CRAWL_TIMEOUT_MS ?? 12 * 60 * 1000);
 
 let queue: string[] = [];
 let looping = false;
 const inFlight = new Set<string>();
 const priority = new Set<string>();
+/** Optional HCPCS filters requested by the Pricing page (keeps huge MRFs tractable). */
+const codeFilters = new Map<string, Set<string>>();
 
 function isStale(facilityId: string): boolean {
   const rec = loadStatus().hospitals[facilityId];
@@ -62,12 +66,33 @@ function seedNationalQueue(preferred: string[] = []) {
   queue = [...new Set([...pref, ...byNeed])];
 }
 
-/** Queue specific hospitals only — never seeds the full national roster. */
-export function prioritizeHospitals(ids: string[]) {
+export function prioritizeHospitals(ids: string[], codes?: string[]) {
   const unique = [...new Set(ids.filter(Boolean))];
   if (unique.length === 0) return;
-  for (const id of unique) priority.add(id);
+  for (const id of unique) {
+    priority.add(id);
+    if (codes?.length) {
+      const set = codeFilters.get(id) ?? new Set<string>();
+      for (const c of codes) set.add(c.trim().toUpperCase());
+      for (const c of DEFAULT_HCPCS_CODES) set.add(c);
+      codeFilters.set(id, set);
+    }
+  }
   void crawlLoop();
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 async function crawlOne(facilityId: string): Promise<void> {
@@ -100,8 +125,12 @@ async function crawlOne(facilityId: string): Promise<void> {
     return;
   }
 
-  const parsed = await parseMrfUrl(found.mrfUrl);
-  // Yield so pending HTTP responses can flush before the next heavy parse.
+  const filter = codeFilters.get(facilityId) ?? new Set(DEFAULT_HCPCS_CODES);
+  const parsed = await withTimeout(
+    parseMrfUrl(found.mrfUrl, { codeFilter: filter }),
+    CRAWL_TIMEOUT_MS,
+    `MRF parse for ${facilityId}`,
+  );
   await new Promise((r) => setImmediate(r));
   const date = new Date().toISOString().slice(0, 10);
   await upsertHospitalCharges({
@@ -111,6 +140,7 @@ async function crawlOne(facilityId: string): Promise<void> {
     mrfUrl: found.mrfUrl,
     codes: parsed.codes,
   });
+  codeFilters.delete(facilityId);
   console.log(
     `[hpt] ${hospital.facilityId} ${hospital.name}: ${Object.keys(parsed.codes).length} HCPCS codes via ${found.via}`,
   );
@@ -149,6 +179,7 @@ async function crawlLoop() {
           snapshots: loadStatus().hospitals[id]?.snapshots ?? [],
           error: err instanceof Error ? err.message.slice(0, 400) : String(err).slice(0, 400),
         });
+        codeFilters.delete(id);
       } finally {
         inFlight.delete(id);
       }
@@ -162,17 +193,17 @@ async function crawlLoop() {
 
 export async function ensureHospitalCrawled(
   hospital: HospitalSummary,
+  codes?: string[],
 ): Promise<{ ready: boolean; error?: string }> {
   if (hospitalHasSnapshot(hospital.facilityId) && !isStale(hospital.facilityId)) {
     return { ready: true };
   }
   const rec = loadStatus().hospitals[hospital.facilityId];
-  prioritizeHospitals([hospital.facilityId]);
-  // Do not await the MRF download on the HTTP request — Render times out ~30s.
-  // The pricing page polls until this hospital's snapshot lands.
+  prioritizeHospitals([hospital.facilityId], codes);
   if (rec?.status === "failed" && rec.error && rec.lastAttemptAt) {
     const age = Date.now() - Date.parse(rec.lastAttemptAt);
-    if (age < 10 * 60 * 1000) return { ready: false, error: rec.error };
+    // Allow retry sooner for timeout / oversized-file failures after a redeploy.
+    if (age < 3 * 60 * 1000) return { ready: false, error: rec.error };
   }
   return { ready: hospitalHasSnapshot(hospital.facilityId), error: rec?.error };
 }
@@ -184,7 +215,9 @@ export async function ensureHospitalCrawled(
  */
 export function startNationalHptCrawl(isReady: () => boolean = isHospitalDirectoryReady) {
   if (process.env.INGEST_HPT !== "true") {
-    console.log("[hpt] National crawl idle (set INGEST_HPT=true or use npm run crawl:hpt). On-demand crawls still run from the Pricing page.");
+    console.log(
+      "[hpt] National crawl idle (set INGEST_HPT=true or use npm run crawl:hpt). On-demand crawls still run from the Pricing page.",
+    );
     return;
   }
   const wait = async () => {

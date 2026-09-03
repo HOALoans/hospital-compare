@@ -46,7 +46,7 @@ export function PricingPage({ onBack }: Props) {
   const [compareWith, setCompareWith] = useState<HospitalSummary[]>([]);
   const [codeInput, setCodeInput] = useState(DEFAULT_HCPCS_CODES.slice(0, 10).join(", "));
   const [metric, setMetric] = useState<HptMetric>("median");
-  const [payer, setPayer] = useState<HptPayer>("cash");
+  const [payer, setPayer] = useState<HptPayer>("all");
   const [mode, setMode] = useState<"snapshot" | "trend">("snapshot");
   const [showMore, setShowMore] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("code");
@@ -152,7 +152,9 @@ export function PricingPage({ onBack }: Props) {
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
               Standard charges from each hospital&apos;s CMS machine-readable file (not a third-party
               API). Compare cash and all-payer negotiated rates to national and ZIP-3 peers, including
-              quartile and whether a price sits in the top 1% of crawled hospitals.
+              quartile and whether a price sits in the top 1% of crawled hospitals. Prefer{" "}
+              <span className="font-medium">All payers</span> — many hospitals (including HCA) omit
+              discounted cash prices and only publish negotiated amounts.
             </p>
           </div>
         </div>
@@ -200,8 +202,8 @@ export function PricingPage({ onBack }: Props) {
               onChange={(e) => setPayer(e.target.value as HptPayer)}
               className="ml-1 rounded-lg border border-slate-300 bg-white px-2 py-1.5"
             >
-              <option value="cash">Cash / self-pay</option>
               <option value="all">All payers (negotiated)</option>
+              <option value="cash">Cash / self-pay</option>
             </select>
           </label>
           <label className="text-sm text-slate-700">
@@ -242,8 +244,9 @@ export function PricingPage({ onBack }: Props) {
       {data?.pendingHospital && !data.crawlError && (
         <p className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-          Downloading this hospital&apos;s CMS price file (often 50–200MB). The table will fill in
-          automatically — usually 1–3 minutes.
+          Downloading this hospital&apos;s CMS price file
+          {data.coverage.running ? " (in progress)" : ""}. Large hospitals can take several
+          minutes; the table fills in automatically.
         </p>
       )}
 

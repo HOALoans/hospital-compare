@@ -78,8 +78,8 @@ export async function buildHptComparison(opts: {
   const codes = normalizeCodes(opts.codes);
   const compareIds = (opts.compareWith ?? []).filter((id) => id && id !== hospital.facilityId).slice(0, 8);
 
-  const crawl = await ensureHospitalCrawled(hospital);
-  prioritizeHospitals(compareIds);
+  const crawl = await ensureHospitalCrawled(hospital, codes);
+  prioritizeHospitals(compareIds, codes);
   const pendingHospital = !crawl.ready;
 
   const rows: HptCodeRow[] = [];
