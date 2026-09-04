@@ -21,7 +21,7 @@ const HOSPITALS: HospitalSummary[] = [
     zip3: "288",
     county: "BUNCOMBE",
     ownership: "Proprietary",
-    ownershipGroup: "proprietary",
+    ownershipGroup: "for-profit",
     hospitalType: "Acute Care Hospitals",
     overallRating: "3",
     latitude: null,
