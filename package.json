@@ -10,7 +10,7 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:client": "vite",
     "dev:server": "tsx watch server/index.ts",
-    "build": "vite build && tsc -p tsconfig.server.json",
+    "build": "vite build && tsc -p tsconfig.server.json && mkdir -p dist/server/hpt && cp server/hpt/seedData.json dist/server/hpt/",
     "start": "node dist/server/index.js",
     "ingest:archives": "tsx scripts/ingestArchives.ts",
     "extract:hca-ahrq": "tsx scripts/extractHcaFromAhrq.ts",
@@ -19,7 +19,8 @@
     "update:hca-watchdog": "node scripts/update-dashboard.js",
     "sync:hca-sources": "node scripts/sync-hca-sources.js",
     "build:staff-ratios": "python3 scripts/buildStaffRatios.py",
-    "crawl:hpt": "tsx scripts/crawlHpt.ts"
+    "crawl:hpt": "tsx scripts/crawlHpt.ts",
+    "seed:hpt": "tsx scripts/seedHpt.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

@@ -226,9 +226,9 @@ export function PricingPage({ onBack }: Props) {
           <div>
             <h2 className="font-display text-2xl text-slate-900">HCPCS price comparison</h2>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
-              Standard charges from each hospital&apos;s CMS machine-readable file. Compare hospitals
-              side by side, and see whether a price sits in the lower or upper part of the national
-              distribution among crawled hospitals. Prefer{" "}
+              Standard charges from each hospital&apos;s CMS machine-readable file. Mission and
+              Pardee load from a pre-built extract so common codes appear immediately; other
+              hospitals download on demand. Prefer{" "}
               <span className="font-medium">All payers</span> — many hospitals omit discounted cash
               prices.
             </p>

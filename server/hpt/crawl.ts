@@ -11,6 +11,8 @@ import {
   saveStatus,
   upsertHospitalCharges,
   upsertHospitalMeta,
+  getCodeShard,
+  latestPoint,
 } from "./store.js";
 
 const STALE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -208,7 +210,16 @@ export async function ensureHospitalCrawled(
   hospital: HospitalSummary,
   codes?: string[],
 ): Promise<{ ready: boolean; error?: string }> {
-  if (hospitalHasSnapshot(hospital.facilityId) && !isStale(hospital.facilityId)) {
+  const hasSnap = hospitalHasSnapshot(hospital.facilityId) && !isStale(hospital.facilityId);
+  if (hasSnap) {
+    // Seed / prior crawl may not include every requested code — refresh in background.
+    if (codes?.length) {
+      const missing = codes.filter((code) => {
+        const pt = latestPoint(getCodeShard(code).byFacility[hospital.facilityId]);
+        return !pt;
+      });
+      if (missing.length > 0) prioritizeHospitals([hospital.facilityId], missing);
+    }
     return { ready: true };
   }
   const rec = loadStatus().hospitals[hospital.facilityId];

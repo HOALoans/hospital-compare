@@ -55,6 +55,7 @@ import {
 import { getCoverage } from "./hpt/store.js";
 import { buildHptComparison } from "./hpt/compare.js";
 import { startNationalHptCrawl } from "./hpt/crawl.js";
+import { loadHptSeed } from "./hpt/loadSeed.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 5175);
@@ -635,6 +636,10 @@ async function start() {
 
   // Same gate as archives: do not compete with the initial CMS HCAHPS/HAI load.
   startNationalHptCrawl(isCacheReady);
+
+  // Instant Pricing for key hospitals (Mission / Pardee) — avoids waiting on
+  // multi-hundred-MB CMS MRF downloads on the free-tier web dyno.
+  loadHptSeed().catch((err) => console.warn("[hpt] Seed load failed:", err));
 
   app.listen(PORT, () => {
     const rl = rateLimitConfig();
