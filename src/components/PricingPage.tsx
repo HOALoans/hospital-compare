@@ -18,7 +18,7 @@ import {
 } from "recharts";
 import type { HospitalSummary } from "@shared/types";
 import type { HptCompareResponse, HptMetric, HptPayer } from "@shared/hpt";
-import { DEFAULT_HCPCS_CODES, HPT_DEFAULT_VISIBLE } from "@shared/hpt";
+import { DEFAULT_HCPCS_CODES, HCPCS_CODE_LABELS, HPT_DEFAULT_VISIBLE, HPT_MAX_CODES } from "@shared/hpt";
 import { CHART } from "@shared/chartTheme";
 import { HospitalSearch } from "@/components/HospitalSearch";
 import { CompareHospitalPicker } from "@/components/CompareHospitalPicker";
@@ -44,11 +44,11 @@ interface Props {
 export function PricingPage({ onBack }: Props) {
   const [hospital, setHospital] = useState<HospitalSummary | null>(null);
   const [compareWith, setCompareWith] = useState<HospitalSummary[]>([]);
-  const [codeInput, setCodeInput] = useState(DEFAULT_HCPCS_CODES.slice(0, 10).join(", "));
+  const [codeInput, setCodeInput] = useState(DEFAULT_HCPCS_CODES.join(", "));
   const [metric, setMetric] = useState<HptMetric>("median");
   const [payer, setPayer] = useState<HptPayer>("all");
   const [mode, setMode] = useState<"snapshot" | "trend">("snapshot");
-  const [showMore, setShowMore] = useState(false);
+  const [showMore, setShowMore] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>("code");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [trendCode, setTrendCode] = useState<string>("");
@@ -58,12 +58,21 @@ export function PricingPage({ onBack }: Props) {
 
   const codes = useMemo(
     () =>
-      codeInput
-        .split(/[\s,]+/)
-        .map((c) => c.trim().toUpperCase())
-        .filter(Boolean),
+      [...new Set(
+        codeInput
+          .split(/[\s,]+/)
+          .map((c) => c.trim().toUpperCase())
+          .filter(Boolean),
+      )].slice(0, HPT_MAX_CODES),
     [codeInput],
   );
+
+  const toggleCode = (code: string) => {
+    const set = new Set(codes);
+    if (set.has(code)) set.delete(code);
+    else if (set.size < HPT_MAX_CODES) set.add(code);
+    setCodeInput([...set].join(", "));
+  };
 
   useEffect(() => {
     if (!hospital || codes.length === 0) {
@@ -173,15 +182,56 @@ export function PricingPage({ onBack }: Props) {
           </p>
         )}
 
-        <label className="mt-5 block text-sm font-medium text-slate-700">
-          HCPCS codes (up to 40, comma-separated)
+        <div className="mt-5">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <label className="block text-sm font-medium text-slate-700">
+              HCPCS codes ({codes.length}/{HPT_MAX_CODES})
+            </label>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <button
+                type="button"
+                className="font-semibold text-brand-primary underline"
+                onClick={() => setCodeInput(DEFAULT_HCPCS_CODES.join(", "))}
+              >
+                All common ({DEFAULT_HCPCS_CODES.length})
+              </button>
+              <button
+                type="button"
+                className="font-semibold text-slate-500 underline"
+                onClick={() => setCodeInput(DEFAULT_HCPCS_CODES.slice(0, 10).join(", "))}
+              >
+                Top 10
+              </button>
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {DEFAULT_HCPCS_CODES.map((code) => {
+              const on = codes.includes(code);
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => toggleCode(code)}
+                  title={HCPCS_CODE_LABELS[code] ?? code}
+                  className={`rounded border px-2 py-1 font-mono text-xs ${
+                    on
+                      ? "border-brand-primary bg-brand-primary/10 text-slate-900"
+                      : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+                  }`}
+                >
+                  {code}
+                </button>
+              );
+            })}
+          </div>
           <textarea
             value={codeInput}
             onChange={(e) => setCodeInput(e.target.value)}
             rows={2}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm"
+            placeholder="Or paste any HCPCS/CPT codes, comma-separated"
+            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm"
           />
-        </label>
+        </div>
 
         <div className="mt-4 flex flex-wrap gap-3">
           <label className="text-sm text-slate-700">
@@ -257,6 +307,12 @@ export function PricingPage({ onBack }: Props) {
             {data.coverage.hospitalCount.toLocaleString()} hospitals
             {data.snapshotDate ? ` · snapshot ${data.snapshotDate}` : ""}.
           </p>
+          {(data.rows[0]?.national.n ?? 0) <= 1 && (
+            <p className="text-sm text-amber-800">
+              National figures match this hospital when only one price file has been crawled
+              (n={data.rows[0]?.national.n ?? 0}). They diverge as more hospitals load.
+            </p>
+          )}
 
           {mode === "snapshot" && (
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">

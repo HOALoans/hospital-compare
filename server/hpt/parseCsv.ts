@@ -68,12 +68,22 @@ function normHeader(h: string): string {
   return h.toLowerCase().replace(/^\ufeff/, "").replace(/[\s|]+/g, "_").replace(/_+/g, "_");
 }
 
-interface ColMap {
+export interface CodeSlot {
   code: number;
   type: number | null;
+}
+
+export interface ColMap {
+  /** Primary code column (legacy tall files). */
+  code: number;
+  type: number | null;
+  /** CMS wide files often have code|1..code|3 with types. */
+  codeSlots: CodeSlot[];
   desc: number | null;
   cash: number | null;
   negotiated: number | null;
+  /** All payer-specific negotiated_dollar columns (wide CMS format). */
+  negotiatedCols: number[];
   charge: number | null;
   chargeType: number | null;
 }
@@ -88,22 +98,42 @@ function mapHeader(headers: string[]): ColMap | null {
     return null;
   };
 
-  const type =
-    find(
-      (s) => s.includes("code") && s.includes("type") && !s.includes("2"),
-      (s) => s === "billing_code_type" || s === "code_type",
+  const codeSlots: CodeSlot[] = [];
+  for (let n = 1; n <= 5; n++) {
+    const codeIdx = h.findIndex((s) => s === `code_${n}` || s === `code${n}`);
+    if (codeIdx < 0) continue;
+    const typeIdx = h.findIndex(
+      (s) => s === `code_${n}_type` || s === `code${n}_type` || s === `code_${n}type`,
     );
-  const code =
-    find(
-      (s) => s === "code" || s === "billing_code" || s === "code_1",
-      (s) => /(^|_)code$/.test(s) && !s.includes("type") && !s.includes("modifier"),
-      (s) => s.includes("billing_code") && !s.includes("type"),
-    );
-  if (code == null) return null;
+    codeSlots.push({ code: codeIdx, type: typeIdx >= 0 ? typeIdx : null });
+  }
+
+  const type = find(
+    (s) => s.includes("code") && s.includes("type") && !s.includes("2") && !/^code_\d/.test(s),
+    (s) => s === "billing_code_type" || s === "code_type",
+  );
+  const code = find(
+    (s) => s === "code" || s === "billing_code" || s === "code_1",
+    (s) => /(^|_)code$/.test(s) && !s.includes("type") && !s.includes("modifier"),
+    (s) => s.includes("billing_code") && !s.includes("type"),
+  );
+
+  if (code == null && codeSlots.length === 0) return null;
+
+  const negotiatedCols = h
+    .map((s, i) => (s.includes("negotiated_dollar") ? i : -1))
+    .filter((i) => i >= 0);
+
+  const primaryCode = code ?? codeSlots[0]!.code;
+  const primaryType = type ?? codeSlots[0]?.type ?? null;
+  if (codeSlots.length === 0) {
+    codeSlots.push({ code: primaryCode, type: primaryType });
+  }
 
   return {
-    code,
-    type,
+    code: primaryCode,
+    type: primaryType,
+    codeSlots,
     desc: find((s) => s === "description" || s.endsWith("_description") || s === "item_description"),
     cash: find(
       (s) => s.includes("discounted_cash") || s.includes("cash_price") || s === "discounted_cash",
@@ -114,36 +144,28 @@ function mapHeader(headers: string[]): ColMap | null {
       (s) => s.includes("standard_charge_dollar"),
       (s) => s.includes("payer_specific") && s.includes("dollar"),
     ),
+    negotiatedCols,
     charge: find((s) => s === "standard_charge" || s === "standard_charge_amount"),
     chargeType: find(
-      (s) => s.includes("standard_charge") && (s.includes("type") || s.includes("methodology") || s.includes("setting") === false) && s.includes("type"),
+      (s) => s.includes("standard_charge") && s.includes("type"),
       (s) => s === "standard_charge_type" || s === "charge_type",
     ),
   };
 }
 
-export function ingestCsvRow(cols: string[], map: ColMap, acc: Map<string, ParsedCodeCharges>) {
-  const code = (cols[map.code] ?? "").trim().toUpperCase();
-  if (!code || code.length > 12) return;
-  const type = map.type != null ? cols[map.type] : "";
-  if (map.type != null && !isHcpcsType(type)) return;
-  if (map.type == null && !/^[A-Z]?\d{4,5}[A-Z]?$/.test(code)) return;
-
-  let row = acc.get(code);
-  if (!row) {
-    row = { description: null, cash: [], negotiated: [] };
-    acc.set(code, row);
-  }
-  if (!row.description && map.desc != null) {
-    const d = cols[map.desc]?.trim();
-    if (d) row.description = d.slice(0, 180);
-  }
-
+function pushAmounts(cols: string[], map: ColMap, row: ParsedCodeCharges) {
   const cash = map.cash != null ? parseMoney(cols[map.cash]) : null;
   if (cash != null) row.cash.push(cash);
 
-  const neg = map.negotiated != null ? parseMoney(cols[map.negotiated]) : null;
-  if (neg != null) row.negotiated.push(neg);
+  if (map.negotiatedCols.length > 0) {
+    for (const i of map.negotiatedCols) {
+      const neg = parseMoney(cols[i]);
+      if (neg != null) row.negotiated.push(neg);
+    }
+  } else {
+    const neg = map.negotiated != null ? parseMoney(cols[map.negotiated]) : null;
+    if (neg != null) row.negotiated.push(neg);
+  }
 
   if (map.charge != null) {
     const amt = parseMoney(cols[map.charge]);
@@ -155,14 +177,60 @@ export function ingestCsvRow(cols: string[], map: ColMap, acc: Map<string, Parse
   }
 }
 
+export function ingestCsvRow(
+  cols: string[],
+  map: ColMap,
+  acc: Map<string, ParsedCodeCharges>,
+  opts?: { codeFilter?: Set<string> | null },
+) {
+  const targets: string[] = [];
+  for (const slot of map.codeSlots) {
+    const code = (cols[slot.code] ?? "").trim().toUpperCase();
+    if (!code || code.length > 12) continue;
+    const type = slot.type != null ? cols[slot.type] : map.type != null ? cols[map.type] : "";
+    if (type && !isHcpcsType(type)) continue;
+    if (!type && !/^[A-Z]?\d{4,5}[A-Z]?$/.test(code)) continue;
+    if (opts?.codeFilter?.size && !opts.codeFilter.has(code)) continue;
+    targets.push(code);
+  }
+  if (targets.length === 0) return;
+
+  const desc = map.desc != null ? cols[map.desc]?.trim().slice(0, 180) || null : null;
+
+  for (const code of [...new Set(targets)]) {
+    let row = acc.get(code);
+    if (!row) {
+      row = { description: null, cash: [], negotiated: [] };
+      acc.set(code, row);
+    }
+    if (!row.description && desc) row.description = desc;
+    pushAmounts(cols, map, row);
+  }
+}
+
 export function detectDelimiter(headerLine: string): string {
-  const counts: [string, number][] = [
-    [",", (headerLine.match(/,/g) ?? []).length],
-    ["|", (headerLine.match(/\|/g) ?? []).length],
-    ["\t", (headerLine.match(/\t/g) ?? []).length],
-  ];
-  counts.sort((a, b) => b[1] - a[1]);
-  return counts[0]![0];
+  // CMS column *names* often contain `|` (code|1, payer|plan|negotiated_dollar).
+  // Prefer comma whenever it appears as a plausible field separator.
+  const commas = (headerLine.match(/,/g) ?? []).length;
+  const tabs = (headerLine.match(/\t/g) ?? []).length;
+  if (tabs > commas && tabs >= 3) return "\t";
+  if (commas >= 3) return ",";
+  const pipes = (headerLine.match(/\|/g) ?? []).length;
+  if (pipes >= 3) return "|";
+  return ",";
+}
+
+/** True when a line looks like the charge-table header (not the hospital attestation row). */
+export function looksLikeChargeHeader(line: string): boolean {
+  const low = line.toLowerCase();
+  if (!low.includes("description")) return false;
+  return (
+    /code\s*[|_]?\s*1/.test(low) ||
+    low.includes("billing_code") ||
+    /(?:^|,)"?code"?\s*,/.test(low) ||
+    low.includes("code|1") ||
+    low.includes(",code,")
+  );
 }
 
 export function mapCsvHeaderLine(headerLine: string): { delimiter: string; map: ColMap } | null {
@@ -172,5 +240,3 @@ export function mapCsvHeaderLine(headerLine: string): { delimiter: string; map: 
   if (!map) return null;
   return { delimiter, map };
 }
-
-export { type ColMap };

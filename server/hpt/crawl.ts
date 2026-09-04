@@ -215,8 +215,10 @@ export async function ensureHospitalCrawled(
   prioritizeHospitals([hospital.facilityId], codes);
   if (rec?.status === "failed" && rec.error && rec.lastAttemptAt) {
     const age = Date.now() - Date.parse(rec.lastAttemptAt);
-    // Allow retry sooner for timeout / oversized-file failures after a redeploy.
-    if (age < 3 * 60 * 1000) return { ready: false, error: rec.error };
+    const discoveryMiss = /cms-hpt|MRF URL/i.test(rec.error);
+    // Discovery misses should retry quickly after domain/alias fixes; other failures wait 3 minutes.
+    const cooldown = discoveryMiss ? 20_000 : 3 * 60 * 1000;
+    if (age < cooldown) return { ready: false, error: rec.error };
   }
   return { ready: hospitalHasSnapshot(hospital.facilityId), error: rec?.error };
 }

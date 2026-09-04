@@ -10,6 +10,7 @@ import { HPT_TMP_DIR } from "../dataPaths.js";
 import {
   collapseCode,
   ingestCsvRow,
+  looksLikeChargeHeader,
   mapCsvHeaderLine,
   parseCsvLine,
   type ParsedCodeCharges,
@@ -42,6 +43,26 @@ function looksLikeJsonUrl(url: string): boolean {
   return /\.json(\.gz)?(\?|$)/i.test(url);
 }
 
+function looksLikeCsvUrl(url: string): boolean {
+  return /\.csv(\.gz)?(\?|$)/i.test(url) || /standardcharges/i.test(url) || /export\/oneclick/i.test(url);
+}
+
+/** Many cms-hpt.txt entries still list http:// while hosts require https. */
+function preferHttps(url: string): string {
+  if (/^http:\/\//i.test(url)) return `https://${url.slice("http://".length)}`;
+  return url;
+}
+
+/** Node fetch usually already inflates Content-Encoding; only gunzip .gz URLs. */
+function maybeGunzipNetworkStream(nodeStream: Readable, url: string): Readable {
+  if (/\.gz(\?|$)/i.test(url)) {
+    const gunzip = zlib.createGunzip();
+    nodeStream.pipe(gunzip);
+    return gunzip;
+  }
+  return nodeStream;
+}
+
 async function downloadToFile(url: string, dest: string, maxBytes: number): Promise<number> {
   const res = await fetch(url, {
     redirect: "follow",
@@ -69,18 +90,77 @@ async function downloadToFile(url: string, dest: string, maxBytes: number): Prom
   return bytes;
 }
 
-async function parseCsvFile(file: string, acc: Map<string, ParsedCodeCharges>) {
-  const rl = readline.createInterface({ input: fs.createReadStream(file), crlfDelay: Infinity });
+async function parseCsvReadable(
+  readable: Readable,
+  acc: Map<string, ParsedCodeCharges>,
+  opts: JsonParseOpts = {},
+): Promise<number> {
+  const rl = readline.createInterface({ input: readable, crlfDelay: Infinity });
   let header: ReturnType<typeof mapCsvHeaderLine> = null;
-  for await (const line of rl) {
-    if (!line.trim()) continue;
-    if (!header) {
-      header = mapCsvHeaderLine(line);
-      if (!header) throw new Error("Unrecognized MRF CSV header");
-      continue;
+  let rows = 0;
+  const remaining = opts.codeFilter?.size ? new Set(opts.codeFilter) : null;
+
+  try {
+    for await (const line of rl) {
+      if (opts.signal?.aborted) break;
+      if (!line.trim()) continue;
+      if (!header) {
+        if (!looksLikeChargeHeader(line)) continue;
+        header = mapCsvHeaderLine(line);
+        if (!header) continue;
+        continue;
+      }
+      ingestCsvRow(parseCsvLine(line, header.delimiter), header.map, acc, {
+        codeFilter: opts.codeFilter,
+      });
+      rows += 1;
+      if (remaining) {
+        for (const code of [...remaining]) {
+          const row = acc.get(code);
+          if (row && (row.cash.length > 0 || row.negotiated.length > 0)) remaining.delete(code);
+        }
+        if (remaining.size === 0) {
+          readable.destroy();
+          break;
+        }
+      }
+      if (rows % 500 === 0) await new Promise<void>((r) => setImmediate(r));
     }
-    ingestCsvRow(parseCsvLine(line, header.delimiter), header.map, acc);
+  } catch (err) {
+    if (!opts.signal?.aborted) throw err;
   }
+
+  if (!header) throw new Error("Unrecognized MRF CSV header");
+  return rows;
+}
+
+async function parseCsvFile(file: string, acc: Map<string, ParsedCodeCharges>, opts: JsonParseOpts = {}) {
+  await parseCsvReadable(fs.createReadStream(file), acc, opts);
+}
+
+async function parseCsvFromNetwork(url: string, acc: Map<string, ParsedCodeCharges>, opts: JsonParseOpts) {
+  const res = await fetch(url, {
+    redirect: "follow",
+    signal: opts.signal,
+    headers: { "User-Agent": USER_AGENT, Accept: "text/csv,application/octet-stream,*/*" },
+  });
+  if (!res.ok) throw new Error(`MRF download ${res.status}`);
+  if (!res.body) throw new Error("Empty MRF body");
+  let nodeStream: Readable = Readable.fromWeb(res.body as import("stream/web").ReadableStream);
+  const onAbort = () => {
+    try {
+      nodeStream.destroy(new Error("aborted"));
+    } catch {
+      /* ignore */
+    }
+  };
+  if (opts.signal) {
+    if (opts.signal.aborted) onAbort();
+    else opts.signal.addEventListener("abort", onAbort, { once: true });
+  }
+  nodeStream = maybeGunzipNetworkStream(nodeStream, url);
+  const rows = await parseCsvReadable(nodeStream, acc, opts);
+  if (rows === 0 && acc.size === 0) throw new Error("CSV stream found 0 charge rows");
 }
 
 async function unzipToDir(zipPath: string, destDir: string): Promise<string[]> {
@@ -153,12 +233,7 @@ async function parseJsonFromNetwork(
     }
   });
 
-  const encoding = (res.headers.get("content-encoding") || "").toLowerCase();
-  if (encoding.includes("gzip") || /\.gz(\?|$)/i.test(url)) {
-    const gunzip = zlib.createGunzip();
-    nodeStream.pipe(gunzip);
-    nodeStream = gunzip;
-  }
+  nodeStream = maybeGunzipNetworkStream(nodeStream, url);
 
   if (opts.codeFilter && opts.codeFilter.size > 0) {
     const n = await extractFilteredCodesFromJsonStream(nodeStream, acc, opts.codeFilter, opts.signal);
@@ -181,11 +256,18 @@ export async function parseMrfUrl(
   opts: JsonParseOpts = {},
 ): Promise<{ codes: Record<string, ReturnType<typeof collapseCode>> }> {
   const acc = new Map<string, ParsedCodeCharges>();
+  mrfUrl = preferHttps(mrfUrl);
 
   // Huge JSON files (e.g. Mission ~800MB): stream from network with an optional code filter.
   // Skip HEAD when filtering — one less round-trip that can hang, and we always stream.
   if (looksLikeJsonUrl(mrfUrl) && opts.codeFilter && opts.codeFilter.size > 0) {
     await parseJsonFromNetwork(mrfUrl, acc, opts);
+    return finalize(acc);
+  }
+
+  // Wide CMS CSVs (e.g. Pardee ~250MB): stream + filter; never write the full file.
+  if (looksLikeCsvUrl(mrfUrl) && opts.codeFilter && opts.codeFilter.size > 0) {
+    await parseCsvFromNetwork(mrfUrl, acc, opts);
     return finalize(acc);
   }
 
@@ -207,6 +289,12 @@ export async function parseMrfUrl(
       await parseJsonFromNetwork(mrfUrl, acc, opts);
       return finalize(acc);
     }
+  }
+
+  // ElevatePFS / similar one-click exports often omit .csv in the URL and report Content-Length: 0.
+  if (!looksLikeJsonUrl(mrfUrl) && opts.codeFilter && opts.codeFilter.size > 0) {
+    await parseCsvFromNetwork(mrfUrl, acc, opts);
+    return finalize(acc);
   }
 
   fs.mkdirSync(HPT_TMP_DIR, { recursive: true });
@@ -267,7 +355,7 @@ export async function parseMrfUrl(
         parseMrfJson(fs.readFileSync(workPath, "utf8"), acc, opts);
       }
     } else {
-      await parseCsvFile(workPath, acc);
+      await parseCsvFile(workPath, acc, opts);
       if (opts.codeFilter?.size) {
         for (const code of [...acc.keys()]) {
           if (!opts.codeFilter.has(code)) acc.delete(code);

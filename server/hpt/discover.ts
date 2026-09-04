@@ -87,6 +87,11 @@ function hptTxtUrls(domain: string): string[] {
   ];
 }
 
+function preferHttpsUrl(url: string): string {
+  if (/^http:\/\//i.test(url)) return `https://${url.slice("http://".length)}`;
+  return url;
+}
+
 async function mrfFromHptTxt(url: string, hospitalNames: string[]): Promise<{ mrfUrl: string; locationName: string } | null> {
   const { ok, text } = await fetchText(url);
   if (!ok) return null;
@@ -120,6 +125,7 @@ function matchIndex(hospital: HospitalSummary, records: IndexRecord[]): IndexRec
 export const HPT_LOCATION_ALIASES: Record<string, string[]> = {
   "340002": ["MISSION HOSPITAL", "MEMORIAL MISSION HOSPITAL"],
   "340087": ["MISSION HOSPITAL", "MEMORIAL MISSION HOSPITAL"],
+  "340017": ["Pardee Hospital", "PARDEE HOSPITAL HENDERSON COUNTY", "Margaret R. Pardee Memorial Hospital"],
 };
 
 export async function discoverMrfUrl(hospital: HospitalSummary): Promise<{ mrfUrl: string; via: string } | null> {
@@ -144,7 +150,9 @@ export async function discoverMrfUrl(hospital: HospitalSummary): Promise<{ mrfUr
     for (const url of hptTxtUrls(domain)) {
       try {
         const hit = await mrfFromHptTxt(url, searchNames);
-        if (hit) return { mrfUrl: hit.mrfUrl, via: `${url} → ${hit.locationName}` };
+        if (hit) {
+          return { mrfUrl: preferHttpsUrl(hit.mrfUrl), via: `${url} → ${hit.locationName}` };
+        }
       } catch {
         /* try next */
       }
@@ -154,9 +162,9 @@ export async function discoverMrfUrl(hospital: HospitalSummary): Promise<{ mrfUr
   if (idx?.mrf_url) {
     if (idx.source) {
       const hit = await mrfFromHptTxt(idx.source, searchNames);
-      if (hit) return { mrfUrl: hit.mrfUrl, via: `cms-hpt.txt (index) → ${hit.locationName}` };
+      if (hit) return { mrfUrl: preferHttpsUrl(hit.mrfUrl), via: `cms-hpt.txt (index) → ${hit.locationName}` };
     }
-    return { mrfUrl: idx.mrf_url, via: "public MRF index" };
+    return { mrfUrl: preferHttpsUrl(idx.mrf_url), via: "public MRF index" };
   }
 
   return null;

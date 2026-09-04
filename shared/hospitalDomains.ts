@@ -7,6 +7,7 @@ import type { HospitalSummary } from "./types.js";
 export const HOSPITAL_DOMAINS: Record<string, string> = {
   "340002": "missionhealth.org",
   "340087": "missionhealth.org",
+  "340017": "unchealth.org", // Pardee (UNC Health) — pardeehospital.org blocks cms-hpt.txt
   "360079": "nyulangone.org",
   "050001": "uabmedicine.org",
   "210009": "ukhealthcare.uky.edu",

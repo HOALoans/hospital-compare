@@ -2,7 +2,7 @@ export type HptMetric = "mean" | "median";
 export type HptPayer = "cash" | "all";
 
 export const HPT_MAX_CODES = 40;
-export const HPT_DEFAULT_VISIBLE = 10;
+export const HPT_DEFAULT_VISIBLE = 40;
 
 /** Common shoppable / outpatient HCPCS (CPT is HCPCS Level I). */
 export const DEFAULT_HCPCS_CODES = [
@@ -10,15 +10,19 @@ export const DEFAULT_HCPCS_CODES = [
   "99214",
   "99283",
   "99284",
+  "99285",
   "70450",
   "70553",
   "71046",
+  "71260",
   "72148",
+  "73721",
   "77067",
   "80053",
   "85025",
   "36415",
   "93000",
+  "93306",
   "45378",
   "29881",
   "43239",
@@ -26,7 +30,39 @@ export const DEFAULT_HCPCS_CODES = [
   "27447",
   "47562",
   "62323",
+  "20610",
+  "97110",
 ];
+
+/** Short labels for the Pricing page code picker. */
+export const HCPCS_CODE_LABELS: Record<string, string> = {
+  "99213": "Office visit (est.)",
+  "99214": "Office visit (est., longer)",
+  "99283": "ED visit",
+  "99284": "ED visit (higher)",
+  "99285": "ED visit (highest)",
+  "70450": "CT head w/o contrast",
+  "70553": "MRI brain w/ & w/o",
+  "71046": "Chest X-ray 2 views",
+  "71260": "CT chest w/ contrast",
+  "72148": "MRI lumbar spine",
+  "73721": "MRI joint lower extremity",
+  "77067": "Screening mammogram",
+  "80053": "Metabolic panel",
+  "85025": "CBC with differential",
+  "36415": "Venipuncture",
+  "93000": "ECG",
+  "93306": "Echo complete",
+  "45378": "Colonoscopy",
+  "29881": "Knee arthroscopy",
+  "43239": "Upper endoscopy + biopsy",
+  "66984": "Cataract surgery",
+  "27447": "Total knee arthroplasty",
+  "47562": "Laparoscopic cholecystectomy",
+  "62323": "Epidural injection",
+  "20610": "Joint injection",
+  "97110": "Therapeutic exercise",
+};
 
 export interface HptChargePoint {
   date: string;
