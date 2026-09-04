@@ -16,7 +16,7 @@ import {
 const STALE_MS = 30 * 24 * 60 * 60 * 1000;
 const BETWEEN_HOSPITAL_MS = Number(process.env.HPT_BETWEEN_MS ?? 2_500);
 /** Abort a single hospital crawl if the MRF stream takes longer than this. */
-const CRAWL_TIMEOUT_MS = Number(process.env.HPT_CRAWL_TIMEOUT_MS ?? 3 * 60 * 1000);
+const CRAWL_TIMEOUT_MS = Number(process.env.HPT_CRAWL_TIMEOUT_MS ?? 5 * 60 * 1000);
 
 let queue: string[] = [];
 let looping = false;
@@ -216,9 +216,12 @@ export async function ensureHospitalCrawled(
   if (rec?.status === "failed" && rec.error && rec.lastAttemptAt) {
     const age = Date.now() - Date.parse(rec.lastAttemptAt);
     const discoveryMiss = /cms-hpt|MRF URL/i.test(rec.error);
-    // Discovery misses should retry quickly after domain/alias fixes; other failures wait 3 minutes.
-    const cooldown = discoveryMiss ? 20_000 : 3 * 60 * 1000;
+    const timedOut = /timed out/i.test(rec.error);
+    // Discovery misses / timeouts should retry quickly; other failures wait 3 minutes.
+    const cooldown = discoveryMiss || timedOut ? 20_000 : 3 * 60 * 1000;
     if (age < cooldown) return { ready: false, error: rec.error };
+    // Past cooldown: retry is queued; don't keep showing the stale error as final.
+    return { ready: false };
   }
   return { ready: hospitalHasSnapshot(hospital.facilityId), error: rec?.error };
 }

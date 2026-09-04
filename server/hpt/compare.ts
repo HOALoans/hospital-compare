@@ -25,6 +25,19 @@ function pickValue(
   return metric === "mean" ? allMean : allMedian;
 }
 
+function nationalBandOf(
+  quartile: 1 | 2 | 3 | 4 | null,
+  percentile: number | null,
+  sampleN: number,
+): HptHospitalValue["nationalBand"] {
+  if (sampleN < 2 || (quartile == null && percentile == null)) return null;
+  if (quartile === 1 || (percentile != null && percentile <= 25)) return "low";
+  if (quartile === 2 || (percentile != null && percentile <= 50)) return "below_median";
+  if (quartile === 3 || (percentile != null && percentile <= 75)) return "above_median";
+  if (quartile === 4 || (percentile != null && percentile > 75)) return "high";
+  return null;
+}
+
 function buildHospitalValue(
   hospital: HospitalSummary,
   value: number | null,
@@ -38,18 +51,19 @@ function buildHospitalValue(
       value: null,
       quartile: null,
       percentile: null,
-      top1Percent: false,
+      nationalBand: null,
     };
   }
   const sorted = [...distValues].sort((a, b) => a - b);
   const pct = empiricalPercentile(sorted, value);
+  const quartile = quartileOf(value, dist.p25, dist.median, dist.p75);
   return {
     facilityId: hospital.facilityId,
     name: hospital.name,
     value,
-    quartile: quartileOf(value, dist.p25, dist.median, dist.p75),
+    quartile,
     percentile: pct,
-    top1Percent: dist.p99 != null && value >= dist.p99,
+    nationalBand: nationalBandOf(quartile, pct, dist.n),
   };
 }
 
@@ -80,7 +94,8 @@ export async function buildHptComparison(opts: {
 
   const crawl = await ensureHospitalCrawled(hospital, codes);
   prioritizeHospitals(compareIds, codes);
-  const pendingHospital = !crawl.ready;
+  const pendingHospital = !crawl.ready && !crawl.error;
+  const pendingCompareIds = compareIds.filter((id) => !hospitalHasSnapshot(id));
 
   const rows: HptCodeRow[] = [];
   const trends: HptCodeTrend[] = [];
@@ -162,9 +177,11 @@ export async function buildHptComparison(opts: {
     ? `Could not load this hospital's price file: ${crawl.error}`
     : pendingHospital
       ? "Still downloading this hospital's CMS price file. This page will refresh automatically."
-      : coverage.crawledOk < 50
-        ? "National crawl is just getting started. Quartiles and the top-1% flag will stabilize as more hospitals are ingested."
-        : `Percentiles use ${coverage.crawledOk.toLocaleString()} crawled hospitals (cash vs negotiated rates from CMS hospital MRFs).`;
+      : pendingCompareIds.length > 0
+        ? `Downloading ${pendingCompareIds.length} comparison hospital price file(s). Columns fill in automatically.`
+        : coverage.crawledOk < 50
+          ? "National sample is still small. Price bands (low → high) stabilize as more hospitals are ingested."
+          : `Percentiles use ${coverage.crawledOk.toLocaleString()} crawled hospitals (cash vs negotiated rates from CMS hospital MRFs).`;
 
   return {
     hospital: {
@@ -178,6 +195,7 @@ export async function buildHptComparison(opts: {
     payer: opts.payer,
     snapshotDate,
     pendingHospital,
+    pendingCompareIds,
     crawlError: crawl.error ?? null,
     coverage,
     rows,

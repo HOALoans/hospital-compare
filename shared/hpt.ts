@@ -87,8 +87,13 @@ export interface HptHospitalValue {
   name: string;
   value: number | null;
   quartile: 1 | 2 | 3 | 4 | null;
+  /** 0–100 empirical percentile among crawled hospitals (higher = more expensive). */
   percentile: number | null;
-  top1Percent: boolean;
+  /**
+   * Where this price sits in the national distribution:
+   * low ≤25th, below_median 25–50, above_median 50–75, high ≥75th.
+   */
+  nationalBand: "low" | "below_median" | "above_median" | "high" | null;
 }
 
 export interface HptCodeRow {
@@ -129,6 +134,8 @@ export interface HptCompareResponse {
   payer: HptPayer;
   snapshotDate: string | null;
   pendingHospital: boolean;
+  /** Compare hospitals still downloading their MRFs. */
+  pendingCompareIds: string[];
   crawlError?: string | null;
   coverage: HptCoverage;
   rows: HptCodeRow[];
