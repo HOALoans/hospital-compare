@@ -73,27 +73,10 @@ export interface HptChargePoint {
   allN: number;
 }
 
-export interface HptDistribution {
-  n: number;
-  mean: number | null;
-  median: number | null;
-  p25: number | null;
-  p75: number | null;
-  p99: number | null;
-}
-
 export interface HptHospitalValue {
   facilityId: string;
   name: string;
   value: number | null;
-  quartile: 1 | 2 | 3 | 4 | null;
-  /** 0–100 empirical percentile among crawled hospitals (higher = more expensive). */
-  percentile: number | null;
-  /**
-   * Where this price sits in the national distribution:
-   * low ≤25th, below_median 25–50, above_median 50–75, high ≥75th.
-   */
-  nationalBand: "low" | "below_median" | "above_median" | "high" | null;
 }
 
 export interface HptCodeRow {
@@ -101,16 +84,12 @@ export interface HptCodeRow {
   description: string | null;
   hospital: HptHospitalValue;
   compare: HptHospitalValue[];
-  national: HptDistribution;
-  zip3: HptDistribution;
-  zip3Label: string;
 }
 
 export interface HptTrendPoint {
   date: string;
-  hospital: number | null;
-  national: number | null;
-  zip3: number | null;
+  /** facilityId → value for hospitals in this comparison */
+  byFacility: Record<string, number | null>;
 }
 
 export interface HptCodeTrend {

@@ -18,25 +18,20 @@ import {
   YAxis,
 } from "recharts";
 import type { HospitalSummary } from "@shared/types";
-import type { HptCompareResponse, HptHospitalValue, HptMetric, HptPayer } from "@shared/hpt";
-import { DEFAULT_HCPCS_CODES, HCPCS_CODE_LABELS, HPT_DEFAULT_VISIBLE, HPT_MAX_CODES } from "@shared/hpt";
-import { CHART } from "@shared/chartTheme";
+import type { HptCompareResponse, HptMetric, HptPayer } from "@shared/hpt";
+import { DEFAULT_HCPCS_CODES, HCPCS_CODE_LABELS, HPT_MAX_CODES } from "@shared/hpt";
+import { CHART, individualHospitalColor } from "@shared/chartTheme";
 import { HospitalSearch } from "@/components/HospitalSearch";
 import { CompareHospitalPicker } from "@/components/CompareHospitalPicker";
 import { PrintPricingReport } from "@/components/PrintPricingReport";
 import { fetchHptCompare } from "@/lib/api";
 
-type SortKey = "code" | "hospital" | "national" | "zip3" | `compare:${string}`;
+type SortKey = "code" | "hospital" | `compare:${string}`;
 type SortDir = "asc" | "desc";
 
 function money(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return "—";
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-}
-
-function pctLabel(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return "—";
-  return `${n.toFixed(0)}th`;
 }
 
 function shortHospitalName(name: string): string {
@@ -48,36 +43,6 @@ function shortHospitalName(name: string): string {
     .split(" ")
     .slice(0, 3)
     .join(" ");
-}
-
-function bandLabel(band: HptHospitalValue["nationalBand"]): string {
-  switch (band) {
-    case "low":
-      return "Lower quarter";
-    case "below_median":
-      return "Below median";
-    case "above_median":
-      return "Above median";
-    case "high":
-      return "Upper quarter";
-    default:
-      return "—";
-  }
-}
-
-function bandClass(band: HptHospitalValue["nationalBand"]): string {
-  switch (band) {
-    case "low":
-      return "bg-emerald-100 text-emerald-900";
-    case "below_median":
-      return "bg-sky-100 text-sky-900";
-    case "above_median":
-      return "bg-amber-100 text-amber-900";
-    case "high":
-      return "bg-rose-100 text-rose-900";
-    default:
-      return "text-slate-400";
-  }
 }
 
 interface Props {
@@ -92,7 +57,6 @@ export function PricingPage({ onBack }: Props) {
   const [metric, setMetric] = useState<HptMetric>("median");
   const [payer, setPayer] = useState<HptPayer>("all");
   const [mode, setMode] = useState<"snapshot" | "trend">("snapshot");
-  const [showMore, setShowMore] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>("code");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [trendCode, setTrendCode] = useState<string>("");
@@ -123,7 +87,6 @@ export function PricingPage({ onBack }: Props) {
     if (!code) return;
     setCodeInput(code);
     setLookupCode(code);
-    setShowMore(true);
   };
 
   const printPdf = () => {
@@ -162,7 +125,6 @@ export function PricingPage({ onBack }: Props) {
           const waiting =
             (res.pendingHospital && !res.crawlError) ||
             (res.pendingCompareIds?.length ?? 0) > 0 ||
-            // Retry shortly after a timeout so Mission-sized files get another chance.
             Boolean(res.crawlError && /timed out/i.test(res.crawlError));
           if (waiting) timer = setTimeout(() => load(false), 5000);
         })
@@ -200,14 +162,7 @@ export function PricingPage({ onBack }: Props) {
     const rows = data?.rows ?? [];
     const copy = [...rows];
     const valueOf = (row: (typeof rows)[number]): number => {
-      if (sortKey === "code") return 0;
       if (sortKey === "hospital") return row.hospital.value ?? -Infinity;
-      if (sortKey === "national") {
-        return (metric === "mean" ? row.national.mean : row.national.median) ?? -Infinity;
-      }
-      if (sortKey === "zip3") {
-        return (metric === "mean" ? row.zip3.mean : row.zip3.median) ?? -Infinity;
-      }
       if (sortKey.startsWith("compare:")) {
         const id = sortKey.slice("compare:".length);
         return row.compare.find((c) => c.facilityId === id)?.value ?? -Infinity;
@@ -220,10 +175,31 @@ export function PricingPage({ onBack }: Props) {
     });
     if (sortDir === "desc") copy.reverse();
     return copy;
-  }, [data, sortKey, sortDir, metric]);
+  }, [data, sortKey, sortDir]);
 
-  const visibleRows = showMore ? sortedRows : sortedRows.slice(0, HPT_DEFAULT_VISIBLE);
   const trend = data?.trends.find((t) => t.code === trendCode);
+  const trendSeries = useMemo(() => {
+    if (!data || !trend) return [];
+    const ids = [data.hospital.facilityId, ...data.rows[0]!.compare.map((c) => c.facilityId)];
+    const names = new Map<string, string>([
+      [data.hospital.facilityId, shortHospitalName(data.hospital.name)],
+      ...data.rows[0]!.compare.map((c) => [c.facilityId, shortHospitalName(c.name)] as const),
+    ]);
+    return ids.map((id, i) => ({
+      id,
+      name: names.get(id) ?? id,
+      color: i === 0 ? CHART.baseHospital : individualHospitalColor(i - 1),
+    }));
+  }, [data, trend]);
+
+  const trendChartData = useMemo(() => {
+    if (!trend) return [];
+    return trend.points.map((p) => {
+      const row: Record<string, string | number | null> = { date: p.date };
+      for (const s of trendSeries) row[s.id] = p.byFacility[s.id] ?? null;
+      return row;
+    });
+  }, [trend, trendSeries]);
 
   const SortIcon = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />;
@@ -242,11 +218,10 @@ export function PricingPage({ onBack }: Props) {
           <div>
             <h2 className="font-display text-2xl text-slate-900">HCPCS price comparison</h2>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
-              Up to {HPT_MAX_CODES} codes per request (keeps first-time downloads faster). Mission and
-              Pardee use a pre-built extract for common codes.{" "}
-              <span className="font-medium">National</span> figures are calculated from hospitals
-              we&apos;ve crawled — CMS does not publish a single national negotiated average for
-              each HCPCS code. Prefer <span className="font-medium">All payers</span>.
+              Side-by-side standard charges from hospitals you load (CMS machine-readable files). Up
+              to {HPT_MAX_CODES} codes per request. Prefer{" "}
+              <span className="font-medium">All payers</span> — many hospitals omit discounted cash
+              prices.
             </p>
           </div>
         </div>
@@ -257,8 +232,7 @@ export function PricingPage({ onBack }: Props) {
 
         {hospital && (
           <p className="mt-3 text-sm text-slate-700">
-            Selected: <span className="font-semibold">{hospital.name}</span> ({hospital.city}, {hospital.state}
-            {hospital.zip3 ? ` · ZIP ${hospital.zip3}xx` : ""})
+            Selected: <span className="font-semibold">{hospital.name}</span> ({hospital.city}, {hospital.state})
             <button type="button" className="ml-3 text-brand-primary underline" onClick={onBack}>
               Back to home
             </button>
@@ -433,8 +407,7 @@ export function PricingPage({ onBack }: Props) {
         <div className="print:hidden space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-slate-600">
-              {data.note} Coverage: {data.coverage.crawledOk.toLocaleString()} ok /{" "}
-              {data.coverage.hospitalCount.toLocaleString()} hospitals attempted
+              {data.note}
               {data.snapshotDate ? ` · snapshot ${data.snapshotDate}` : ""}.
             </p>
             <button
@@ -447,12 +420,6 @@ export function PricingPage({ onBack }: Props) {
               Save PDF
             </button>
           </div>
-          {(data.rows[0]?.national.n ?? 0) < 5 && (
-            <p className="text-sm text-amber-800">
-              National bands need a larger sample. With n={data.rows[0]?.national.n ?? 0}, a single
-              hospital can dominate the &quot;national&quot; column until more files load.
-            </p>
-          )}
 
           {mode === "snapshot" && (
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -481,24 +448,13 @@ export function PricingPage({ onBack }: Props) {
                         </button>
                       </th>
                     ))}
-                    <th className="px-3 py-3">
-                      <button type="button" className="inline-flex items-center gap-1 font-semibold" onClick={() => toggleSort("national")}>
-                        National <SortIcon col="national" />
-                      </button>
-                    </th>
-                    <th className="px-3 py-3">
-                      <button type="button" className="inline-flex items-center gap-1 font-semibold" onClick={() => toggleSort("zip3")}>
-                        {data.rows[0]?.zip3Label ?? "ZIP3"} <SortIcon col="zip3" />
-                      </button>
-                    </th>
-                    <th className="px-3 py-3">vs national</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleRows.map((row) => (
+                  {sortedRows.map((row) => (
                     <tr key={row.code} className="border-t border-slate-100">
                       <td className="px-3 py-2 font-mono font-semibold text-slate-900">{row.code}</td>
-                      <td className="max-w-[14rem] truncate px-3 py-2 text-slate-600" title={row.description ?? ""}>
+                      <td className="max-w-[18rem] truncate px-3 py-2 text-slate-600" title={row.description ?? ""}>
                         {row.description ?? "—"}
                       </td>
                       <td className="px-3 py-2 font-medium">{money(row.hospital.value)}</td>
@@ -507,42 +463,10 @@ export function PricingPage({ onBack }: Props) {
                           {money(c.value)}
                         </td>
                       ))}
-                      <td className="px-3 py-2 text-slate-600">
-                        {money(metric === "mean" ? row.national.mean : row.national.median)}
-                        <span className="block text-xs text-slate-400">n={row.national.n}</span>
-                      </td>
-                      <td className="px-3 py-2 text-slate-600">
-                        {money(metric === "mean" ? row.zip3.mean : row.zip3.median)}
-                        <span className="block text-xs text-slate-400">n={row.zip3.n}</span>
-                      </td>
-                      <td className="px-3 py-2">
-                        {row.hospital.nationalBand ? (
-                          <span className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${bandClass(row.hospital.nationalBand)}`}>
-                            {bandLabel(row.hospital.nationalBand)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                        <span className="mt-0.5 block text-xs text-slate-400">
-                          {row.hospital.percentile != null ? `${pctLabel(row.hospital.percentile)} pct` : ""}
-                          {row.hospital.quartile ? ` · Q${row.hospital.quartile}` : ""}
-                        </span>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {sortedRows.length > 10 && (
-                <div className="border-t border-slate-100 px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowMore((v) => !v)}
-                    className="text-sm font-semibold text-brand-primary"
-                  >
-                    {showMore ? "Show fewer codes" : `Show all ${sortedRows.length} codes`}
-                  </button>
-                </div>
-              )}
             </div>
           )}
 
@@ -562,18 +486,26 @@ export function PricingPage({ onBack }: Props) {
                   ))}
                 </select>
               </label>
-              {trend && trend.points.length > 0 ? (
+              {trend && trendChartData.length > 0 ? (
                 <div className="mt-4 h-72">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={trend.points}>
+                    <LineChart data={trendChartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" />
                       <YAxis tickFormatter={(v) => money(Number(v))} width={80} />
                       <Tooltip formatter={(v) => money(Number(v))} />
                       <Legend />
-                      <Line type="monotone" dataKey="hospital" name="Hospital" stroke={CHART.baseHospital} dot />
-                      <Line type="monotone" dataKey="zip3" name="ZIP-3" stroke={CHART.county} dot />
-                      <Line type="monotone" dataKey="national" name="National" stroke={CHART.national} dot />
+                      {trendSeries.map((s) => (
+                        <Line
+                          key={s.id}
+                          type="monotone"
+                          dataKey={s.id}
+                          name={s.name}
+                          stroke={s.color}
+                          connectNulls
+                          dot
+                        />
+                      ))}
                     </LineChart>
                   </ResponsiveContainer>
                 </div>

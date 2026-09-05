@@ -78,11 +78,10 @@ export function MethodologyPage({ onBack, onStartCompare }: Props) {
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
           Procedure prices come from each hospital&apos;s CMS-required machine-readable file
           (discovered via <span className="font-mono">cms-hpt.txt</span>), not from a paid aggregator.
-          CMS does not publish a ready-made national average negotiated charge by HCPCS code; we
-          calculate national and ZIP-3 mean/median from the hospital files we have crawled, and place
-          each hospital in a price band (lower quarter → upper quarter). Each pricing request is
+          Comparisons are hospital-to-hospital for facilities you load — we do not show national or
+          ZIP averages for negotiated HCPCS charges (CMS does not publish those). Each request is
           limited to five codes so first-time downloads stay tractable. Trend lines use our crawl
-          history — hospitals rarely keep old files online.
+          history when the same hospital is re-extracted over time.
         </p>
       </section>
 

@@ -3,7 +3,6 @@ import type {
   HptCodeRow,
   HptCodeTrend,
   HptCompareResponse,
-  HptDistribution,
   HptHospitalValue,
   HptMetric,
   HptPayer,
@@ -11,7 +10,6 @@ import type {
 import { HPT_MAX_CODES } from "../../shared/hpt.js";
 import { getHospitalById } from "../cache.js";
 import { getCodeShard, getCoverage, hospitalHasSnapshot, latestPoint } from "./store.js";
-import { empiricalPercentile, quartileOf, summarize } from "./stats.js";
 import { ensureHospitalCrawled, prioritizeHospitals } from "./crawl.js";
 
 function pickValue(
@@ -25,45 +23,11 @@ function pickValue(
   return metric === "mean" ? allMean : allMedian;
 }
 
-function nationalBandOf(
-  quartile: 1 | 2 | 3 | 4 | null,
-  percentile: number | null,
-  sampleN: number,
-): HptHospitalValue["nationalBand"] {
-  if (sampleN < 2 || (quartile == null && percentile == null)) return null;
-  if (quartile === 1 || (percentile != null && percentile <= 25)) return "low";
-  if (quartile === 2 || (percentile != null && percentile <= 50)) return "below_median";
-  if (quartile === 3 || (percentile != null && percentile <= 75)) return "above_median";
-  if (quartile === 4 || (percentile != null && percentile > 75)) return "high";
-  return null;
-}
-
-function buildHospitalValue(
-  hospital: HospitalSummary,
-  value: number | null,
-  distValues: number[],
-  dist: HptDistribution,
-): HptHospitalValue {
-  if (value == null) {
-    return {
-      facilityId: hospital.facilityId,
-      name: hospital.name,
-      value: null,
-      quartile: null,
-      percentile: null,
-      nationalBand: null,
-    };
-  }
-  const sorted = [...distValues].sort((a, b) => a - b);
-  const pct = empiricalPercentile(sorted, value);
-  const quartile = quartileOf(value, dist.p25, dist.median, dist.p75);
+function hospitalValue(hospital: HospitalSummary, value: number | null): HptHospitalValue {
   return {
     facilityId: hospital.facilityId,
     name: hospital.name,
     value,
-    quartile,
-    percentile: pct,
-    nationalBand: nationalBandOf(quartile, pct, dist.n),
   };
 }
 
@@ -101,25 +65,19 @@ export async function buildHptComparison(opts: {
   const trends: HptCodeTrend[] = [];
   let snapshotDate: string | null = null;
 
+  const trackedIds = new Set([hospital.facilityId, ...compareIds]);
+
   for (const code of codes) {
     const shard = getCodeShard(code);
-    const nationalVals: number[] = [];
-    const zipVals: number[] = [];
     const latestByFacility = new Map<string, ReturnType<typeof latestPoint>>();
 
-    for (const [fid, points] of Object.entries(shard.byFacility)) {
-      const latest = latestPoint(points);
+    for (const fid of trackedIds) {
+      const latest = latestPoint(shard.byFacility[fid]);
       if (!latest) continue;
       latestByFacility.set(fid, latest);
       if (!snapshotDate || latest.date > snapshotDate) snapshotDate = latest.date;
-      const v = pickValue(latest.cash, latest.allMean, latest.allMedian, opts.metric, opts.payer);
-      if (v == null) continue;
-      nationalVals.push(v);
-      if (latest.zip3 && latest.zip3 === hospital.zip3) zipVals.push(v);
     }
 
-    const national = summarize(nationalVals);
-    const zip3 = summarize(zipVals);
     const selfLatest = latestByFacility.get(hospital.facilityId);
     const selfVal = selfLatest
       ? pickValue(selfLatest.cash, selfLatest.allMean, selfLatest.allMedian, opts.metric, opts.payer)
@@ -131,43 +89,30 @@ export async function buildHptComparison(opts: {
       .map((h) => {
         const pt = latestByFacility.get(h.facilityId);
         const val = pt ? pickValue(pt.cash, pt.allMean, pt.allMedian, opts.metric, opts.payer) : null;
-        return buildHospitalValue(h, val, nationalVals, national);
+        return hospitalValue(h, val);
       });
 
     rows.push({
       code,
       description: shard.description,
-      hospital: buildHospitalValue(hospital, selfVal, nationalVals, national),
+      hospital: hospitalValue(hospital, selfVal),
       compare: compareHospitals,
-      national,
-      zip3,
-      zip3Label: hospital.zip3 ? `ZIP ${hospital.zip3}xx` : "ZIP3",
     });
 
     const dateSet = new Set<string>();
-    for (const pts of Object.values(shard.byFacility)) {
-      for (const p of pts) dateSet.add(p.date);
+    for (const fid of trackedIds) {
+      for (const p of shard.byFacility[fid] ?? []) dateSet.add(p.date);
     }
     const dates = [...dateSet].sort();
     const points = dates.map((date) => {
-      const nat: number[] = [];
-      const z: number[] = [];
-      let hospitalVal: number | null = null;
-      for (const [fid, pts] of Object.entries(shard.byFacility)) {
-        const pt = pts.find((p) => p.date === date) ?? null;
-        if (!pt) continue;
-        const v = pickValue(pt.cash, pt.allMean, pt.allMedian, opts.metric, opts.payer);
-        if (v == null) continue;
-        nat.push(v);
-        if (pt.zip3 === hospital.zip3) z.push(v);
-        if (fid === hospital.facilityId) hospitalVal = v;
+      const series: Record<string, number | null> = {};
+      for (const fid of trackedIds) {
+        const pt = (shard.byFacility[fid] ?? []).find((p) => p.date === date) ?? null;
+        series[fid] = pt
+          ? pickValue(pt.cash, pt.allMean, pt.allMedian, opts.metric, opts.payer)
+          : null;
       }
-      return {
-        date,
-        hospital: hospitalVal,
-        national: opts.metric === "mean" ? summarize(nat).mean : summarize(nat).median,
-        zip3: opts.metric === "mean" ? summarize(z).mean : summarize(z).median,
-      };
+      return { date, byFacility: series };
     });
     trends.push({ code, description: shard.description, points });
   }
@@ -179,9 +124,7 @@ export async function buildHptComparison(opts: {
       ? "Still downloading this hospital's CMS price file. This page will refresh automatically."
       : pendingCompareIds.length > 0
         ? `Downloading ${pendingCompareIds.length} comparison hospital price file(s). Columns fill in automatically.`
-        : coverage.crawledOk < 50
-          ? "National sample is still small. Price bands (low → high) stabilize as more hospitals are ingested."
-          : `Percentiles use ${coverage.crawledOk.toLocaleString()} crawled hospitals (cash vs negotiated rates from CMS hospital MRFs).`;
+        : `Comparing ${1 + compareIds.length} loaded hospital${1 + compareIds.length === 1 ? "" : "s"} from CMS price files.`;
 
   return {
     hospital: {
