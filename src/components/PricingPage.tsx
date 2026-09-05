@@ -392,8 +392,28 @@ export function PricingPage({ onBack }: Props) {
         <p className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 print:hidden">
           <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
           Downloading comparison hospital price file
-          {(data?.pendingCompareIds.length ?? 0) > 1 ? "s" : ""}…
+          {(data?.pendingCompareIds.length ?? 0) > 1 ? "s" : ""} (typically 1–3 minutes each for
+          large CMS files)…
         </p>
+      )}
+
+      {data?.compareErrors && Object.keys(data.compareErrors).length > 0 && (
+        <div className="space-y-1 print:hidden">
+          {Object.entries(data.compareErrors).map(([id, msg]) => {
+            const name =
+              data.rows[0]?.compare.find((c) => c.facilityId === id)?.name ??
+              compareWith.find((h) => h.facilityId === id)?.name ??
+              id;
+            return (
+              <p
+                key={id}
+                className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800"
+              >
+                {name.split(" ").slice(0, 4).join(" ")}: {msg}
+              </p>
+            );
+          })}
+        </div>
       )}
 
       {data?.crawlError && (

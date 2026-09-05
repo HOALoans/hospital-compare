@@ -115,6 +115,8 @@ export interface HptCompareResponse {
   pendingHospital: boolean;
   /** Compare hospitals still downloading their MRFs. */
   pendingCompareIds: string[];
+  /** facilityId → error for compare hospitals that failed to load. */
+  compareErrors?: Record<string, string>;
   crawlError?: string | null;
   coverage: HptCoverage;
   rows: HptCodeRow[];

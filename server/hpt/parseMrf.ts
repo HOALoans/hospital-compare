@@ -44,7 +44,37 @@ function looksLikeJsonUrl(url: string): boolean {
 }
 
 function looksLikeCsvUrl(url: string): boolean {
-  return /\.csv(\.gz)?(\?|$)/i.test(url) || /standardcharges/i.test(url) || /export\/oneclick/i.test(url);
+  return /\.csv(\.gz)?(\?|$)/i.test(url) || /export\/oneclick/i.test(url);
+}
+
+/** Peek the start of an MRF to choose JSON vs CSV when the URL has no useful extension. */
+async function sniffRemoteKind(
+  url: string,
+  signal?: AbortSignal,
+): Promise<"json" | "csv" | "unknown"> {
+  try {
+    const res = await fetch(url, {
+      redirect: "follow",
+      signal,
+      headers: {
+        "User-Agent": USER_AGENT,
+        Range: "bytes=0-2047",
+        Accept: "application/json,text/csv,application/octet-stream,*/*",
+      },
+    });
+    if (!res.ok && res.status !== 206) return "unknown";
+    const buf = Buffer.from(await res.arrayBuffer());
+    const text = buf.toString("utf8").replace(/^\uFEFF/, "").trimStart();
+    if (text.startsWith("{") || text.startsWith("[")) return "json";
+    const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
+    if (looksLikeChargeHeader(firstLine) || /^"?description"?[,|]/i.test(firstLine)) return "csv";
+    const ctype = (res.headers.get("content-type") || "").toLowerCase();
+    if (ctype.includes("json")) return "json";
+    if (ctype.includes("csv") || ctype.includes("text/plain")) return "csv";
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
 }
 
 /** Many cms-hpt.txt entries still list http:// while hosts require https. */
@@ -291,8 +321,27 @@ export async function parseMrfUrl(
     }
   }
 
-  // ElevatePFS / similar one-click exports often omit .csv in the URL and report Content-Length: 0.
-  if (!looksLikeJsonUrl(mrfUrl) && opts.codeFilter && opts.codeFilter.size > 0) {
+  // ElevatePFS / HospitalPriceDisclosure / opaque URLs: sniff body, don't assume CSV.
+  if (!looksLikeJsonUrl(mrfUrl) && !looksLikeCsvUrl(mrfUrl) && opts.codeFilter && opts.codeFilter.size > 0) {
+    const kind = await sniffRemoteKind(mrfUrl, opts.signal);
+    if (kind === "json") {
+      await parseJsonFromNetwork(mrfUrl, acc, opts);
+      return finalize(acc);
+    }
+    if (kind === "csv" || kind === "unknown") {
+      // unknown: try CSV first (Pardee-style), then JSON
+      try {
+        await parseCsvFromNetwork(mrfUrl, acc, opts);
+        if (acc.size > 0) return finalize(acc);
+      } catch {
+        /* fall through to JSON */
+      }
+      await parseJsonFromNetwork(mrfUrl, acc, opts);
+      return finalize(acc);
+    }
+  }
+
+  if (!looksLikeJsonUrl(mrfUrl) && looksLikeCsvUrl(mrfUrl) && opts.codeFilter && opts.codeFilter.size > 0) {
     await parseCsvFromNetwork(mrfUrl, acc, opts);
     return finalize(acc);
   }

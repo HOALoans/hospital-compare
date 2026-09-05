@@ -33,7 +33,7 @@ function findMatchingBraceEnd(buf: Buffer, start: number): number {
 
 /**
  * Fast path for huge minified MRFs when we only need a handful of HCPCS codes.
- * Scans for `"code":"XXXX"` and parses the parent charge item (object that owns `description`).
+ * Scans for `"code":"XXXX"` / `"code": "XXXX"` and parses the parent charge item.
  */
 export async function extractFilteredCodesFromJsonStream(
   readable: Readable,
@@ -41,10 +41,11 @@ export async function extractFilteredCodesFromJsonStream(
   codeFilter: Set<string>,
   signal?: AbortSignal,
 ): Promise<number> {
-  const needles = [...codeFilter].map((c) => ({
-    code: c,
-    buf: Buffer.from(`"code":"${c}"`),
-  }));
+  // Hospitals minify differently — Novant uses spaces after `:`.
+  const needles = [...codeFilter].flatMap((c) => [
+    { code: c, buf: Buffer.from(`"code":"${c}"`) },
+    { code: c, buf: Buffer.from(`"code": "${c}"`) },
+  ]);
   const remaining = new Set(codeFilter);
   let buf: Buffer = Buffer.alloc(0);
   let parsedObjects = 0;

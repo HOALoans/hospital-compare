@@ -9,7 +9,7 @@ import type {
 } from "../../shared/hpt.js";
 import { HPT_MAX_CODES } from "../../shared/hpt.js";
 import { getHospitalById } from "../cache.js";
-import { getCodeShard, getCoverage, hospitalHasSnapshot, latestPoint } from "./store.js";
+import { getCodeShard, getCoverage, hospitalHasSnapshot, latestPoint, loadStatus } from "./store.js";
 import { ensureHospitalCrawled, prioritizeHospitals } from "./crawl.js";
 
 function pickValue(
@@ -59,7 +59,18 @@ export async function buildHptComparison(opts: {
   const crawl = await ensureHospitalCrawled(hospital, codes);
   prioritizeHospitals(compareIds, codes);
   const pendingHospital = !crawl.ready && !crawl.error;
-  const pendingCompareIds = compareIds.filter((id) => !hospitalHasSnapshot(id));
+  const st = loadStatus();
+  const pendingCompareIds: string[] = [];
+  const compareErrors: Record<string, string> = {};
+  for (const id of compareIds) {
+    if (hospitalHasSnapshot(id)) continue;
+    const rec = st.hospitals[id];
+    if (rec?.status === "failed" && rec.error) {
+      compareErrors[id] = rec.error;
+      continue;
+    }
+    pendingCompareIds.push(id);
+  }
 
   const rows: HptCodeRow[] = [];
   const trends: HptCodeTrend[] = [];
@@ -118,13 +129,16 @@ export async function buildHptComparison(opts: {
   }
 
   const coverage = getCoverage();
+  const failedCmp = Object.keys(compareErrors).length;
   const note = crawl.error
     ? `Could not load this hospital's price file: ${crawl.error}`
     : pendingHospital
       ? "Still downloading this hospital's CMS price file. This page will refresh automatically."
       : pendingCompareIds.length > 0
-        ? `Downloading ${pendingCompareIds.length} comparison hospital price file(s). Columns fill in automatically.`
-        : `Comparing ${1 + compareIds.length} loaded hospital${1 + compareIds.length === 1 ? "" : "s"} from CMS price files.`;
+        ? `Downloading ${pendingCompareIds.length} comparison hospital price file(s). Usually 1–3 minutes each for large files.`
+        : failedCmp > 0
+          ? `Loaded ${1 + compareIds.length - failedCmp - pendingCompareIds.length} hospital(s); ${failedCmp} comparison hospital(s) failed to parse.`
+          : `Comparing ${1 + compareIds.length} loaded hospital${1 + compareIds.length === 1 ? "" : "s"} from CMS price files.`;
 
   return {
     hospital: {
@@ -139,6 +153,7 @@ export async function buildHptComparison(opts: {
     snapshotDate,
     pendingHospital,
     pendingCompareIds,
+    compareErrors,
     crawlError: crawl.error ?? null,
     coverage,
     rows,
