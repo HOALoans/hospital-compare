@@ -4,6 +4,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   CircleDollarSign,
+  FileDown,
   Loader2,
 } from "lucide-react";
 import {
@@ -22,6 +23,7 @@ import { DEFAULT_HCPCS_CODES, HCPCS_CODE_LABELS, HPT_DEFAULT_VISIBLE, HPT_MAX_CO
 import { CHART } from "@shared/chartTheme";
 import { HospitalSearch } from "@/components/HospitalSearch";
 import { CompareHospitalPicker } from "@/components/CompareHospitalPicker";
+import { PrintPricingReport } from "@/components/PrintPricingReport";
 import { fetchHptCompare } from "@/lib/api";
 
 type SortKey = "code" | "hospital" | "national" | "zip3" | `compare:${string}`;
@@ -85,7 +87,7 @@ interface Props {
 export function PricingPage({ onBack }: Props) {
   const [hospital, setHospital] = useState<HospitalSummary | null>(null);
   const [compareWith, setCompareWith] = useState<HospitalSummary[]>([]);
-  const [codeInput, setCodeInput] = useState(DEFAULT_HCPCS_CODES.join(", "));
+  const [codeInput, setCodeInput] = useState(DEFAULT_HCPCS_CODES.slice(0, HPT_MAX_CODES).join(", "));
   const [lookupCode, setLookupCode] = useState("");
   const [metric, setMetric] = useState<HptMetric>("median");
   const [payer, setPayer] = useState<HptPayer>("all");
@@ -122,6 +124,18 @@ export function PricingPage({ onBack }: Props) {
     setCodeInput(code);
     setLookupCode(code);
     setShowMore(true);
+  };
+
+  const printPdf = () => {
+    if (!data) return;
+    const previousTitle = document.title;
+    document.title = " ";
+    const restore = () => {
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
+    window.print();
   };
 
   useEffect(() => {
@@ -218,7 +232,9 @@ export function PricingPage({ onBack }: Props) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+      {data && <PrintPricingReport data={data} metric={metric} payer={payer} />}
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 print:hidden">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-white">
             <CircleDollarSign className="h-5 w-5" />
@@ -226,11 +242,11 @@ export function PricingPage({ onBack }: Props) {
           <div>
             <h2 className="font-display text-2xl text-slate-900">HCPCS price comparison</h2>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
-              Standard charges from each hospital&apos;s CMS machine-readable file. Mission and
-              Pardee load from a pre-built extract so common codes appear immediately; other
-              hospitals download on demand. Prefer{" "}
-              <span className="font-medium">All payers</span> — many hospitals omit discounted cash
-              prices.
+              Up to {HPT_MAX_CODES} codes per request (keeps first-time downloads faster). Mission and
+              Pardee use a pre-built extract for common codes.{" "}
+              <span className="font-medium">National</span> figures are calculated from hospitals
+              we&apos;ve crawled — CMS does not publish a single national negotiated average for
+              each HCPCS code. Prefer <span className="font-medium">All payers</span>.
             </p>
           </div>
         </div>
@@ -289,16 +305,16 @@ export function PricingPage({ onBack }: Props) {
               <button
                 type="button"
                 className="font-semibold text-brand-primary underline"
-                onClick={() => setCodeInput(DEFAULT_HCPCS_CODES.join(", "))}
+                onClick={() => setCodeInput(DEFAULT_HCPCS_CODES.slice(0, HPT_MAX_CODES).join(", "))}
               >
-                All common ({DEFAULT_HCPCS_CODES.length})
+                Suggested {HPT_MAX_CODES}
               </button>
               <button
                 type="button"
                 className="font-semibold text-slate-500 underline"
-                onClick={() => setCodeInput(DEFAULT_HCPCS_CODES.slice(0, 10).join(", "))}
+                onClick={() => setCodeInput(DEFAULT_HCPCS_CODES.slice(0, 3).join(", "))}
               >
-                Top 10
+                Top 3
               </button>
             </div>
           </div>
@@ -380,17 +396,17 @@ export function PricingPage({ onBack }: Props) {
       </section>
 
       {error && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 print:hidden">{error}</p>
       )}
 
       {loading && (
-        <p className="inline-flex items-center gap-2 text-sm text-slate-600">
+        <p className="inline-flex items-center gap-2 text-sm text-slate-600 print:hidden">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading charges…
         </p>
       )}
 
       {data?.pendingHospital && !data.crawlError && (
-        <p className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 print:hidden">
           <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
           Downloading {data.hospital.name.split(" ").slice(0, 3).join(" ")}
           &apos;s CMS price file. Large hospitals can take several minutes; the table fills in
@@ -399,7 +415,7 @@ export function PricingPage({ onBack }: Props) {
       )}
 
       {(data?.pendingCompareIds?.length ?? 0) > 0 && (
-        <p className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 print:hidden">
           <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
           Downloading comparison hospital price file
           {(data?.pendingCompareIds.length ?? 0) > 1 ? "s" : ""}…
@@ -407,19 +423,30 @@ export function PricingPage({ onBack }: Props) {
       )}
 
       {data?.crawlError && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 print:hidden">
           {data.hospital.name.split(" ").slice(0, 3).join(" ")}: {data.crawlError}. Retrying
           automatically when possible — or re-select the hospital after a minute.
         </p>
       )}
 
       {data && (
-        <>
-          <p className="text-sm text-slate-600">
-            {data.note} Coverage: {data.coverage.crawledOk.toLocaleString()} ok /{" "}
-            {data.coverage.hospitalCount.toLocaleString()} hospitals attempted
-            {data.snapshotDate ? ` · snapshot ${data.snapshotDate}` : ""}.
-          </p>
+        <div className="print:hidden space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-slate-600">
+              {data.note} Coverage: {data.coverage.crawledOk.toLocaleString()} ok /{" "}
+              {data.coverage.hospitalCount.toLocaleString()} hospitals attempted
+              {data.snapshotDate ? ` · snapshot ${data.snapshotDate}` : ""}.
+            </p>
+            <button
+              type="button"
+              onClick={printPdf}
+              title='In the print dialog: More settings → uncheck "Headers and footers"'
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
+            >
+              <FileDown className="h-4 w-4" />
+              Save PDF
+            </button>
+          </div>
           {(data.rows[0]?.national.n ?? 0) < 5 && (
             <p className="text-sm text-amber-800">
               National bands need a larger sample. With n={data.rows[0]?.national.n ?? 0}, a single
@@ -558,7 +585,7 @@ export function PricingPage({ onBack }: Props) {
               )}
             </section>
           )}
-        </>
+        </div>
       )}
     </div>
   );
