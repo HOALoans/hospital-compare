@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-14T18:00:12.591Z",
+  "updatedAt": "2026-09-15T16:37:47.148Z",
   "sources": [
     {
       "name": "828 News NOW",
@@ -44,7 +44,7 @@
       "host": "congress.gov",
       "exampleUrl": "https://www.congress.gov/event/119th-congress/house-event/119239",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-14"
+      "lastSeen": "2026-09-15"
     },
     {
       "name": "Dogwood Health Trust",
@@ -58,14 +58,14 @@
       "host": "govinfo.gov",
       "exampleUrl": "https://www.govinfo.gov/app/details/BILLS-119hr10311ih",
       "firstSeen": "2026-09-11",
-      "lastSeen": "2026-09-14"
+      "lastSeen": "2026-09-15"
     },
     {
       "name": "HCA Healthcare Investor Relations",
       "host": "investor.hcahealthcare.com",
       "exampleUrl": "https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-14"
+      "lastSeen": "2026-09-15"
     },
     {
       "name": "HCA Healthcare Investor Relations / SEC 10-Q",
@@ -75,18 +75,25 @@
       "lastSeen": "2026-09-11"
     },
     {
-      "name": "Healthcare Dive / SEC 8-K",
+      "name": "Healthcare Dive",
       "host": "healthcaredive.com",
       "exampleUrl": "https://www.healthcaredive.com/news/hca-cuts-2026-earnings-ACA-coverage-losses/825147/",
       "firstSeen": "2026-08-20",
-      "lastSeen": "2026-09-14"
+      "lastSeen": "2026-09-15"
     },
     {
       "name": "MarketBeat",
       "host": "marketbeat.com",
       "exampleUrl": "https://www.marketbeat.com/instant-alerts/filing-deane-retirement-strategies-inc-invests-480-million-in-hca-healthcare-inc-hca-2026-08-10/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-14"
+      "lastSeen": "2026-09-15"
+    },
+    {
+      "name": "MarketScreener / HCA IR",
+      "host": "finance.yahoo.com",
+      "exampleUrl": "https://finance.yahoo.com/news/investors-reacting-hca-healthcare-hca-191303649.html",
+      "firstSeen": "2026-08-12",
+      "lastSeen": "2026-09-15"
     },
     {
       "name": "National Nurses United",
@@ -97,21 +104,21 @@
       "host": "toobig2care.org",
       "exampleUrl": "https://toobig2care.org/hca-case-study/",
       "firstSeen": "2026-08-18",
-      "lastSeen": "2026-09-14"
+      "lastSeen": "2026-09-15"
     },
     {
       "name": "NC Department of Justice",
       "host": "ncdoj.gov",
       "exampleUrl": "https://ncdoj.gov/ag-jackson-wins-key-arguments-as-hca-mission-hospital-case-proceeds-to-trial/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-14"
+      "lastSeen": "2026-09-15"
     },
     {
       "name": "NC Health News",
       "host": "northcarolinahealthnews.org",
-      "exampleUrl": "https://www.northcarolinahealthnews.org/2026/08/25/western-nc-hospital-certificate-of-need-tug-of-war/",
+      "exampleUrl": "https://www.northcarolinahealthnews.org/2026/09/15/needed-hospital-beds-across-nc-delayed-by-industry-appeals/",
       "firstSeen": "2026-08-13",
-      "lastSeen": "2026-09-14"
+      "lastSeen": "2026-09-15"
     },
     {
       "name": "StockTitan / SEC 8-K",
@@ -124,21 +131,14 @@
       "host": "kffhealthnews.org",
       "exampleUrl": "https://kffhealthnews.org/health-industry/hospital-mergers-monopolies-drive-healthcare-costs-asheville-north-carolina/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-14"
+      "lastSeen": "2026-09-15"
     },
     {
       "name": "WLOS",
       "host": "wlos.com",
       "exampleUrl": "https://wlos.com/news/local/independent-monitor-discusses-hcas-ownership-of-mission-hospital",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-14"
-    },
-    {
-      "name": "Yahoo Finance / HCA IR",
-      "host": "finance.yahoo.com",
-      "exampleUrl": "https://finance.yahoo.com/news/investors-reacting-hca-healthcare-hca-191303649.html",
-      "firstSeen": "2026-08-12",
-      "lastSeen": "2026-09-14"
+      "lastSeen": "2026-09-15"
     },
     {
       "name": "Yahoo Finance / StockTitan",
