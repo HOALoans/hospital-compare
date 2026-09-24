@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-23T16:28:39.588Z",
+  "updatedAt": "2026-09-24T16:50:01.520Z",
   "sources": [
     {
       "name": "828 News NOW / WLOS",
@@ -11,9 +11,9 @@
     {
       "name": "Asheville Watchdog",
       "host": "avlwatchdog.org",
-      "exampleUrl": "https://avlwatchdog.org/hca-ceo-pledges-to-do-better-at-mission-in-closed-door-meeting/",
+      "exampleUrl": "https://avlwatchdog.org/antitrust-lawsuit-against-mission-hca-hits-roadblock/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-23"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "Bank of America / TipRanks",
@@ -33,7 +33,7 @@
       "host": "benzinga.com",
       "exampleUrl": "https://www.benzinga.com/analyst-stock-ratings/initiation/26/09/61942164/this-hca-healthcare-analyst-begins-coverage-on-a-bullish-note-here-are-top-5-initiations-for-wednesday",
       "firstSeen": "2026-09-23",
-      "lastSeen": "2026-09-23"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "Blue Ridge Public Radio (BPR)",
@@ -51,14 +51,14 @@
       "host": "congress.gov",
       "exampleUrl": "https://www.congress.gov/event/119th-congress/house-event/119239",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-22"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "Dogwood Health Trust",
       "host": "dogwoodhealthtrust.org",
       "exampleUrl": "https://dogwoodhealthtrust.org/independent-monitor-dogwood-host-community-qa-webinar-on-2025-monitoring-report/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-23"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "H.R. 10311 — GovInfo",
@@ -72,21 +72,21 @@
       "host": "investor.hcahealthcare.com",
       "exampleUrl": "https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-23"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "Healthcare Dive",
       "host": "healthcaredive.com",
       "exampleUrl": "https://www.healthcaredive.com/news/hca-cuts-2026-earnings-ACA-coverage-losses/825147/",
       "firstSeen": "2026-08-20",
-      "lastSeen": "2026-09-23"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "MarketBeat",
       "host": "marketbeat.com",
       "exampleUrl": "https://www.marketbeat.com/instant-alerts/filing-deane-retirement-strategies-inc-invests-480-million-in-hca-healthcare-inc-hca-2026-08-10/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-23"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "MarketScreener / HCA IR",
@@ -100,7 +100,7 @@
       "host": "nashvillebanner.com",
       "exampleUrl": "https://nashvillebanner.com/2026/09/02/hca-healthcare-layoffs-heat-advisory/",
       "firstSeen": "2026-09-16",
-      "lastSeen": "2026-09-23"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "National Nurses United",
@@ -111,21 +111,21 @@
       "host": "toobig2care.org",
       "exampleUrl": "https://toobig2care.org/hca-case-study/",
       "firstSeen": "2026-08-18",
-      "lastSeen": "2026-09-23"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "NC Department of Justice",
       "host": "ncdoj.gov",
       "exampleUrl": "https://ncdoj.gov/ag-jackson-wins-key-arguments-as-hca-mission-hospital-case-proceeds-to-trial/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-23"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "NC Health News",
       "host": "northcarolinahealthnews.org",
       "exampleUrl": "https://www.northcarolinahealthnews.org/2026/09/15/needed-hospital-beds-across-nc-delayed-by-industry-appeals/",
       "firstSeen": "2026-08-13",
-      "lastSeen": "2026-09-23"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "SEC / Simply Wall St",
@@ -152,14 +152,14 @@
       "host": "kffhealthnews.org",
       "exampleUrl": "https://kffhealthnews.org/health-industry/hospital-mergers-monopolies-drive-healthcare-costs-asheville-north-carolina/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-23"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "WLOS",
       "host": "wlos.com",
       "exampleUrl": "https://wlos.com/news/local/independent-monitor-discusses-hcas-ownership-of-mission-hospital",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-23"
+      "lastSeen": "2026-09-24"
     },
     {
       "name": "Yahoo Finance / Simply Wall St",
