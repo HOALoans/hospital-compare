@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-30T18:15:37.513Z",
+  "updatedAt": "2026-10-01T18:18:42.938Z",
   "sources": [
     {
       "name": "828 News NOW / WLOS",
@@ -11,9 +11,9 @@
     {
       "name": "Asheville Watchdog",
       "host": "avlwatchdog.org",
-      "exampleUrl": "https://avlwatchdog.org/its-groundhog-day-for-hca-owned-mission-hospital-and-asheville-its-deja-vu-all-over-again/",
+      "exampleUrl": "https://avlwatchdog.org/pardee-emerging-from-missions-shadow/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-30"
+      "lastSeen": "2026-10-01"
     },
     {
       "name": "Bank of America / TipRanks",
@@ -27,13 +27,6 @@
       "exampleUrl": "https://www.beckershospitalreview.com/quality/patient-safety-outcomes/patient-death-draws-renewed-cms-scrutiny-at-hcas-mission-hospital/",
       "firstSeen": "2026-08-11",
       "lastSeen": "2026-08-13"
-    },
-    {
-      "name": "Benzinga / BMO Capital",
-      "host": "benzinga.com",
-      "exampleUrl": "https://www.benzinga.com/analyst-stock-ratings/initiation/26/09/61942164/this-hca-healthcare-analyst-begins-coverage-on-a-bullish-note-here-are-top-5-initiations-for-wednesday",
-      "firstSeen": "2026-09-23",
-      "lastSeen": "2026-09-30"
     },
     {
       "name": "Blue Ridge Public Radio (BPR)",
@@ -61,39 +54,46 @@
       "lastSeen": "2026-09-29"
     },
     {
-      "name": "H.R. 10311 — GovInfo",
+      "name": "H.R. 10311 / GovInfo, September 8, 2026",
       "host": "govinfo.gov",
       "exampleUrl": "https://www.govinfo.gov/app/details/BILLS-119hr10311ih",
       "firstSeen": "2026-09-11",
-      "lastSeen": "2026-09-28"
+      "lastSeen": "2026-10-01"
     },
     {
-      "name": "HCA Healthcare 10-Q / SEC",
+      "name": "HCA 10-Q / SEC, Q2 2026",
       "host": "sec.gov",
-      "exampleUrl": "https://www.sec.gov/Archives/edgar/data/0000860730/000119312526315151/hca-ex99_1.htm",
+      "exampleUrl": "https://www.sec.gov/Archives/edgar/data/0000860730/000119312526321077/hca-20260630.htm",
       "firstSeen": "2026-08-12",
-      "lastSeen": "2026-09-30"
+      "lastSeen": "2026-10-01"
     },
     {
       "name": "HCA Healthcare Investor Relations",
       "host": "investor.hcahealthcare.com",
       "exampleUrl": "https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-30"
+      "lastSeen": "2026-10-01"
+    },
+    {
+      "name": "HCA Healthcare IR / Benzinga",
+      "host": "benzinga.com",
+      "exampleUrl": "https://www.benzinga.com/markets/earnings/26/01/50162818/100-billion-market-cap-hospital-operator-hca-healthcare-to-buy-back-stock-worth-10-billion",
+      "firstSeen": "2026-09-23",
+      "lastSeen": "2026-10-01"
     },
     {
       "name": "Healthcare Dive",
       "host": "healthcaredive.com",
       "exampleUrl": "https://www.healthcaredive.com/news/hca-cuts-2026-earnings-ACA-coverage-losses/825147/",
       "firstSeen": "2026-08-20",
-      "lastSeen": "2026-09-30"
+      "lastSeen": "2026-10-01"
     },
     {
       "name": "MarketBeat",
       "host": "marketbeat.com",
       "exampleUrl": "https://www.marketbeat.com/instant-alerts/filing-deane-retirement-strategies-inc-invests-480-million-in-hca-healthcare-inc-hca-2026-08-10/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-30"
+      "lastSeen": "2026-10-01"
     },
     {
       "name": "MarketScreener / HCA IR",
@@ -103,11 +103,11 @@
       "lastSeen": "2026-09-16"
     },
     {
-      "name": "Nashville Banner",
+      "name": "Nashville Banner / WKRN",
       "host": "nashvillebanner.com",
       "exampleUrl": "https://nashvillebanner.com/2026/09/02/hca-healthcare-layoffs-heat-advisory/",
       "firstSeen": "2026-09-16",
-      "lastSeen": "2026-09-30"
+      "lastSeen": "2026-10-01"
     },
     {
       "name": "National Nurses United",
@@ -118,14 +118,14 @@
       "host": "toobig2care.org",
       "exampleUrl": "https://toobig2care.org/hca-case-study/",
       "firstSeen": "2026-08-18",
-      "lastSeen": "2026-09-30"
+      "lastSeen": "2026-10-01"
     },
     {
       "name": "NC Department of Justice",
       "host": "ncdoj.gov",
       "exampleUrl": "https://ncdoj.gov/ag-jackson-wins-key-arguments-as-hca-mission-hospital-case-proceeds-to-trial/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-30"
+      "lastSeen": "2026-10-01"
     },
     {
       "name": "NC Health News",
@@ -152,7 +152,7 @@
       "host": "kffhealthnews.org",
       "exampleUrl": "https://kffhealthnews.org/health-industry/hospital-mergers-monopolies-drive-healthcare-costs-asheville-north-carolina/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-09-30"
+      "lastSeen": "2026-10-01"
     },
     {
       "name": "WLOS",
