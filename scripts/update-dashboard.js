@@ -22,6 +22,12 @@ import {
   formatSourcesForPrompt,
   loadHcaSources,
 } from "./hcaSources.js";
+import {
+  fetchFinanceSignals,
+  financeSignalsToCards,
+  formatFinanceSignalsForPrompt,
+  enrichFinancialNewsItems,
+} from "./hcaFinanceSignals.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -63,7 +69,13 @@ IMPORTANT: Also check every outlet listed under LEARNED / PERSISTENT OUTLETS bel
 
 IMPORTANT COLUMN SPLIT:
 - newsItems = accountability / care / CMS / lawsuit / staffing / CON / congressional oversight / advocacy framing for Mission and WNC. Do NOT put pure earnings/stock items here.
-- financialNewsItems = purely financial headlines about HCA: earnings, revenue, cost cutting, margins, guidance, buybacks, dividends, stock, analyst price targets, capital allocation. Do NOT put CMS citations, AG lawsuit, staffing, or patient-safety advocacy items here.
+- financialNewsItems = purely financial headlines about HCA: earnings, revenue, cost cutting, margins, guidance, buybacks, dividends, stock, analyst price targets / initiations / upgrades / downgrades, institutional filings, insider Form 4s, capital allocation. Do NOT put CMS citations, AG lawsuit, staffing, or patient-safety advocacy items here.
+
+FINANCIAL NEWS FRESHNESS (critical):
+- Prefer financialNewsItems from the last ~45 days. Between quarterly earnings, actively search for analyst ratings, initiations, price-target changes, MarketBeat filing alerts, HCA IR releases, and notable insider transactions — not only the last earnings release.
+- Do NOT fill the financial column with the same Q2 2026 earnings / August 2026 Deane stake recycle every day when fresher analyst or market items exist.
+- When LIVE FINANCE SIGNALS are provided in the user message, include cards for the newest analyst actions (with accurate firm/rating/date) and search for corroborating URLs when possible.
+- Keep at most one older evergreen financial item (e.g. prior-quarter earnings or the $10B buyback) if needed for context; the top of the list must be the newest financial developments.
 
 CONGRESSIONAL / HAZEN TESTIMONY:
 - When relevant (or when little fresher Mission news exists), include Hazen's April 28, 2026 Ways and Means testimony or related hearing coverage in newsItems and/or a talking point.
@@ -882,7 +894,7 @@ async function requestDashboardJson(client, params) {
   }
 }
 
-async function fetchDashboardData(apiKey, learnedSourcesText = "") {
+async function fetchDashboardData(apiKey, learnedSourcesText = "", financePromptBlock = "") {
   // Streaming + generous timeout: scheduled runs (Aug 4 #30918362133, Aug 5
   // #31014010755) hit APIConnectionTimeoutError ~5m into non-streaming
   // web_search — idle sockets get closed before the full JSON arrives.
@@ -901,20 +913,23 @@ async function fetchDashboardData(apiKey, learnedSourcesText = "") {
   const userPrompt = `Today's date is ${today}.
 
 Return 3–5 newsItems (accountability/care/CMS/lawsuit/congressional oversight — newest first),
-3–5 financialNewsItems (earnings/revenue/margins/guidance/buybacks/stock only — newest first),
+3–5 financialNewsItems (earnings/revenue/margins/guidance/buybacks/stock/analyst ratings only — newest first),
 and 5–7 talkingPoints.
 For talkingPoints[].text, start with a short punchy title sentence ending in a period, then the supporting sentences.
 When a talking point cites a specific earnings release, court ruling, monitor report, CON decision, congressional testimony (e.g. Sam Hazen Ways and Means), or news article, include source (short name) and sourceUrl with the real URL; omit both if unknown. Preserve url/sourceUrl whenever known.
 For each newsItems[] / financialNewsItems[] entry:
 - include url with the real article/press-release/filing/hearing URL when known; omit url if unknown. Never invent URLs.
 - include brief (2–4 sentences) for the on-page news-brief modal.
-- REQUIRED: accountabilityPoints — 2–4 short Reclaim positioning / talking-point bullets shown under each card blurb and in the click-modal. Write them for advocates (how to frame the story to hold HCA accountable). For financialNewsItems, connect earnings/revenue/cost-cutting/margins/guidance/buybacks/stock to Mission accountability (profits vs staffing, capital returns vs missing staffing plans, IR silence on CMS/AG).
+- REQUIRED: accountabilityPoints — 2–4 short Reclaim positioning / talking-point bullets shown under each card blurb and in the click-modal. Write them for advocates (how to frame the story to hold HCA accountable). For financialNewsItems, connect earnings/revenue/cost-cutting/margins/guidance/buybacks/stock/analyst coverage to Mission accountability (profits vs staffing, capital returns vs missing staffing plans, IR silence on CMS/AG).
 Consider Sam Hazen / House Ways and Means testimony (April 28, 2026) when relevant for newsItems or talkingPoints; paraphrase carefully, do not invent quotes.
-For tag, use a short label like Lawsuit, Noncompliance, Earnings, CON, Safety, Monitor, Congress, Guidance, Margins, Buyback, or Update. Prefer "Lawsuit" (not "Trial") for AG case items.
+For tag, use a short label like Lawsuit, Noncompliance, Earnings, CON, Safety, Monitor, Congress, Guidance, Margins, Buyback, Analyst, Stock, or Update. Prefer "Lawsuit" (not "Trial") for AG case items.
 For tagClass, choose tag-red, tag-amber, tag-blue, or tag-teal to match severity/topic.
 Set todayDate to today's date in "Month D, YYYY" format.
 Set sectionLabel and financialSectionLabel to any non-empty strings (the update script overwrites them with a Scanned date/time stamp).
 
+FINANCIAL FRESHNESS: Search specifically for HCA analyst ratings, initiations, upgrades/downgrades, price targets, MarketBeat alerts, and IR releases since the last earnings report. Put the newest financial developments first. Do not lead with July/August 2026 earnings recycle if September/October analyst or market items exist.
+
+${financePromptBlock ? `${financePromptBlock}\n` : ""}
 CRITICAL: After any tool use, your FINAL message must be ONLY the raw JSON object — no narration like "Now I have…" or "Let me compile…".`;
 
   const baseParams = {
@@ -1009,9 +1024,34 @@ async function main() {
   );
   const learnedSourcesText = formatSourcesForPrompt(loadHcaSources().sources);
 
-  const data = await fetchDashboardData(apiKey, learnedSourcesText);
+  console.log("Fetching live HCA finance signals…");
+  const financeSignals = await fetchFinanceSignals();
+  if (financeSignals.errors.length) {
+    console.warn("Finance signal warnings:", financeSignals.errors.join("; "));
+  }
+  const signalCards = financeSignalsToCards(financeSignals);
+  console.log(
+    `Finance signals: ${financeSignals.ratings.length} ratings, ${financeSignals.insiders.length} insider rows → ${signalCards.length} candidate cards`,
+  );
+  const financePromptBlock = formatFinanceSignalsForPrompt(financeSignals);
+
+  const data = await fetchDashboardData(apiKey, learnedSourcesText, financePromptBlock);
   data.newsItems = sortNewsItemsByDateDesc(data.newsItems);
-  data.financialNewsItems = sortNewsItemsByDateDesc(data.financialNewsItems);
+  data.financialNewsItems = enrichFinancialNewsItems(
+    sortNewsItemsByDateDesc(data.financialNewsItems),
+    signalCards,
+    parseNewsDate,
+  );
+  // Re-validate merged cards (signal cards already match schema).
+  for (const [i, item] of data.financialNewsItems.entries()) {
+    validateNewsItem(item, "financialNewsItems", i);
+  }
+  console.log(
+    `Financial column after enrichment: ${data.financialNewsItems.length} items` +
+      (data.financialNewsItems[0]
+        ? ` (newest: ${data.financialNewsItems[0].date} — ${data.financialNewsItems[0].headline.slice(0, 60)}…)`
+        : ""),
+  );
 
   let html = fs.readFileSync(htmlPath, "utf8");
   html = ensureMarkers(html);
