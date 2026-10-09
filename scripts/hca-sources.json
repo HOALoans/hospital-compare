@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-08T18:40:43.913Z",
+  "updatedAt": "2026-10-09T18:26:48.703Z",
   "sources": [
     {
       "name": "828 News NOW / WLOS",
@@ -13,7 +13,7 @@
       "host": "avlwatchdog.org",
       "exampleUrl": "https://avlwatchdog.org/embattled-congressman-introduces-hca-mission-act-to-expand-regulators-powers/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-08"
+      "lastSeen": "2026-10-09"
     },
     {
       "name": "Bank of America / TipRanks",
@@ -26,7 +26,7 @@
       "host": "finance.yahoo.com",
       "exampleUrl": "https://finance.yahoo.com/quote/HCA/analysis/",
       "firstSeen": "2026-08-12",
-      "lastSeen": "2026-10-08"
+      "lastSeen": "2026-10-09"
     },
     {
       "name": "Becker's Hospital Review",
@@ -57,14 +57,14 @@
       "host": "congress.gov",
       "exampleUrl": "https://www.congress.gov/event/119th-congress/house-event/119239",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-08"
+      "lastSeen": "2026-10-09"
     },
     {
       "name": "Dogwood Health Trust",
       "host": "dogwoodhealthtrust.org",
       "exampleUrl": "https://dogwoodhealthtrust.org/independent-monitor-dogwood-host-community-qa-webinar-on-2025-monitoring-report/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-08"
+      "lastSeen": "2026-10-09"
     },
     {
       "name": "H.R. 10311 / GovInfo, September 8, 2026",
@@ -102,6 +102,13 @@
       "lastSeen": "2026-10-08"
     },
     {
+      "name": "Investing.com",
+      "host": "investing.com",
+      "exampleUrl": "https://www.investing.com/news/analyst-ratings/cantor-fitzgerald-reiterates-hca-healthcare-stock-rating-on-stable-labor-93CH-4934345",
+      "firstSeen": "2026-10-09",
+      "lastSeen": "2026-10-09"
+    },
+    {
       "name": "Investing.com / Cantor Fitzgerald",
       "host": "",
       "firstSeen": "2026-10-06",
@@ -112,7 +119,7 @@
       "host": "marketbeat.com",
       "exampleUrl": "https://www.marketbeat.com/instant-alerts/analyst-royal-bank-of-canada-forecasts-strong-price-appreciation-for-hca-healthcare-nyse-hca-stock-2026-10-07/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-08"
+      "lastSeen": "2026-10-09"
     },
     {
       "name": "MarketBeat / Live Analyst Signals",
@@ -121,11 +128,11 @@
       "lastSeen": "2026-10-08"
     },
     {
-      "name": "Nashville Banner / WKRN",
+      "name": "Nashville Banner",
       "host": "nashvillebanner.com",
       "exampleUrl": "https://nashvillebanner.com/2026/09/02/hca-healthcare-layoffs-heat-advisory/",
       "firstSeen": "2026-09-16",
-      "lastSeen": "2026-10-07"
+      "lastSeen": "2026-10-09"
     },
     {
       "name": "National Nurses United",
@@ -136,21 +143,21 @@
       "host": "toobig2care.org",
       "exampleUrl": "https://toobig2care.org/hca-case-study/",
       "firstSeen": "2026-08-18",
-      "lastSeen": "2026-10-08"
+      "lastSeen": "2026-10-09"
     },
     {
       "name": "NC Department of Justice",
       "host": "ncdoj.gov",
       "exampleUrl": "https://ncdoj.gov/ag-jackson-wins-key-arguments-as-hca-mission-hospital-case-proceeds-to-trial/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-08"
+      "lastSeen": "2026-10-09"
     },
     {
       "name": "NC Health News",
       "host": "northcarolinahealthnews.org",
       "exampleUrl": "https://www.northcarolinahealthnews.org/2026/10/03/antitrust-lawsuit-against-mission-hca-hits-roadblock/",
       "firstSeen": "2026-08-13",
-      "lastSeen": "2026-10-08"
+      "lastSeen": "2026-10-09"
     },
     {
       "name": "StockAnalysis.com / Bernstein",
@@ -175,21 +182,21 @@
       "name": "TipRanks / Globe and Mail",
       "host": "",
       "firstSeen": "2026-10-08",
-      "lastSeen": "2026-10-08"
+      "lastSeen": "2026-10-09"
     },
     {
       "name": "Washington Post / KFF Health News",
       "host": "kffhealthnews.org",
       "exampleUrl": "https://kffhealthnews.org/health-industry/hospital-mergers-monopolies-drive-healthcare-costs-asheville-north-carolina/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-08"
+      "lastSeen": "2026-10-09"
     },
     {
       "name": "WLOS",
       "host": "wlos.com",
       "exampleUrl": "https://wlos.com/news/local/hca-healthcare-invest-mission-health-hospital-32-million-dollars-facilities-western-north-carolina-surgery-patients-clinics-technology",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-08"
+      "lastSeen": "2026-10-09"
     },
     {
       "name": "Yahoo Finance / Simply Wall St",
