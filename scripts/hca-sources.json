@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-15T16:38:15.361Z",
+  "updatedAt": "2026-11-02T21:38:48.566Z",
   "sources": [
     {
       "name": "828 News NOW / WLOS",
@@ -11,9 +11,9 @@
     {
       "name": "Asheville Watchdog",
       "host": "avlwatchdog.org",
-      "exampleUrl": "https://avlwatchdog.org/embattled-congressman-introduces-hca-mission-act-to-expand-regulators-powers/",
+      "exampleUrl": "https://avlwatchdog.org/mission-hospital-says-it-is-back-in-substantial-compliance-with-federal-safety-regulations/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-15"
+      "lastSeen": "2026-11-02"
     },
     {
       "name": "Bank of America / TipRanks",
@@ -50,28 +50,28 @@
       "host": "congress.gov",
       "exampleUrl": "https://www.congress.gov/event/119th-congress/house-event/119239",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-15"
+      "lastSeen": "2026-11-02"
     },
     {
       "name": "Dogwood Health Trust",
       "host": "dogwoodhealthtrust.org",
       "exampleUrl": "https://dogwoodhealthtrust.org/independent-monitor-dogwood-host-community-qa-webinar-on-2025-monitoring-report/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-15"
+      "lastSeen": "2026-11-02"
     },
     {
-      "name": "GovInfo — H.R. 10311 (September 8, 2026)",
+      "name": "GovInfo — H.R. 10311",
       "host": "govinfo.gov",
       "exampleUrl": "https://www.govinfo.gov/app/details/BILLS-119hr10311ih",
       "firstSeen": "2026-09-11",
-      "lastSeen": "2026-10-14"
+      "lastSeen": "2026-11-02"
     },
     {
       "name": "GuruFocus / MarketBeat",
       "host": "gurufocus.com",
       "exampleUrl": "https://www.gurufocus.com/news/9119469/hca-maintained-by-td-cowen-price-target-raised-to-460",
       "firstSeen": "2026-10-12",
-      "lastSeen": "2026-10-15"
+      "lastSeen": "2026-11-02"
     },
     {
       "name": "HCA 10-Q / SEC, Q2 2026",
@@ -83,9 +83,9 @@
     {
       "name": "HCA Healthcare Investor Relations",
       "host": "investor.hcahealthcare.com",
-      "exampleUrl": "https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Second-Quarter-2026-Results/default.aspx",
+      "exampleUrl": "https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Third-Quarter-2026-Results/default.aspx",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-06"
+      "lastSeen": "2026-11-02"
     },
     {
       "name": "HCA Healthcare IR / Benzinga",
@@ -117,9 +117,9 @@
     {
       "name": "MarketBeat",
       "host": "marketbeat.com",
-      "exampleUrl": "https://www.marketbeat.com/instant-alerts/analyst-royal-bank-of-canada-forecasts-strong-price-appreciation-for-hca-healthcare-nyse-hca-stock-2026-10-07/",
+      "exampleUrl": "https://www.marketbeat.com/instant-alerts/analyst-hca-healthcare-nyse-hca-stock-price-expected-to-rise-wells-fargo-company-analyst-says-2026-11-02/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-15"
+      "lastSeen": "2026-11-02"
     },
     {
       "name": "MarketBeat / Live Analyst Signals",
@@ -143,14 +143,14 @@
       "host": "toobig2care.org",
       "exampleUrl": "https://toobig2care.org/hca-case-study/",
       "firstSeen": "2026-08-18",
-      "lastSeen": "2026-10-15"
+      "lastSeen": "2026-11-02"
     },
     {
       "name": "NC Department of Justice",
       "host": "ncdoj.gov",
       "exampleUrl": "https://ncdoj.gov/ag-jackson-wins-key-arguments-as-hca-mission-hospital-case-proceeds-to-trial/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-15"
+      "lastSeen": "2026-11-02"
     },
     {
       "name": "NC Health News",
@@ -158,6 +158,20 @@
       "exampleUrl": "https://www.northcarolinahealthnews.org/2026/10/03/antitrust-lawsuit-against-mission-hca-hits-roadblock/",
       "firstSeen": "2026-08-13",
       "lastSeen": "2026-10-14"
+    },
+    {
+      "name": "RBC Capital",
+      "host": "finance.yahoo.com",
+      "exampleUrl": "https://finance.yahoo.com/quote/HCA/analysis/",
+      "firstSeen": "2026-08-12",
+      "lastSeen": "2026-11-02"
+    },
+    {
+      "name": "StockAnalysis / MarketBeat",
+      "host": "stockanalysis.com",
+      "exampleUrl": "https://stockanalysis.com/stocks/hca/ratings/",
+      "firstSeen": "2026-11-02",
+      "lastSeen": "2026-11-02"
     },
     {
       "name": "StockAnalysis.com / Bernstein",
@@ -179,37 +193,37 @@
       "lastSeen": "2026-09-22"
     },
     {
-      "name": "TD Cowen",
-      "host": "finance.yahoo.com",
-      "exampleUrl": "https://finance.yahoo.com/quote/HCA/analysis/",
-      "firstSeen": "2026-08-12",
-      "lastSeen": "2026-10-15"
-    },
-    {
       "name": "TipRanks / Globe and Mail",
       "host": "",
       "firstSeen": "2026-10-08",
       "lastSeen": "2026-10-09"
     },
     {
+      "name": "TradingView / RBC Capital",
+      "host": "tradingview.com",
+      "exampleUrl": "https://www.tradingview.com/news/tradingview:7ff4110662c16:0-rbc-capital-maintains-hca-healthcare-at-outperform-raises-price-target-to-521-from-496/",
+      "firstSeen": "2026-11-02",
+      "lastSeen": "2026-11-02"
+    },
+    {
       "name": "Washington Post / KFF Health News",
       "host": "kffhealthnews.org",
       "exampleUrl": "https://kffhealthnews.org/health-industry/hospital-mergers-monopolies-drive-healthcare-costs-asheville-north-carolina/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-15"
+      "lastSeen": "2026-11-02"
     },
     {
       "name": "Weiss Ratings",
       "host": "",
       "firstSeen": "2026-10-15",
-      "lastSeen": "2026-10-15"
+      "lastSeen": "2026-11-02"
     },
     {
       "name": "WLOS",
       "host": "wlos.com",
       "exampleUrl": "https://wlos.com/news/local/chuck-edwards-hca-mission-act-hospital-patient-safety-fines-north-carolina-health-care-accountability-jamie-ager-jennifer-balkcom-north-carolina",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-10-15"
+      "lastSeen": "2026-11-02"
     },
     {
       "name": "Yahoo Finance / Simply Wall St",
