@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-03T19:18:49.180Z",
+  "updatedAt": "2026-11-04T19:36:53.697Z",
   "sources": [
     {
       "name": "828 News NOW / WLOS",
@@ -11,9 +11,9 @@
     {
       "name": "Asheville Watchdog",
       "host": "avlwatchdog.org",
-      "exampleUrl": "https://avlwatchdog.org/mission-hospital-says-it-is-back-in-substantial-compliance-with-federal-safety-regulations/",
+      "exampleUrl": "https://avlwatchdog.org/possible-settlement-in-antitrust-lawsuit-against-mission-hospital",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-11-03"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "Bank of America / TipRanks",
@@ -24,9 +24,9 @@
     {
       "name": "Becker's Hospital Review",
       "host": "beckershospitalreview.com",
-      "exampleUrl": "https://www.beckershospitalreview.com/quality/patient-safety-outcomes/patient-death-draws-renewed-cms-scrutiny-at-hcas-mission-hospital/",
+      "exampleUrl": "https://www.beckershospitalreview.com/legal-regulatory-issues/monitor-finds-noncompliance-issues-at-hca-mission-hospital",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-08-13"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "Bernstein / Live Analyst Signals",
@@ -35,11 +35,18 @@
       "lastSeen": "2026-10-08"
     },
     {
+      "name": "Bernstein / StockAnalysis",
+      "host": "stockanalysis.com",
+      "exampleUrl": "https://stockanalysis.com/analysts/lance-wilkes/",
+      "firstSeen": "2026-11-02",
+      "lastSeen": "2026-11-04"
+    },
+    {
       "name": "Blue Ridge Public Radio (BPR)",
       "host": "bpr.org",
       "exampleUrl": "https://www.bpr.org/health/2026-07-28/judge-allows-nc-attorney-generals-lawsuit-against-hca-over-mission-hospital-to-proceed-to-trial",
       "firstSeen": "2026-08-21",
-      "lastSeen": "2026-11-03"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "CMS",
@@ -50,14 +57,14 @@
       "host": "congress.gov",
       "exampleUrl": "https://www.congress.gov/event/119th-congress/house-event/119239",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-11-03"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "Dogwood Health Trust",
       "host": "dogwoodhealthtrust.org",
       "exampleUrl": "https://dogwoodhealthtrust.org/independent-monitor-dogwood-host-community-qa-webinar-on-2025-monitoring-report/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-11-03"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "GovInfo — H.R. 10311",
@@ -71,14 +78,14 @@
       "host": "gurufocus.com",
       "exampleUrl": "https://www.gurufocus.com/news/9162186/hca-healthcare-plans-senior-notes-offering-amid-strategic-debt-management-hca",
       "firstSeen": "2026-10-12",
-      "lastSeen": "2026-11-03"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "HCA Healthcare Investor Relations",
       "host": "investor.hcahealthcare.com",
       "exampleUrl": "https://investor.hcahealthcare.com/news/news-details/2026/HCA-Healthcare-Reports-Third-Quarter-2026-Results/default.aspx",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-11-03"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "HCA Healthcare IR / Benzinga",
@@ -92,7 +99,7 @@
       "host": "sec.gov",
       "exampleUrl": "https://www.sec.gov/Archives/edgar/data/0000860730/000119312526437871/hca-20260930.htm",
       "firstSeen": "2026-08-12",
-      "lastSeen": "2026-11-03"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "Healthcare Dive / HCA IR",
@@ -100,13 +107,6 @@
       "exampleUrl": "https://www.healthcaredive.com/news/hca-cuts-2026-earnings-ACA-coverage-losses/825147/",
       "firstSeen": "2026-08-20",
       "lastSeen": "2026-10-08"
-    },
-    {
-      "name": "Investing.com",
-      "host": "investing.com",
-      "exampleUrl": "https://www.investing.com/news/analyst-ratings/cantor-fitzgerald-reiterates-hca-healthcare-stock-rating-on-stable-labor-93CH-4934345",
-      "firstSeen": "2026-10-09",
-      "lastSeen": "2026-10-12"
     },
     {
       "name": "Investing.com / Cantor Fitzgerald",
@@ -119,14 +119,14 @@
       "host": "finance.yahoo.com",
       "exampleUrl": "https://finance.yahoo.com/quote/HCA/",
       "firstSeen": "2026-08-12",
-      "lastSeen": "2026-11-03"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "MarketBeat",
       "host": "marketbeat.com",
       "exampleUrl": "https://www.marketbeat.com/instant-alerts/analyst-hca-healthcare-nyse-hca-earns-buy-rating-from-truist-financial-2026-11-03/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-11-03"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "MarketBeat / Live Analyst Signals",
@@ -150,7 +150,7 @@
       "host": "toobig2care.org",
       "exampleUrl": "https://toobig2care.org/hca-case-study/",
       "firstSeen": "2026-08-18",
-      "lastSeen": "2026-11-03"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "NC Department of Justice",
@@ -162,16 +162,16 @@
     {
       "name": "NC Health News",
       "host": "northcarolinahealthnews.org",
-      "exampleUrl": "https://www.northcarolinahealthnews.org/2026/10/03/antitrust-lawsuit-against-mission-hca-hits-roadblock/",
+      "exampleUrl": "https://www.northcarolinahealthnews.org/2026/10/24/7-years-after-mission-deal-hca-disputes-states-authority-to-enforce-purchase-agreement",
       "firstSeen": "2026-08-13",
-      "lastSeen": "2026-11-03"
+      "lastSeen": "2026-11-04"
     },
     {
-      "name": "StockAnalysis / MarketBeat",
-      "host": "stockanalysis.com",
-      "exampleUrl": "https://stockanalysis.com/stocks/hca/ratings/",
-      "firstSeen": "2026-11-02",
-      "lastSeen": "2026-11-03"
+      "name": "Reuters / Investing.com, Nov. 4, 2026",
+      "host": "investing.com",
+      "exampleUrl": "https://www.investing.com/news/stock-market-news/health-insurers-hospitals-rally-after-sweeping-midterm-win-for-democrats-5000171",
+      "firstSeen": "2026-10-09",
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "StockAnalysis.com / Bernstein",
@@ -210,7 +210,7 @@
       "host": "kffhealthnews.org",
       "exampleUrl": "https://kffhealthnews.org/health-industry/hospital-mergers-monopolies-drive-healthcare-costs-asheville-north-carolina/",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-11-03"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "Weiss Ratings",
@@ -221,9 +221,9 @@
     {
       "name": "WLOS",
       "host": "wlos.com",
-      "exampleUrl": "https://wlos.com/news/local/chuck-edwards-hca-mission-act-hospital-patient-safety-fines-north-carolina-health-care-accountability-jamie-ager-jennifer-balkcom-north-carolina",
+      "exampleUrl": "https://wlos.com/news/local/jamie-ager-wins-north-carolina-11th-congressional-district-politics-democrat-victory-republican-jennifer-balkcom-defeat-house-representatives",
       "firstSeen": "2026-08-11",
-      "lastSeen": "2026-11-02"
+      "lastSeen": "2026-11-04"
     },
     {
       "name": "Yahoo Finance / Simply Wall St",
